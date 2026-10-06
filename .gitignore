@@ -1,0 +1,52 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### Secretos y logs (MediChain) ###
+application.properties
+.env
+.env.*
+*.log
+# Claves y almacenes de certificados (nunca en el repo)
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+### Python (scripts/) ###
+__pycache__/
+*.pyc
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+# PDFs de habilitación (por si DOCUMENTOS_DIR apunta dentro del repo)
+data/
