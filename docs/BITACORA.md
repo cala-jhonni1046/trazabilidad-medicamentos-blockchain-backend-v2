@@ -365,9 +365,9 @@
 
 ## Pendiente
 
-- **Paso 9:** a definir.
+- **Paso 9:** tests de integración con Testcontainers (PostgreSQL real en Docker).
 - **Paso 10:** migración inicial con Flyway, que reemplaza el SQL de arranque (`InicializadorBaseDatos`) y `ddl-auto=update` (problema 4 del relevamiento del 28/09).
-- **Paso 11:** a definir.
+- **Paso 11:** Actuator, Docker (imagen + docker-compose) y README.
 - **Pendientes ya anotados en `CLAUDE.md`, sin paso asignado:**
   - rate limiting en login, registro, verificación pública e intentos de lote inválidos;
   - captcha y verificación de email en el registro;
