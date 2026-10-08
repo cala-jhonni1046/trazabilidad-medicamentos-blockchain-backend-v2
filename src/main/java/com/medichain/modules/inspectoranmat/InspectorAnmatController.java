@@ -2,6 +2,7 @@ package com.medichain.modules.inspectoranmat;
 
 import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
@@ -41,12 +43,13 @@ public class InspectorAnmatController {
 
     /** Lista los inspectores de forma paginada. */
     @GetMapping
-    @Operation(operationId = "listarInspectores", summary = "Listar inspectores", description = "Devuelve una página de inspectores ANMAT. Roles: SEDE_CENTRAL, INSPECTOR.")
+    @Operation(operationId = "listarInspectores", summary = "Listar inspectores", description = "Devuelve una página de inspectores ANMAT. Filtro opcional ?estado=ACTIVO o BAJA (una sola por consulta; lo ajeno sigue sin verse). Roles: SEDE_CENTRAL, INSPECTOR.")
     @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR')")
     public ResponseEntity<Page<InspectorAnmatResponseDTO>> getAll(
+            @Parameter(description = "Estado (opcional): ACTIVO o BAJA") @RequestParam(required = false) EstadoInspector estado,
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<InspectorAnmatResponseDTO> page = service.getAll(pageable).map(mapper::toResponseDTO);
+        Page<InspectorAnmatResponseDTO> page = service.getAll(estado, pageable).map(mapper::toResponseDTO);
         return ResponseEntity.status(HttpStatus.OK).body(page);
     }
 

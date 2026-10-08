@@ -8,12 +8,12 @@ import com.medichain.modules.registroblockchain.ErrorBlockchainException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
@@ -27,7 +27,9 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +42,16 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /** Unicidad sin traducción propia. */
+    private static final Traduccion DATO_DUPLICADO = new Traduccion("DATO_DUPLICADO", "El dato ya existe");
+
+    /** FK, CHECK o NOT NULL: un dato que la validación debió frenar. */
+    private static final Traduccion RESTRICCION_DE_DATOS = new Traduccion("RESTRICCION_DE_DATOS",
+            "Los datos no cumplen una restricción del sistema");
+
+    /** Restricción de la base (nombre en minúsculas, ver las migraciones) → código y mensaje del 409. */
+    private static final Map<String, Traduccion> TRADUCCIONES = traducciones();
 
     /**
      * Errores de Bean Validation → 400 con la lista de campos. BindException
@@ -155,23 +167,49 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
-    /** Violación de unique/FK en la base → 409 sin nombres de tablas ni constraints. */
+    /**
+     * Violación de una restricción de la base → 409 SIEMPRE con código (tabla
+     * TRADUCCIONES por nombre de restricción). Las carreras que necesitan
+     * efectos propios (R5, LOTE_DUPLICADO, R3 + intento) ya las traduce su
+     * Service; acá llegan las demás. Unicidad sin entrada en la tabla →
+     * DATO_DUPLICADO; cualquier otra (FK, CHECK, NOT NULL) → RESTRICCION_DE_DATOS
+     * y log ERROR: es un dato que la validación debió frenar antes.
+     * El log lleva solo el nombre de la restricción y el SQLState, NUNCA el valor
+     * (sería un DNI, un email o un dato de la dispensación).
+     */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponseDTO> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
-        logger.warn("Violación de integridad de datos: {}", ex.getMostSpecificCause().getMessage());
-        ErrorResponseDTO errorResponse = new ErrorResponseDTO(
-                HttpStatus.CONFLICT.value(),
-                "El dato ya existe o viola una restricción");
+        String restriccion = RestriccionUnica.nombre(ex);
+        String estadoSql = RestriccionUnica.estadoSql(ex);
+        Traduccion traduccion = restriccion != null ? TRADUCCIONES.get(restriccion.toLowerCase()) : null;
+        if (traduccion == null) {
+            boolean unicidad = "23505".equals(estadoSql);
+            traduccion = unicidad ? DATO_DUPLICADO : RESTRICCION_DE_DATOS;
+        }
+        if (traduccion == RESTRICCION_DE_DATOS) {
+            logger.error("Violación de una restricción de datos que la validación no frenó: restricción {}, SQLState {}",
+                    restriccion, estadoSql);
+        } else {
+            logger.warn("Violación de unicidad: restricción {}, SQLState {} → {}", restriccion, estadoSql,
+                    traduccion.codigo);
+        }
+        ErrorResponseDTO errorResponse = new ErrorResponseDTO(HttpStatus.CONFLICT.value(), traduccion.mensaje,
+                traduccion.codigo);
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
-    /** Conflicto de @Version (edición concurrente) → 409. */
-    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    public ResponseEntity<ErrorResponseDTO> handleOptimisticLockingFailureException(ObjectOptimisticLockingFailureException ex) {
-        logger.warn("Conflicto de concurrencia optimista: {}", ex.getMessage());
+    /**
+     * Conflicto de @Version (dos ediciones simultáneas de la misma fila) → 409
+     * CONFLICTO_VERSION. OptimisticLockingFailureException cubre todas sus
+     * variantes (ObjectOptimisticLockingFailureException incluida).
+     */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponseDTO> handleOptimisticLockingFailureException(OptimisticLockingFailureException ex) {
+        logger.warn("Conflicto de concurrencia optimista ({}): {}", ex.getClass().getSimpleName(), ex.getMessage());
         ErrorResponseDTO errorResponse = new ErrorResponseDTO(
                 HttpStatus.CONFLICT.value(),
-                "El registro fue modificado por otro usuario; volvé a cargarlo");
+                "El registro fue modificado por otro usuario; volvé a cargarlo",
+                "CONFLICTO_VERSION");
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
@@ -262,5 +300,38 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Error interno del servidor");
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    /** Tabla de traducción: restricción de la base → código y mensaje del 409 (mensajes sin el valor). */
+    private static Map<String, Traduccion> traducciones() {
+        Traduccion empresa = new Traduccion("EMPRESA_DUPLICADA", "Ya existe una empresa registrada con ese CUIT o GLN");
+        Traduccion inspector = new Traduccion("INSPECTOR_DUPLICADO", "Ya existe un inspector con ese legajo o DNI");
+        Map<String, Traduccion> tabla = new LinkedHashMap<>();
+        tabla.put("uk_empresas_cuit", empresa);
+        tabla.put("uk_empresas_gln", empresa);
+        tabla.put("uk_usuarios_email", new Traduccion("REGISTRO_NO_COMPLETADO",
+                "No se pudo completar el registro con esos datos"));
+        tabla.put("uk_medicamentos_gtin", new Traduccion("MEDICAMENTO_DUPLICADO",
+                "Ya existe un medicamento registrado con ese GTIN"));
+        tabla.put("uk_inspectores_anmat_legajo", inspector);
+        tabla.put("uk_inspectores_anmat_dni", inspector);
+        tabla.put("ux_circuito_par_vigente", new Traduccion("R5",
+                "Ya existe un circuito vigente entre este laboratorio y esa farmacia"));
+        tabla.put("ux_lote_laboratorio_codigo", new Traduccion("LOTE_DUPLICADO",
+                "Tu laboratorio ya tiene un lote con ese código"));
+        tabla.put("ux_unidad_gtin_serie", new Traduccion("R3", "Alguna serie ya existe para ese GTIN"));
+        return tabla;
+    }
+
+    /** Código de regla y mensaje de un 409 por violación de una restricción. */
+    private static final class Traduccion {
+
+        private final String codigo;
+        private final String mensaje;
+
+        private Traduccion(String codigo, String mensaje) {
+            this.codigo = codigo;
+            this.mensaje = mensaje;
+        }
     }
 }

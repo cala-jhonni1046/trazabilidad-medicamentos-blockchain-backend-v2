@@ -184,9 +184,9 @@ class LoteServiceTest {
     void farmaciaNoListaTodo() {
         Empresa farmacia = DatosDePrueba.empresaHabilitada(TipoEmpresa.FARMACIA);
         when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.FARMACIA, farmacia));
-        when(repository.findVisiblesParaFarmacia(farmacia.getId(), pagina)).thenReturn(Page.empty(pagina));
+        when(repository.findVisiblesParaFarmacia(farmacia.getId(), null, pagina)).thenReturn(Page.empty(pagina));
 
-        Page<Lote> resultado = service().getAll(pagina);
+        Page<Lote> resultado = service().getAll(null, pagina);
 
         assertTrue(resultado.isEmpty());
         verify(repository, never()).findAll(any(Pageable.class));

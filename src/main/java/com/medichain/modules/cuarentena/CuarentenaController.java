@@ -2,6 +2,7 @@ package com.medichain.modules.cuarentena;
 
 import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
@@ -43,12 +45,13 @@ public class CuarentenaController {
 
     /** Lista las medidas sanitarias de forma paginada. */
     @GetMapping
-    @Operation(operationId = "listarCuarentenas", summary = "Listar cuarentenas", description = "Devuelve una página de medidas sanitarias. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "listarCuarentenas", summary = "Listar cuarentenas", description = "Devuelve una página de medidas sanitarias. Filtro opcional ?estado=ACTIVA, LEVANTADA o CONVERTIDA_EN_RECALL (una sola por consulta; lo ajeno sigue sin verse). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
     @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<CuarentenaResponseDTO>> getAll(
+            @Parameter(description = "Estado (opcional): ACTIVA, LEVANTADA o CONVERTIDA_EN_RECALL") @RequestParam(required = false) EstadoCuarentena estado,
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<CuarentenaResponseDTO> page = service.getAll(pageable).map(mapper::toResponseDTO);
+        Page<CuarentenaResponseDTO> page = service.getAll(estado, pageable).map(mapper::toResponseDTO);
         return ResponseEntity.status(HttpStatus.OK).body(page);
     }
 

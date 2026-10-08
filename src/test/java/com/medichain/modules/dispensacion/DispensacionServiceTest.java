@@ -3,6 +3,8 @@ package com.medichain.modules.dispensacion;
 import com.medichain.exceptions.ReglaNegocioException;
 import com.medichain.exceptions.ResourceNotFoundException;
 import com.medichain.modules.auth.UsuarioAutenticado;
+import com.medichain.modules.cuarentena.Bloqueo;
+import com.medichain.modules.cuarentena.CausaBloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
 import com.medichain.modules.empresa.Empresa;
 import com.medichain.modules.empresa.TipoEmpresa;
@@ -226,7 +228,7 @@ class DispensacionServiceTest {
     @Test
     @DisplayName("R10: caja bloqueada → 409 R10")
     void cajaBloqueada() {
-        when(evaluadorBloqueo.bloqueoDeCaja(caja)).thenReturn(Optional.of("el lote está en cuarentena"));
+        when(evaluadorBloqueo.bloqueoDeCaja(caja)).thenReturn(Optional.of(new Bloqueo(CausaBloqueo.LOTE_EN_CUARENTENA, "el lote está en cuarentena")));
 
         fallaCon("R10", () -> service().dispensar(dto()));
         assertEquals(EstadoUnidad.EN_STOCK, caja.getEstado());

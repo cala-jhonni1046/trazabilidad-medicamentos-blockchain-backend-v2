@@ -1,5 +1,6 @@
 package com.medichain.modules.bulto;
 
+import com.medichain.modules.cuarentena.Bloqueo;
 import org.springframework.stereotype.Component;
 
 /**
@@ -10,8 +11,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class BultoMapper {
 
-    /** Convierte una entidad Bulto en su DTO de salida. */
-    public BultoResponseDTO toResponseDTO(Bulto entity) {
+    /** Convierte una entidad Bulto en su DTO de salida, con su bloqueo R10 (null si no está bloqueado). */
+    public BultoResponseDTO toResponseDTO(Bulto entity, Bloqueo bloqueo) {
         if (entity == null) {
             return null;
         }
@@ -29,6 +30,10 @@ public class BultoMapper {
         dto.setDestinoId(entity.getDestino() != null ? entity.getDestino().getId() : null);
         dto.setUbicacionId(entity.getUbicacion() != null ? entity.getUbicacion().getId() : null);
         dto.setViajeActualId(entity.getViajeActual() != null ? entity.getViajeActual().getId() : null);
+        // R10: lo calcula EvaluadorBloqueo (el mapper no consulta la base); null = no bloqueado.
+        dto.setBloqueado(bloqueo != null);
+        dto.setMotivoBloqueo(bloqueo != null ? bloqueo.getCausa() : null);
+        dto.setMensajeBloqueo(bloqueo != null ? bloqueo.getMensaje() : null);
         return dto;
     }
 }

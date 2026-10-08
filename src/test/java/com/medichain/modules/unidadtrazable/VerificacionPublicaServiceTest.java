@@ -1,6 +1,8 @@
 package com.medichain.modules.unidadtrazable;
 
 import com.medichain.modules.bulto.Bulto;
+import com.medichain.modules.cuarentena.Bloqueo;
+import com.medichain.modules.cuarentena.CausaBloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
 import com.medichain.modules.despachologistico.DespachoLogistico;
 import com.medichain.modules.despachologistico.DespachoLogisticoRepository;
@@ -135,7 +137,7 @@ class VerificacionPublicaServiceTest {
     @DisplayName("Lote en cuarentena (bloqueo), DEVUELTA o RECHAZADA → BLOQUEADA")
     void bloqueada() {
         UnidadTrazable conCuarentena = DatosDePrueba.cajaEnStock(lote, "S1", farmacia);
-        when(evaluadorBloqueo.bloqueoDeCaja(conCuarentena)).thenReturn(Optional.of("el lote está en cuarentena"));
+        when(evaluadorBloqueo.bloqueoDeCaja(conCuarentena)).thenReturn(Optional.of(new Bloqueo(CausaBloqueo.LOTE_EN_CUARENTENA, "el lote está en cuarentena")));
         assertEquals(EstadoVerificacion.BLOQUEADA, verificar(conCuarentena).getEstado());
 
         UnidadTrazable devuelta = DatosDePrueba.cajaEnStock(lote, "S2", farmacia);

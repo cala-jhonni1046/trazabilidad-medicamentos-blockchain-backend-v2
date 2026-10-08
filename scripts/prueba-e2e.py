@@ -783,6 +783,46 @@ def seccion_b11a_contrato(ctx, demo, admin):
                   r.campo("status") == 409 and r.campo("regla") == "R5" and bool(r.campo("message")))
 
 
+def seccion_b11b_filtros_bloqueo_errores(ctx, demo, admin):
+    """B11b: filtros por estado, temperatura del viaje para la receptora, indicador R10 y 409 siempre con código."""
+    lab = ctx.token(EMAIL_LABORATORIO, demo)
+    r = pedir("GET", ctx.url("/api/lotes?estado=RECALL&size=100"), token=lab)
+    lotes = contenido(r)
+    recall = buscar(lotes, "codigo", "L2026-0001") or {}
+    ctx.verificar("b11b.1", "lotes ?estado=RECALL: solo RECALL, incluido L2026-0001", 200, r,
+                  len(lotes) > 0 and all(l["estado"] == "RECALL" for l in lotes) and recall.get("estado") == "RECALL")
+    ctx.verificar("b11b.2", "indicador R10 de L2026-0001 → bloqueado, LOTE_EN_RECALL, con mensaje", 200, r,
+                  recall.get("bloqueado") is True and recall.get("motivoBloqueo") == "LOTE_EN_RECALL"
+                  and bool(recall.get("mensajeBloqueo")))
+    r = pedir("GET", ctx.url("/api/bultos?estado=EN_TRANSITO&size=100"), token=lab)
+    ctx.verificar("b11b.3", "bultos ?estado=EN_TRANSITO: todos EN_TRANSITO y con su indicador R10", 200, r,
+                  all(b["estado"] == "EN_TRANSITO" and "bloqueado" in b for b in contenido(r)))
+    r = pedir("GET", ctx.url("/api/bultos?estado=NO_EXISTE"), token=lab)
+    ctx.verificar("b11b.4", "filtro con un estado inexistente → 400", 400, r)
+
+    viaje_id, _ = buscar_viaje(ctx.base, lab, "VJ-0001")
+    ruta = ctx.url("/api/viajes/%s/telemetria-temperatura" % exigir(viaje_id, "no encontré VJ-0001"))
+    r = pedir("GET", ruta, token=ctx.token(EMAIL_DISTRIBUIDORA, demo))
+    lecturas = contenido(r)
+    horas = [l["fechaHora"] for l in lecturas]
+    ctx.verificar("b11b.5", "la distribuidora (receptora del tramo 1) ve las temperaturas de VJ-0001, por hora", 200, r,
+                  len(lecturas) >= 3 and horas == sorted(horas))
+    r = pedir("GET", ruta, token=ctx.token(EMAIL_FARMACIA, demo))
+    ctx.verificar("b11b.6", "la farmacia no es receptora del tramo 1 → 404", 404, r)
+
+    medicamento = {"gtin": GTIN_CUYAFEN, "nombreComercial": "Copia", "principioActivo": "Ibuprofeno",
+                   "concentracion": "400 mg", "formaFarmaceutica": "Comprimido", "presentacion": "Caja x 20",
+                   "temperaturaMinima": 15, "temperaturaMaxima": 30, "biologico": False}
+    r = pedir("POST", ctx.url("/api/medicamentos"), medicamento, token=lab)
+    ctx.verificar("b11b.7", "GTIN ya registrado → 409 MEDICAMENTO_DUPLICADO", 409, r,
+                  r.campo("regla") == "MEDICAMENTO_DUPLICADO")
+    inspector = {"legajo": "E2E-0010", "dni": "39000909", "provincia": "SAN_JUAN",
+                 "email": "inspector.dni.repetido@medichain.demo", "password": demo, "nombre": "Otro", "apellido": "Dni"}
+    r = pedir("POST", ctx.url("/api/inspectores-anmat"), inspector, token=ctx.token(admin[0], admin[1]))
+    ctx.verificar("b11b.8", "inspector con un DNI ya usado → 409 INSPECTOR_DUPLICADO (sin repetir el DNI)", 409, r,
+                  r.campo("regla") == "INSPECTOR_DUPLICADO" and "39000909" not in (r.campo("message") or ""))
+
+
 def seccion_final_cadena(ctx, demo, admin):
     """Final: la cadena sigue íntegra después de todo el recorrido."""
     sede = ctx.token(admin[0], admin[1])
@@ -804,6 +844,7 @@ SECCIONES = [
     ("8  · Anclaje (deshabilitado)", seccion_8_anclaje_deshabilitado),
     ("9  · Cuentas desactivadas con token vigente", seccion_9_cuentas),
     ("B11a · Contrato para el frontend", seccion_b11a_contrato),
+    ("B11b · Filtros, temperatura del viaje, bloqueo R10 y códigos de error", seccion_b11b_filtros_bloqueo_errores),
     ("Final · Cadena íntegra", seccion_final_cadena),
 ]
 

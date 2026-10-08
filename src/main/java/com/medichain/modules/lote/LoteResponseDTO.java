@@ -1,5 +1,6 @@
 package com.medichain.modules.lote;
 
+import com.medichain.modules.cuarentena.CausaBloqueo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -42,6 +43,14 @@ public class LoteResponseDTO {
     @Schema(nullable = true)
     private UUID liberadoPorId;
 
+    @Schema(description = "R10: bloqueado no viaja, no se recibe ni se dispensa. Se calcula en cada consulta (no se guarda).",
+            example = "false", requiredMode = Schema.RequiredMode.REQUIRED)
+    private boolean bloqueado;
+    @Schema(description = "Causa del bloqueo (código); null si no está bloqueado", nullable = true)
+    private CausaBloqueo motivoBloqueo;
+    @Schema(description = "Explicación del bloqueo para mostrar; null si no está bloqueado",
+            example = "el lote L2026-0415 está vencido", nullable = true)
+    private String mensajeBloqueo;
     /** Constructor vacío exigido por Jackson. */
     public LoteResponseDTO() {
     }
@@ -184,5 +193,35 @@ public class LoteResponseDTO {
     /** Establece el id del laboratorio dueño del lote. */
     public void setLaboratorioId(UUID laboratorioId) {
         this.laboratorioId = laboratorioId;
+    }
+
+    /** Indica si está bloqueado (R10, calculado). */
+    public boolean isBloqueado() {
+        return bloqueado;
+    }
+
+    /** Establece si está bloqueado. */
+    public void setBloqueado(boolean bloqueado) {
+        this.bloqueado = bloqueado;
+    }
+
+    /** Devuelve la causa del bloqueo (null si no lo está). */
+    public CausaBloqueo getMotivoBloqueo() {
+        return motivoBloqueo;
+    }
+
+    /** Establece la causa del bloqueo. */
+    public void setMotivoBloqueo(CausaBloqueo motivoBloqueo) {
+        this.motivoBloqueo = motivoBloqueo;
+    }
+
+    /** Devuelve la explicación del bloqueo (null si no lo está). */
+    public String getMensajeBloqueo() {
+        return mensajeBloqueo;
+    }
+
+    /** Establece la explicación del bloqueo. */
+    public void setMensajeBloqueo(String mensajeBloqueo) {
+        this.mensajeBloqueo = mensajeBloqueo;
     }
 }

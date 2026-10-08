@@ -94,7 +94,7 @@ class FiltroJwtRealTest {
     @Test
     @DisplayName("INSPECTOR (con provincia, sin empresa) con token real en GET /api/empresas → 200")
     void inspectorConTokenRealRecibe200() throws Exception {
-        when(empresaService.getAll(any(Pageable.class))).thenReturn(Page.empty());
+        when(empresaService.getAll(any(), any(Pageable.class))).thenReturn(Page.empty());
         String token = tokenDe(RolUsuario.INSPECTOR, null, "MENDOZA");
 
         mockMvc.perform(get("/api/empresas").header("Authorization", "Bearer " + token))
@@ -114,7 +114,7 @@ class FiltroJwtRealTest {
     @Test
     @DisplayName("Token real y vigente de una cuenta desactivada (p. ej. inspector dado de baja) → 401")
     void cuentaInactivaConTokenVigenteRecibe401() throws Exception {
-        when(empresaService.getAll(any(Pageable.class))).thenReturn(Page.empty());
+        when(empresaService.getAll(any(), any(Pageable.class))).thenReturn(Page.empty());
         String token = tokenDe(RolUsuario.INSPECTOR, null, "MENDOZA");
         when(usuarioRepository.existsByIdAndActivoTrue(any(UUID.class))).thenReturn(false);
 

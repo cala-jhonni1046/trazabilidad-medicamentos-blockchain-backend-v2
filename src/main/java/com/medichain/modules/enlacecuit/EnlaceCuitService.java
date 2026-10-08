@@ -66,13 +66,13 @@ public class EnlaceCuitService {
 
     /** Devuelve una página de circuitos según el rol del usuario. */
     @Transactional(readOnly = true)
-    public Page<EnlaceCuit> getAll(Pageable pageable) {
+    public Page<EnlaceCuit> getAll(EstadoEnlaceCuit estado, Pageable pageable) {
         UsuarioAutenticado actual = usuarioActual.obtener();
         return switch (actual.getRol()) {
-            case SEDE_CENTRAL, INSPECTOR -> repository.findAll(pageable);
-            case LABORATORIO -> repository.findByLaboratorioId(actual.getEmpresaId(), pageable);
-            case DISTRIBUIDOR -> repository.findByDistribuidorId(actual.getEmpresaId(), pageable);
-            case FARMACIA -> repository.findByFarmaciaId(actual.getEmpresaId(), pageable);
+            case SEDE_CENTRAL, INSPECTOR -> repository.findPorEstado(estado, pageable);
+            case LABORATORIO -> repository.findDelLaboratorioPorEstado(actual.getEmpresaId(), estado, pageable);
+            case DISTRIBUIDOR -> repository.findDeLaDistribuidoraPorEstado(actual.getEmpresaId(), estado, pageable);
+            case FARMACIA -> repository.findDeLaFarmaciaPorEstado(actual.getEmpresaId(), estado, pageable);
             case PACIENTE -> Page.empty(pageable);
         };
     }

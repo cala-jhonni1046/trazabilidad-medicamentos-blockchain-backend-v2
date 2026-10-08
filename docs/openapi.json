@@ -127,9 +127,17 @@
     },
     "/api/bultos" : {
       "get" : {
-        "description" : "Devuelve una página de bultos. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
+        "description" : "Devuelve una página de bultos. Filtro opcional ?estado=ARMADO, EN_TRANSITO, EN_DEPOSITO, RECIBIDO, RECHAZADO, ROBADO o DESARMADO (una sola por consulta; lo ajeno sigue sin verse). Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
         "operationId" : "listarBultos",
         "parameters" : [ {
+          "description" : "Estado (opcional): ARMADO, EN_TRANSITO, EN_DEPOSITO, RECIBIDO, RECHAZADO, ROBADO o DESARMADO",
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/EstadoBulto"
+          }
+        }, {
           "description" : "Zero-based page index (0..N)",
           "in" : "query",
           "name" : "page",
@@ -288,7 +296,7 @@
     },
     "/api/bultos/{id}" : {
       "get" : {
-        "description" : "Busca un bulto por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
+        "description" : "Busca un bulto por su id. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
         "operationId" : "obtenerBulto",
         "parameters" : [ {
           "in" : "path",
@@ -436,9 +444,17 @@
     },
     "/api/circuitos" : {
       "get" : {
-        "description" : "SEDE e INSPECTOR ven todos; cada empresa, los circuitos donde participa. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
+        "description" : "SEDE e INSPECTOR ven todos; cada empresa, los circuitos donde participa. Filtro opcional ?estado=PENDIENTE_EMPRESAS, PENDIENTE_INSPECTOR, APROBADO, RECHAZADO o SUSPENDIDO (una sola por consulta; lo ajeno sigue sin verse). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
         "operationId" : "listarCircuitos",
         "parameters" : [ {
+          "description" : "Estado (opcional): PENDIENTE_EMPRESAS, PENDIENTE_INSPECTOR, APROBADO, RECHAZADO o SUSPENDIDO",
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/EstadoEnlaceCuit"
+          }
+        }, {
           "description" : "Zero-based page index (0..N)",
           "in" : "query",
           "name" : "page",
@@ -1494,9 +1510,17 @@
     },
     "/api/cuarentenas" : {
       "get" : {
-        "description" : "Devuelve una página de medidas sanitarias. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
+        "description" : "Devuelve una página de medidas sanitarias. Filtro opcional ?estado=ACTIVA, LEVANTADA o CONVERTIDA_EN_RECALL (una sola por consulta; lo ajeno sigue sin verse). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
         "operationId" : "listarCuarentenas",
         "parameters" : [ {
+          "description" : "Estado (opcional): ACTIVA, LEVANTADA o CONVERTIDA_EN_RECALL",
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/EstadoCuarentena"
+          }
+        }, {
           "description" : "Zero-based page index (0..N)",
           "in" : "query",
           "name" : "page",
@@ -2383,9 +2407,17 @@
     },
     "/api/empresas" : {
       "get" : {
-        "description" : "Devuelve una página de empresas. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
+        "description" : "Devuelve una página de empresas. Filtro opcional ?estado=PENDIENTE, HABILITADA, RECHAZADA o SUSPENDIDA (las empresas solo ven las HABILITADA) (una sola por consulta; lo ajeno sigue sin verse). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
         "operationId" : "listarEmpresas",
         "parameters" : [ {
+          "description" : "Estado (opcional): PENDIENTE, HABILITADA, RECHAZADA o SUSPENDIDA",
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/EstadoHabilitacion"
+          }
+        }, {
           "description" : "Zero-based page index (0..N)",
           "in" : "query",
           "name" : "page",
@@ -3459,9 +3491,17 @@
     },
     "/api/inspectores-anmat" : {
       "get" : {
-        "description" : "Devuelve una página de inspectores ANMAT. Roles: SEDE_CENTRAL, INSPECTOR.",
+        "description" : "Devuelve una página de inspectores ANMAT. Filtro opcional ?estado=ACTIVO o BAJA (una sola por consulta; lo ajeno sigue sin verse). Roles: SEDE_CENTRAL, INSPECTOR.",
         "operationId" : "listarInspectores",
         "parameters" : [ {
+          "description" : "Estado (opcional): ACTIVO o BAJA",
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/EstadoInspector"
+          }
+        }, {
           "description" : "Zero-based page index (0..N)",
           "in" : "query",
           "name" : "page",
@@ -3837,9 +3877,17 @@
     },
     "/api/lotes" : {
       "get" : {
-        "description" : "SEDE e INSPECTOR ven todos; el laboratorio, los suyos. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
+        "description" : "SEDE e INSPECTOR ven todos; el laboratorio, los suyos. Filtro opcional ?estado=PENDIENTE_LIBERACION, LIBERADO, CUARENTENA o RECALL (una sola por consulta; lo ajeno sigue sin verse). Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
         "operationId" : "listarLotes",
         "parameters" : [ {
+          "description" : "Estado (opcional): PENDIENTE_LIBERACION, LIBERADO, CUARENTENA o RECALL",
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/EstadoLote"
+          }
+        }, {
           "description" : "Zero-based page index (0..N)",
           "in" : "query",
           "name" : "page",
@@ -4081,7 +4129,7 @@
     },
     "/api/lotes/{id}" : {
       "get" : {
-        "description" : "404 si no es de tu laboratorio. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
+        "description" : "404 si no es de tu laboratorio. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
         "operationId" : "obtenerLote",
         "parameters" : [ {
           "in" : "path",
@@ -4229,7 +4277,7 @@
     },
     "/api/lotes/{id}/unidades" : {
       "get" : {
-        "description" : "Cada caja con su GTIN y serie. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO dueño (los demás, 404).",
+        "description" : "Cada caja con su GTIN y serie. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO dueño (los demás, 404). Reglas: R10.",
         "operationId" : "listarCajasDelLote",
         "parameters" : [ {
           "in" : "path",
@@ -5133,9 +5181,17 @@
     },
     "/api/reportes-ciudadanos" : {
       "get" : {
-        "description" : "PACIENTE: los suyos (estado y fechas). SEDE e INSPECTOR: todos. Roles: SEDE_CENTRAL, INSPECTOR, PACIENTE. Reglas: R13.",
+        "description" : "PACIENTE: los suyos (estado y fechas). SEDE e INSPECTOR: todos. Filtro opcional ?estado=ABIERTO, EN_INVESTIGACION o CERRADO (una sola por consulta; lo ajeno sigue sin verse). Roles: SEDE_CENTRAL, INSPECTOR, PACIENTE. Reglas: R13.",
         "operationId" : "listarReportes",
         "parameters" : [ {
+          "description" : "Estado (opcional): ABIERTO, EN_INVESTIGACION o CERRADO",
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/EstadoAuditoria"
+          }
+        }, {
           "description" : "Zero-based page index (0..N)",
           "in" : "query",
           "name" : "page",
@@ -5834,7 +5890,7 @@
     },
     "/api/telemetria-temperatura" : {
       "get" : {
-        "description" : "Devuelve una página de lecturas de temperatura. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.",
+        "description" : "Devuelve una página de lecturas de temperatura. La empresa ve las de sus viajes y las de los viajes que recibe (receptora de ese tramo: distribuidora en el tramo 1, farmacia en el tramo 2). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
         "operationId" : "listarLecturasTemperatura",
         "parameters" : [ {
           "description" : "Zero-based page index (0..N)",
@@ -5995,7 +6051,7 @@
     },
     "/api/telemetria-temperatura/{id}" : {
       "get" : {
-        "description" : "Busca una lectura de temperatura por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.",
+        "description" : "Busca una lectura de temperatura por su id: la ve la empresa origen del viaje o la receptora de ese tramo (ajena → 404). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
         "operationId" : "obtenerLecturaTemperatura",
         "parameters" : [ {
           "in" : "path",
@@ -6064,7 +6120,7 @@
     },
     "/api/unidades-trazables" : {
       "get" : {
-        "description" : "Devuelve una página de unidades trazables. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
+        "description" : "Devuelve una página de unidades trazables. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
         "operationId" : "listarCajas",
         "parameters" : [ {
           "description" : "Zero-based page index (0..N)",
@@ -6227,7 +6283,7 @@
     },
     "/api/unidades-trazables/{id}" : {
       "get" : {
-        "description" : "Busca una unidad trazable por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
+        "description" : "Busca una unidad trazable por su id. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
         "operationId" : "obtenerCaja",
         "parameters" : [ {
           "in" : "path",
@@ -7043,6 +7099,107 @@
         "summary" : "Registrar la salida",
         "tags" : [ "Viajes" ]
       }
+    },
+    "/api/viajes/{id}/telemetria-temperatura" : {
+      "get" : {
+        "description" : "Lecturas de temperatura del viaje, ordenadas por hora de lectura (para su gráfico). Las ve la Sede, los inspectores, la empresa origen del viaje y la receptora de ese tramo (distribuidora en el tramo 1, farmacia en el tramo 2); viaje inexistente o ajeno → 404. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R9.",
+        "operationId" : "listarTemperaturasDelViaje",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "Zero-based page index (0..N)",
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "description" : "The size of the page to be returned",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 100,
+            "minimum" : 1
+          }
+        }, {
+          "description" : "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+          "in" : "query",
+          "name" : "sort",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "default" : [ "fechaHora,ASC" ],
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagedModelTelemetriaTemperaturaResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "Datos inválidos: campo obligatorio, formato o parámetro mal formado. En la validación, 'errors' trae un elemento por campo."
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "No autenticado: falta el token, no es válido, venció o la cuenta está desactivada (en el login: credenciales incorrectas)."
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "Tu rol (o tu marca de administrador o director técnico) no permite esta acción."
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "No existe o no es visible para tu empresa o provincia (lo ajeno responde 404, no 403)."
+          }
+        },
+        "summary" : "Temperaturas de un viaje",
+        "tags" : [ "Viajes" ]
+      }
     }
   },
   "components" : {
@@ -7129,6 +7286,11 @@
       "BultoResponseDTO" : {
         "type" : "object",
         "properties" : {
+          "bloqueado" : {
+            "type" : "boolean",
+            "description" : "R10: bloqueado no viaja, no se recibe ni se dispensa. Se calcula en cada consulta (no se guarda).",
+            "example" : false
+          },
           "cantidad" : {
             "type" : "integer",
             "format" : "int32",
@@ -7165,6 +7327,16 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "mensajeBloqueo" : {
+            "type" : [ "string", "null" ],
+            "description" : "Explicación del bloqueo para mostrar; null si no está bloqueado",
+            "example" : "el lote L2026-0415 está vencido"
+          },
+          "motivoBloqueo" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/CausaBloqueo",
+            "description" : "Causa del bloqueo (código); null si no está bloqueado"
+          },
           "precinto" : {
             "type" : "string",
             "example" : "PRE-000123"
@@ -7182,7 +7354,12 @@
             "format" : "uuid"
           }
         },
-        "required" : [ "cantidad", "codigo", "destinoId", "estado", "fechaActualizacion", "fechaArmado", "fechaCreacion", "id", "loteId", "precinto", "version" ]
+        "required" : [ "bloqueado", "cantidad", "codigo", "destinoId", "estado", "fechaActualizacion", "fechaArmado", "fechaCreacion", "id", "loteId", "precinto", "version" ]
+      },
+      "CausaBloqueo" : {
+        "type" : "string",
+        "description" : "Por qué una caja, un bulto o un lote está bloqueado (R10).",
+        "enum" : [ "LOTE_VENCIDO", "LOTE_EN_CUARENTENA", "LOTE_EN_RECALL", "LOTE_CON_MEDIDA_VIGENTE", "BULTO_CON_MEDIDA_VIGENTE" ]
       },
       "ConclusionRequestDTO" : {
         "type" : "object",
@@ -8280,6 +8457,11 @@
       "LoteResponseDTO" : {
         "type" : "object",
         "properties" : {
+          "bloqueado" : {
+            "type" : "boolean",
+            "description" : "R10: bloqueado no viaja, no se recibe ni se dispensa. Se calcula en cada consulta (no se guarda).",
+            "example" : false
+          },
           "cantidad" : {
             "type" : "integer",
             "format" : "int32",
@@ -8334,12 +8516,22 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "mensajeBloqueo" : {
+            "type" : [ "string", "null" ],
+            "description" : "Explicación del bloqueo para mostrar; null si no está bloqueado",
+            "example" : "el lote L2026-0415 está vencido"
+          },
+          "motivoBloqueo" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/CausaBloqueo",
+            "description" : "Causa del bloqueo (código); null si no está bloqueado"
+          },
           "version" : {
             "type" : "integer",
             "format" : "int64"
           }
         },
-        "required" : [ "cantidad", "codigo", "estado", "fechaActualizacion", "fechaCreacion", "fechaFabricacion", "fechaVencimiento", "id", "laboratorioId", "medicamentoId", "version" ]
+        "required" : [ "bloqueado", "cantidad", "codigo", "estado", "fechaActualizacion", "fechaCreacion", "fechaFabricacion", "fechaVencimiento", "id", "laboratorioId", "medicamentoId", "version" ]
       },
       "MedicamentoRequestDTO" : {
         "type" : "object",
@@ -9401,6 +9593,11 @@
       "UnidadTrazableResponseDTO" : {
         "type" : "object",
         "properties" : {
+          "bloqueado" : {
+            "type" : "boolean",
+            "description" : "R10: bloqueado no viaja, no se recibe ni se dispensa. Se calcula en cada consulta (no se guarda).",
+            "example" : false
+          },
           "bultoId" : {
             "type" : [ "string", "null" ],
             "format" : "uuid"
@@ -9436,6 +9633,16 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "mensajeBloqueo" : {
+            "type" : [ "string", "null" ],
+            "description" : "Explicación del bloqueo para mostrar; null si no está bloqueado",
+            "example" : "el lote L2026-0415 está vencido"
+          },
+          "motivoBloqueo" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/CausaBloqueo",
+            "description" : "Causa del bloqueo (código); null si no está bloqueado"
+          },
           "serie" : {
             "type" : "string",
             "example" : "L20260415S000001"
@@ -9445,7 +9652,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "codigoGS1", "estado", "fechaActualizacion", "fechaCreacion", "gtin", "id", "loteId", "serie", "version" ]
+        "required" : [ "bloqueado", "codigoGS1", "estado", "fechaActualizacion", "fechaCreacion", "gtin", "id", "loteId", "serie", "version" ]
       },
       "UsuarioRequestDTO" : {
         "type" : "object",

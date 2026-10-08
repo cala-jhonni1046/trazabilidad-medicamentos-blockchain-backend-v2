@@ -15,4 +15,7 @@ public interface MedicamentoRepository extends JpaRepository<Medicamento, UUID> 
 
     /** Medicamento por GTIN (normalizado, 14 dígitos). */
     Optional<Medicamento> findByGtin(String gtin);
+
+    /** Indica si ya hay un medicamento con ese GTIN (el GTIN es único en el sistema). */
+    boolean existsByGtin(String gtin);
 }

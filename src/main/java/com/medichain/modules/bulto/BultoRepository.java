@@ -22,14 +22,24 @@ public interface BultoRepository extends JpaRepository<Bulto, UUID> {
     /** Bultos armados con lotes de un laboratorio. */
     Page<Bulto> findByLoteMedicamentoLaboratorioId(UUID laboratorioId, Pageable pageable);
 
-    /** Bultos de lotes del laboratorio dado. */
-    Page<Bulto> findByLoteLaboratorioId(UUID laboratorioId, Pageable pageable);
+    /** Bultos: todos, opcionalmente de un estado (Sede e inspectores). */
+    @Query("select b from Bulto b where (:estado is null or b.estado = :estado)")
+    Page<Bulto> findPorEstado(@Param("estado") EstadoBulto estado, Pageable pageable);
 
-    /** Bultos de circuitos donde la empresa es la distribuidora (los ve desde ARMADO). */
-    Page<Bulto> findByDestinoDistribuidorId(UUID empresaId, Pageable pageable);
+    /** Bultos de lotes del laboratorio dado, opcionalmente de un estado. */
+    @Query("select b from Bulto b where b.lote.laboratorio.id = :empresaId and (:estado is null or b.estado = :estado)")
+    Page<Bulto> findDelLaboratorioPorEstado(@Param("empresaId") UUID empresaId, @Param("estado") EstadoBulto estado,
+                            Pageable pageable);
 
-    /** Bultos de circuitos donde la empresa es la farmacia (los ve desde ARMADO). */
-    Page<Bulto> findByDestinoFarmaciaId(UUID empresaId, Pageable pageable);
+    /** Bultos de circuitos donde la empresa es la distribuidora (los ve desde ARMADO), opcionalmente de un estado. */
+    @Query("select b from Bulto b where b.destino.distribuidor.id = :empresaId and (:estado is null or b.estado = :estado)")
+    Page<Bulto> findDeLaDistribuidoraPorEstado(@Param("empresaId") UUID empresaId, @Param("estado") EstadoBulto estado,
+                            Pageable pageable);
+
+    /** Bultos de circuitos donde la empresa es la farmacia (los ve desde ARMADO), opcionalmente de un estado. */
+    @Query("select b from Bulto b where b.destino.farmacia.id = :empresaId and (:estado is null or b.estado = :estado)")
+    Page<Bulto> findDeLaFarmaciaPorEstado(@Param("empresaId") UUID empresaId, @Param("estado") EstadoBulto estado,
+                            Pageable pageable);
 
     /** Bultos con los códigos dados (lo que se escanea al armar un viaje). */
     List<Bulto> findByCodigoIn(Collection<String> codigos);

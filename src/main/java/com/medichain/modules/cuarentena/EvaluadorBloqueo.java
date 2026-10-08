@@ -23,8 +23,10 @@ import java.util.UUID;
  * alcance LOTE. Un bulto está bloqueado si su lote lo está o si figura en
  * una medida VIGENTE (alcance DESPACHO —ruptura de frío o robo— o BULTO).
  * Una caja hereda el bloqueo de su lote y de su bulto. Bloqueado no viaja,
- * no se recibe y no se dispensa. Las versiones en bloque hacen una consulta
- * por grupo (no una por bulto) para no caer en N+1.
+ * no se recibe y no se dispensa. Devuelve un Bloqueo (causa en código +
+ * mensaje); las versiones en bloque (lotes, bultos, cajas) hacen una consulta
+ * por grupo, no una por elemento, para los listados paginados (sin N+1).
+ * Es el ÚNICO lugar donde se calcula R10.
  */
 @Service
 public class EvaluadorBloqueo {
@@ -36,26 +38,42 @@ public class EvaluadorBloqueo {
         this.cuarentenaRepository = cuarentenaRepository;
     }
 
-    /** Devuelve el motivo por el que el lote está bloqueado, o vacío si no lo está. */
+    /** Bloqueo del lote (vencido, CUARENTENA, RECALL o medida vigente de alcance LOTE), o vacío si no lo está. */
     @Transactional(readOnly = true)
-    public Optional<String> bloqueoDeLote(Lote lote) {
-        Optional<String> propio = bloqueoPropioDeLote(lote);
-        if (propio.isPresent()) {
-            return propio;
-        }
-        if (!cuarentenaRepository.findLotesConMedidaVigente(List.of(lote.getId())).isEmpty()) {
-            return Optional.of("el lote " + lote.getCodigo() + " tiene una medida sanitaria vigente");
-        }
-        return Optional.empty();
+    public Optional<Bloqueo> bloqueoDeLote(Lote lote) {
+        return Optional.ofNullable(bloqueosDeLotes(List.of(lote)).get(lote.getId()));
     }
 
     /**
-     * Evalúa varios bultos de una vez. Devuelve, para cada bulto bloqueado,
-     * el motivo (código del bulto → motivo). Vacío si ninguno lo está.
+     * Evalúa varios lotes de una vez, con UNA consulta de medidas vigentes
+     * para todos. Devuelve id del lote → bloqueo, solo de los bloqueados.
      */
     @Transactional(readOnly = true)
-    public Map<String, String> bultosBloqueados(Collection<Bulto> bultos) {
-        Map<String, String> bloqueados = new LinkedHashMap<>();
+    public Map<UUID, Bloqueo> bloqueosDeLotes(Collection<Lote> lotes) {
+        Map<UUID, Bloqueo> bloqueados = new LinkedHashMap<>();
+        if (lotes.isEmpty()) {
+            return bloqueados;
+        }
+        Set<UUID> loteIds = new HashSet<>();
+        for (Lote lote : lotes) {
+            loteIds.add(lote.getId());
+        }
+        Set<UUID> lotesConMedida = new HashSet<>(cuarentenaRepository.findLotesConMedidaVigente(loteIds));
+        for (Lote lote : lotes) {
+            Optional<Bloqueo> bloqueo = bloqueoDeLote(lote, lotesConMedida);
+            bloqueo.ifPresent(b -> bloqueados.put(lote.getId(), b));
+        }
+        return bloqueados;
+    }
+
+    /**
+     * Evalúa varios bultos de una vez: hereda el bloqueo de su lote y suma el
+     * propio (medida vigente de alcance DESPACHO o BULTO). Dos consultas para
+     * todo el grupo. Devuelve id del bulto → bloqueo, solo de los bloqueados.
+     */
+    @Transactional(readOnly = true)
+    public Map<UUID, Bloqueo> bloqueosDeBultos(Collection<Bulto> bultos) {
+        Map<UUID, Bloqueo> bloqueados = new LinkedHashMap<>();
         if (bultos.isEmpty()) {
             return bloqueados;
         }
@@ -68,32 +86,52 @@ public class EvaluadorBloqueo {
         Set<UUID> lotesConMedida = new HashSet<>(cuarentenaRepository.findLotesConMedidaVigente(loteIds));
         Set<UUID> bultosConMedida = new HashSet<>(cuarentenaRepository.findBultosConMedidaVigente(bultoIds));
         for (Bulto bulto : bultos) {
-            Optional<String> delLote = bloqueoPropioDeLote(bulto.getLote());
+            Optional<Bloqueo> delLote = bloqueoDeLote(bulto.getLote(), lotesConMedida);
             if (delLote.isPresent()) {
-                bloqueados.put(bulto.getCodigo(), delLote.get());
-            } else if (lotesConMedida.contains(bulto.getLote().getId())) {
-                bloqueados.put(bulto.getCodigo(), "el lote " + bulto.getLote().getCodigo() + " tiene una medida sanitaria vigente");
+                bloqueados.put(bulto.getId(), delLote.get());
             } else if (bultosConMedida.contains(bulto.getId())) {
-                bloqueados.put(bulto.getCodigo(), "el bulto tiene una cuarentena o recall vigente");
+                bloqueados.put(bulto.getId(), new Bloqueo(CausaBloqueo.BULTO_CON_MEDIDA_VIGENTE,
+                        "el bulto " + bulto.getCodigo() + " tiene una cuarentena o recall vigente"));
             }
         }
         return bloqueados;
     }
 
     /**
-     * Motivo por el que una caja está bloqueada (R10), o vacío: hereda el
-     * bloqueo de su lote y, si está en un bulto, el de su bulto.
+     * Evalúa varias cajas de una vez (listados paginados): la caja en un bulto
+     * hereda el bloqueo del bulto (que ya incluye el de su lote, R6); la caja
+     * sin bulto, el de su lote. Pocas consultas para todo el grupo, sin N+1.
+     * Devuelve id de la caja → bloqueo, solo de las bloqueadas.
      */
     @Transactional(readOnly = true)
-    public Optional<String> bloqueoDeCaja(UnidadTrazable caja) {
-        if (caja.getBulto() != null) {
-            Map<String, String> bloqueados = bultosBloqueados(List.of(caja.getBulto()));
-            if (!bloqueados.isEmpty()) {
-                return Optional.of(bloqueados.values().iterator().next());
+    public Map<UUID, Bloqueo> bloqueosDeCajas(Collection<UnidadTrazable> cajas) {
+        Map<UUID, Bulto> bultos = new LinkedHashMap<>();
+        Map<UUID, Lote> lotesSinBulto = new LinkedHashMap<>();
+        for (UnidadTrazable caja : cajas) {
+            if (caja.getBulto() != null) {
+                bultos.put(caja.getBulto().getId(), caja.getBulto());
+            } else {
+                lotesSinBulto.put(caja.getLote().getId(), caja.getLote());
             }
-            return Optional.empty();
         }
-        return bloqueoDeLote(caja.getLote());
+        Map<UUID, Bloqueo> porBulto = bloqueosDeBultos(bultos.values());
+        Map<UUID, Bloqueo> porLote = bloqueosDeLotes(lotesSinBulto.values());
+        Map<UUID, Bloqueo> bloqueadas = new LinkedHashMap<>();
+        for (UnidadTrazable caja : cajas) {
+            Bloqueo bloqueo = caja.getBulto() != null
+                    ? porBulto.get(caja.getBulto().getId())
+                    : porLote.get(caja.getLote().getId());
+            if (bloqueo != null) {
+                bloqueadas.put(caja.getId(), bloqueo);
+            }
+        }
+        return bloqueadas;
+    }
+
+    /** Bloqueo de una caja (R10): hereda el de su lote y, si está en un bulto, el de su bulto. Vacío si no lo está. */
+    @Transactional(readOnly = true)
+    public Optional<Bloqueo> bloqueoDeCaja(UnidadTrazable caja) {
+        return Optional.ofNullable(bloqueosDeCajas(List.of(caja)).get(caja.getId()));
     }
 
     /**
@@ -119,13 +157,25 @@ public class EvaluadorBloqueo {
         return new HashSet<>(cuarentenaRepository.findBultosConMedidaVigente(bultoIds));
     }
 
-    /** Bloqueo que surge del propio lote (sin consultar medidas): vencido, CUARENTENA o RECALL. */
-    private Optional<String> bloqueoPropioDeLote(Lote lote) {
+    /**
+     * Bloqueo de un lote dado el conjunto de lotes con medida vigente (ya
+     * consultado): primero lo propio del lote (vencido, CUARENTENA, RECALL) y
+     * después la medida vigente de alcance LOTE.
+     */
+    private Optional<Bloqueo> bloqueoDeLote(Lote lote, Set<UUID> lotesConMedida) {
         if (lote.estaVencido()) {
-            return Optional.of("el lote " + lote.getCodigo() + " está vencido");
+            return Optional.of(new Bloqueo(CausaBloqueo.LOTE_VENCIDO, "el lote " + lote.getCodigo() + " está vencido"));
         }
-        if (lote.getEstado() == EstadoLote.CUARENTENA || lote.getEstado() == EstadoLote.RECALL) {
-            return Optional.of("el lote " + lote.getCodigo() + " está en " + lote.getEstado());
+        if (lote.getEstado() == EstadoLote.CUARENTENA) {
+            return Optional.of(new Bloqueo(CausaBloqueo.LOTE_EN_CUARENTENA,
+                    "el lote " + lote.getCodigo() + " está en CUARENTENA"));
+        }
+        if (lote.getEstado() == EstadoLote.RECALL) {
+            return Optional.of(new Bloqueo(CausaBloqueo.LOTE_EN_RECALL, "el lote " + lote.getCodigo() + " está en RECALL"));
+        }
+        if (lotesConMedida.contains(lote.getId())) {
+            return Optional.of(new Bloqueo(CausaBloqueo.LOTE_CON_MEDIDA_VIGENTE,
+                    "el lote " + lote.getCodigo() + " tiene una medida sanitaria vigente"));
         }
         return Optional.empty();
     }

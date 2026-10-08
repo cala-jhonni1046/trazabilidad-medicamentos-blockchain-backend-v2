@@ -151,7 +151,7 @@ class EmpresaServiceTest {
         when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.FARMACIA, propia));
         when(repository.findByEstado(EstadoHabilitacion.HABILITADA, pagina)).thenReturn(Page.empty(pagina));
 
-        service().getAll(pagina);
+        service().getAll(null, pagina);
 
         verify(repository, never()).findAll(any(Pageable.class));
     }

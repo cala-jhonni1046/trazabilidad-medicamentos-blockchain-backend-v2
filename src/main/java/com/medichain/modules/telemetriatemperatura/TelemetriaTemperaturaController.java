@@ -41,9 +41,9 @@ public class TelemetriaTemperaturaController {
 
     /** Lista las lecturas de temperatura de forma paginada. */
     @GetMapping
-    @Operation(operationId = "listarLecturasTemperatura", summary = "Listar lecturas de temperatura", description = "Devuelve una página de lecturas de temperatura. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.")
+    @Operation(operationId = "listarLecturasTemperatura", summary = "Listar lecturas de temperatura", description = "Devuelve una página de lecturas de temperatura. La empresa ve las de sus viajes y las de los viajes que recibe (receptora de ese tramo: distribuidora en el tramo 1, farmacia en el tramo 2). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
     @RespuestasError({400, 401, 403})
-    @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR')")
+    @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<TelemetriaTemperaturaResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<TelemetriaTemperaturaResponseDTO> page = service.getAll(pageable).map(mapper::toResponseDTO);
@@ -52,9 +52,9 @@ public class TelemetriaTemperaturaController {
 
     /** Busca una lectura de temperatura por id. */
     @GetMapping("/{id}")
-    @Operation(operationId = "obtenerLecturaTemperatura", summary = "Obtener una lectura", description = "Busca una lectura de temperatura por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.")
+    @Operation(operationId = "obtenerLecturaTemperatura", summary = "Obtener una lectura", description = "Busca una lectura de temperatura por su id: la ve la empresa origen del viaje o la receptora de ese tramo (ajena → 404). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
     @RespuestasError({400, 401, 403, 404})
-    @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR')")
+    @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<TelemetriaTemperaturaResponseDTO> getById(@PathVariable UUID id) {
         TelemetriaTemperaturaResponseDTO dto = mapper.toResponseDTO(service.getById(id));
         return ResponseEntity.status(HttpStatus.OK).body(dto);

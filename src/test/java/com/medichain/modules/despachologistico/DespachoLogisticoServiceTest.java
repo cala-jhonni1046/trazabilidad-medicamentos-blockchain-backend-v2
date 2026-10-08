@@ -7,6 +7,8 @@ import com.medichain.modules.bulto.Bulto;
 import com.medichain.modules.bulto.BultoRepository;
 import com.medichain.modules.bulto.EstadoBulto;
 import com.medichain.modules.cuarentena.AperturaCuarentenas;
+import com.medichain.modules.cuarentena.Bloqueo;
+import com.medichain.modules.cuarentena.CausaBloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
 import com.medichain.modules.cuarentena.MotivoBloqueo;
 import com.medichain.modules.empresa.Empresa;
@@ -107,7 +109,7 @@ class DespachoLogisticoServiceTest {
     /** Construye el Service bajo prueba con los mocks. */
     private DespachoLogisticoService service() {
         lenient().when(repository.save(any(DespachoLogistico.class))).thenAnswer(inv -> inv.getArgument(0));
-        lenient().when(evaluadorBloqueo.bultosBloqueados(anyCollection())).thenReturn(Map.of());
+        lenient().when(evaluadorBloqueo.bloqueosDeBultos(anyCollection())).thenReturn(Map.of());
         return new DespachoLogisticoService(repository, bultoRepository, unidadTrazableRepository, evaluadorBloqueo,
                 aperturaCuarentenas, usuarioActual, verificadorEmpresa, verificadorUsuario, registradorEventos);
     }
@@ -216,9 +218,11 @@ class DespachoLogisticoServiceTest {
     @DisplayName("R10: no se crea un viaje con un bulto bloqueado")
     void crearConBultoBloqueado() {
         como(RolUsuario.LABORATORIO, laboratorio);
-        when(bultoRepository.findByCodigoIn(anyCollection())).thenReturn(List.of(DatosDePrueba.bulto("BUL-0001", lote, circuito)));
+        Bulto bloqueado = DatosDePrueba.bulto("BUL-0001", lote, circuito);
+        when(bultoRepository.findByCodigoIn(anyCollection())).thenReturn(List.of(bloqueado));
         DespachoLogisticoService service = service();
-        when(evaluadorBloqueo.bultosBloqueados(anyCollection())).thenReturn(Map.of("BUL-0001", "cuarentena vigente"));
+        when(evaluadorBloqueo.bloqueosDeBultos(anyCollection()))
+                .thenReturn(Map.of(bloqueado.getId(), new Bloqueo(CausaBloqueo.BULTO_CON_MEDIDA_VIGENTE, "cuarentena vigente")));
 
         fallaCon("R10", () -> service.crear(dto("BUL-0001")));
         verify(repository, never()).save(any());
@@ -286,7 +290,8 @@ class DespachoLogisticoServiceTest {
         DespachoLogistico viaje = viajeProgramado(bulto);
         como(RolUsuario.LABORATORIO, laboratorio);
         DespachoLogisticoService service = service();
-        when(evaluadorBloqueo.bultosBloqueados(anyCollection())).thenReturn(Map.of("BUL-0001", "cuarentena vigente"));
+        when(evaluadorBloqueo.bloqueosDeBultos(anyCollection()))
+                .thenReturn(Map.of(bulto.getId(), new Bloqueo(CausaBloqueo.BULTO_CON_MEDIDA_VIGENTE, "cuarentena vigente")));
 
         fallaCon("R10", () -> service.salida(viaje.getId()));
         assertEquals(EstadoDespacho.PROGRAMADO, viaje.getEstado());

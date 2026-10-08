@@ -63,11 +63,11 @@ public class ReporteCiudadanoService {
 
     /** Página de reportes: SEDE e INSPECTOR todos; el PACIENTE, los suyos; empresas, ninguno. */
     @Transactional(readOnly = true)
-    public Page<ReporteCiudadano> getAll(Pageable pageable) {
+    public Page<ReporteCiudadano> getAll(EstadoAuditoria estado, Pageable pageable) {
         UsuarioAutenticado actual = usuarioActual.obtener();
         return switch (actual.getRol()) {
-            case SEDE_CENTRAL, INSPECTOR -> repository.findAll(pageable);
-            case PACIENTE -> repository.findByPacienteId(actual.getUsuarioId(), pageable);
+            case SEDE_CENTRAL, INSPECTOR -> repository.findPorEstado(estado, pageable);
+            case PACIENTE -> repository.findDelPacientePorEstado(actual.getUsuarioId(), estado, pageable);
             case LABORATORIO, DISTRIBUIDOR, FARMACIA -> Page.empty(pageable);
         };
     }

@@ -84,12 +84,12 @@ public class CuarentenaService {
 
     /** Página de medidas: SEDE e INSPECTOR todas; una empresa, las que la afectan. */
     @Transactional(readOnly = true)
-    public Page<Cuarentena> getAll(Pageable pageable) {
+    public Page<Cuarentena> getAll(EstadoCuarentena estado, Pageable pageable) {
         UsuarioAutenticado actual = usuarioActual.obtener();
         return switch (actual.getRol()) {
-            case SEDE_CENTRAL, INSPECTOR -> repository.findAll(pageable);
+            case SEDE_CENTRAL, INSPECTOR -> repository.findPorEstado(estado, pageable);
             case LABORATORIO, DISTRIBUIDOR, FARMACIA ->
-                    repository.findVisiblesParaEmpresa(actual.getEmpresaId(), pageable);
+                    repository.findVisiblesParaEmpresa(actual.getEmpresaId(), estado, pageable);
             case PACIENTE -> Page.empty(pageable);
         };
     }

@@ -1,6 +1,7 @@
 package com.medichain.utils;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import java.sql.SQLException;
 
 /**
  * Utilidad RestriccionUnica en MediChain.
@@ -17,6 +18,39 @@ import org.springframework.dao.DataIntegrityViolationException;
 public final class RestriccionUnica {
 
     private RestriccionUnica() {
+    }
+
+    /**
+     * Nombre de la restricción violada, tal como lo informa Hibernate
+     * (getConstraintName), o null si no lo informa. Nunca devuelve el valor
+     * duplicado: sirve para loguear sin datos personales.
+     */
+    public static String nombre(DataIntegrityViolationException excepcion) {
+        Throwable causa = excepcion;
+        while (causa != null) {
+            if (causa instanceof org.hibernate.exception.ConstraintViolationException violacion
+                    && violacion.getConstraintName() != null) {
+                return violacion.getConstraintName();
+            }
+            causa = causa.getCause() == causa ? null : causa.getCause();
+        }
+        return null;
+    }
+
+    /**
+     * SQLState de la violación: 23505 única, 23503 clave foránea, 23514 CHECK,
+     * 23502 NOT NULL. null si no viene de un SQLException.
+     */
+    public static String estadoSql(DataIntegrityViolationException excepcion) {
+        Throwable causa = excepcion;
+        while (causa != null) {
+            if (causa instanceof SQLException sql && sql.getSQLState() != null) {
+                SQLException siguiente = sql.getNextException();
+                return siguiente != null && siguiente.getSQLState() != null ? siguiente.getSQLState() : sql.getSQLState();
+            }
+            causa = causa.getCause() == causa ? null : causa.getCause();
+        }
+        return null;
     }
 
     /** true si la excepción es una violación de la restricción única con ese nombre. */

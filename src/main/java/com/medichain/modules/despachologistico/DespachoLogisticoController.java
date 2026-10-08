@@ -2,6 +2,9 @@ package com.medichain.modules.despachologistico;
 
 import com.medichain.config.RespuestasError;
 import com.medichain.modules.empresa.MotivoRequestDTO;
+import com.medichain.modules.telemetriatemperatura.TelemetriaTemperaturaMapper;
+import com.medichain.modules.telemetriatemperatura.TelemetriaTemperaturaResponseDTO;
+import com.medichain.modules.telemetriatemperatura.TelemetriaTemperaturaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,11 +39,17 @@ public class DespachoLogisticoController {
 
     private final DespachoLogisticoService service;
     private final DespachoLogisticoMapper mapper;
+    private final TelemetriaTemperaturaService telemetriaTemperaturaService;
+    private final TelemetriaTemperaturaMapper telemetriaTemperaturaMapper;
 
     @Autowired
-    public DespachoLogisticoController(DespachoLogisticoService service, DespachoLogisticoMapper mapper) {
+    public DespachoLogisticoController(DespachoLogisticoService service, DespachoLogisticoMapper mapper,
+                                       TelemetriaTemperaturaService telemetriaTemperaturaService,
+                                       TelemetriaTemperaturaMapper telemetriaTemperaturaMapper) {
         this.service = service;
         this.mapper = mapper;
+        this.telemetriaTemperaturaService = telemetriaTemperaturaService;
+        this.telemetriaTemperaturaMapper = telemetriaTemperaturaMapper;
     }
 
     /** Lista los viajes visibles para el usuario. */
@@ -60,6 +69,19 @@ public class DespachoLogisticoController {
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<DespachoLogisticoResponseDTO> getById(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.getById(id)));
+    }
+
+    /** Lecturas de temperatura de un viaje (gráfico), de la más vieja a la más nueva. */
+    @GetMapping("/{id}/telemetria-temperatura")
+    @Operation(operationId = "listarTemperaturasDelViaje", summary = "Temperaturas de un viaje",
+            description = "Lecturas de temperatura del viaje, ordenadas por hora de lectura (para su gráfico). Las ve la Sede, los inspectores, la empresa origen del viaje y la receptora de ese tramo (distribuidora en el tramo 1, farmacia en el tramo 2); viaje inexistente o ajeno → 404. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R9.")
+    @RespuestasError({400, 401, 403, 404})
+    @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
+    public ResponseEntity<Page<TelemetriaTemperaturaResponseDTO>> temperaturas(@PathVariable UUID id,
+            @ParameterObject @PageableDefault(size = 100, sort = "fechaHora", direction = Sort.Direction.ASC) Pageable pageable) {
+        Page<TelemetriaTemperaturaResponseDTO> page = telemetriaTemperaturaService.lecturasDelViaje(id, pageable)
+                .map(telemetriaTemperaturaMapper::toResponseDTO);
+        return ResponseEntity.status(HttpStatus.OK).body(page);
     }
 
     /** Crea un viaje PROGRAMADO con sus bultos. */

@@ -1,9 +1,13 @@
 package com.medichain.modules.lote;
 
 import com.medichain.config.RespuestasError;
+import com.medichain.modules.cuarentena.Bloqueo;
+import com.medichain.modules.cuarentena.EvaluadorBloqueo;
+import com.medichain.modules.unidadtrazable.UnidadTrazable;
 import com.medichain.modules.unidadtrazable.UnidadTrazableMapper;
 import com.medichain.modules.unidadtrazable.UnidadTrazableResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,7 +25,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -38,22 +45,26 @@ public class LoteController {
     private final LoteService service;
     private final LoteMapper mapper;
     private final UnidadTrazableMapper unidadTrazableMapper;
+    private final EvaluadorBloqueo evaluadorBloqueo;
 
     @Autowired
-    public LoteController(LoteService service, LoteMapper mapper, UnidadTrazableMapper unidadTrazableMapper) {
+    public LoteController(LoteService service, LoteMapper mapper, UnidadTrazableMapper unidadTrazableMapper,
+                          EvaluadorBloqueo evaluadorBloqueo) {
         this.service = service;
         this.mapper = mapper;
         this.unidadTrazableMapper = unidadTrazableMapper;
+        this.evaluadorBloqueo = evaluadorBloqueo;
     }
 
     /** Lista los lotes visibles para el usuario. */
     @GetMapping
-    @Operation(operationId = "listarLotes", summary = "Listar lotes", description = "SEDE e INSPECTOR ven todos; el laboratorio, los suyos. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "listarLotes", summary = "Listar lotes", description = "SEDE e INSPECTOR ven todos; el laboratorio, los suyos. Filtro opcional ?estado=PENDIENTE_LIBERACION, LIBERADO, CUARENTENA o RECALL (una sola por consulta; lo ajeno sigue sin verse). Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.")
     @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<LoteResponseDTO>> getAll(
+            @Parameter(description = "Estado (opcional): PENDIENTE_LIBERACION, LIBERADO, CUARENTENA o RECALL") @RequestParam(required = false) EstadoLote estado,
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.OK).body(service.getAll(pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.status(HttpStatus.OK).body(pagina(service.getAll(estado, pageable)));
     }
 
     /** Bandeja de liberación del inspector. */
@@ -63,27 +74,27 @@ public class LoteController {
     @PreAuthorize("hasRole('INSPECTOR')")
     public ResponseEntity<Page<LoteResponseDTO>> bandejaLiberacion(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.ASC) Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.OK).body(service.bandejaLiberacion(pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.status(HttpStatus.OK).body(pagina(service.bandejaLiberacion(pageable)));
     }
 
     /** Busca un lote por id. */
     @GetMapping("/{id}")
-    @Operation(operationId = "obtenerLote", summary = "Obtener un lote", description = "404 si no es de tu laboratorio. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "obtenerLote", summary = "Obtener un lote", description = "404 si no es de tu laboratorio. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.")
     @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<LoteResponseDTO> getById(@PathVariable UUID id) {
-        return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.getById(id)));
+        return ResponseEntity.status(HttpStatus.OK).body(respuesta(service.getById(id)));
     }
 
     /** Cajas del lote, paginadas por serie. */
     @GetMapping("/{id}/unidades")
-    @Operation(operationId = "listarCajasDelLote", summary = "Cajas de un lote", description = "Cada caja con su GTIN y serie. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO dueño (los demás, 404).")
+    @Operation(operationId = "listarCajasDelLote", summary = "Cajas de un lote", description = "Cada caja con su GTIN y serie. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO dueño (los demás, 404). Reglas: R10.")
     @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO')")
     public ResponseEntity<Page<UnidadTrazableResponseDTO>> unidades(@PathVariable UUID id,
             @ParameterObject @PageableDefault(size = 50, sort = "serie", direction = Sort.Direction.ASC) Pageable pageable) {
         return ResponseEntity.status(HttpStatus.OK)
-                .body(service.unidades(id, pageable).map(unidadTrazableMapper::toResponseDTO));
+                .body(paginaDeCajas(service.unidades(id, pageable)));
     }
 
     /** Registra un lote con todas sus cajas. */
@@ -96,7 +107,7 @@ public class LoteController {
     @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('LABORATORIO')")
     public ResponseEntity<LoteResponseDTO> registrar(@Valid @RequestBody LoteRequestDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponseDTO(service.registrar(dto)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(respuesta(service.registrar(dto)));
     }
 
     /** Libera el lote (R4). */
@@ -106,6 +117,23 @@ public class LoteController {
     @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasAnyRole('LABORATORIO', 'INSPECTOR')")
     public ResponseEntity<LoteResponseDTO> liberar(@PathVariable UUID id) {
-        return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.liberar(id)));
+        return ResponseEntity.status(HttpStatus.OK).body(respuesta(service.liberar(id)));
+    }
+
+    /** DTO de un lote con su bloqueo R10. */
+    private LoteResponseDTO respuesta(Lote lote) {
+        return mapper.toResponseDTO(lote, evaluadorBloqueo.bloqueosDeLotes(List.of(lote)).get(lote.getId()));
+    }
+
+    /** Página de lotes con el bloqueo R10 de cada uno, calculado para toda la página de una vez (sin N+1). */
+    private Page<LoteResponseDTO> pagina(Page<Lote> lotes) {
+        Map<UUID, Bloqueo> bloqueos = evaluadorBloqueo.bloqueosDeLotes(lotes.getContent());
+        return lotes.map(lote -> mapper.toResponseDTO(lote, bloqueos.get(lote.getId())));
+    }
+
+    /** Página de cajas del lote con el bloqueo R10 de cada una (sin N+1). */
+    private Page<UnidadTrazableResponseDTO> paginaDeCajas(Page<UnidadTrazable> cajas) {
+        Map<UUID, Bloqueo> bloqueos = evaluadorBloqueo.bloqueosDeCajas(cajas.getContent());
+        return cajas.map(caja -> unidadTrazableMapper.toResponseDTO(caja, bloqueos.get(caja.getId())));
     }
 }

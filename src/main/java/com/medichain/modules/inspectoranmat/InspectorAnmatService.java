@@ -1,5 +1,6 @@
 package com.medichain.modules.inspectoranmat;
 
+import com.medichain.exceptions.ReglaNegocioException;
 import com.medichain.exceptions.ResourceNotFoundException;
 import com.medichain.modules.auth.UsuarioAutenticado;
 import com.medichain.modules.empresa.Empresa;
@@ -60,8 +61,8 @@ public class InspectorAnmatService {
 
     /** Devuelve una página de inspectores (todos: lo ven solo SEDE e INSPECTOR). */
     @Transactional(readOnly = true)
-    public Page<InspectorAnmat> getAll(Pageable pageable) {
-        return repository.findAll(pageable);
+    public Page<InspectorAnmat> getAll(EstadoInspector estado, Pageable pageable) {
+        return repository.findPorEstado(estado, pageable);
     }
 
     /** Busca un inspector por id o lanza ResourceNotFoundException si no existe. */
@@ -79,6 +80,14 @@ public class InspectorAnmatService {
     public InspectorAnmat create(InspectorAnmat entity, InspectorAnmatRequestDTO dto) {
         UsuarioAutenticado actual = usuarioActual.obtener();
         Usuario usuarioAlta = verificadorUsuario.obtener(actual.getUsuarioId());
+        // Legajo y DNI son únicos: se avisa antes de crear la cuenta (el índice frena igual una carrera).
+        // El mensaje no repite el DNI.
+        if (repository.existsByLegajo(entity.getLegajo())) {
+            throw new ReglaNegocioException("INSPECTOR_DUPLICADO", "Ya existe un inspector con ese legajo");
+        }
+        if (repository.existsByDni(entity.getDni())) {
+            throw new ReglaNegocioException("INSPECTOR_DUPLICADO", "Ya existe un inspector con ese DNI");
+        }
 
         Usuario cuenta = new Usuario(dto.getEmail(), passwordEncoder.encode(dto.getPassword()),
                 dto.getNombre(), dto.getApellido(), dto.getDni(), RolUsuario.INSPECTOR);

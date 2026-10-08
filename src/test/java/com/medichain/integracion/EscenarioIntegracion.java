@@ -244,7 +244,17 @@ public class EscenarioIntegracion {
      * recepción en la farmacia. Las cajas quedan EN_STOCK. Devuelve el bulto.
      */
     public Bulto cajasEnFarmacia(Actores actores, EnlaceCuit circuito, Lote lote, int cantidad) {
-        Bulto bulto = ejecutor.ejecutarComo(actores.adminLaboratorio(), () -> {
+        Bulto bulto = bultoArmado(actores, circuito, lote, cantidad);
+        viajeEnTransito(actores.adminLaboratorio(), bulto);
+        recibir(actores.adminDistribuidora(), bulto, cantidad);
+        viajeEnTransito(actores.adminDistribuidora(), bulto);
+        recibir(actores.adminFarmacia(), bulto, cantidad);
+        return bulto;
+    }
+
+    /** El laboratorio arma un bulto (ARMADO) con las primeras "cantidad" cajas libres del lote. */
+    public Bulto bultoArmado(Actores actores, EnlaceCuit circuito, Lote lote, int cantidad) {
+        return ejecutor.ejecutarComo(actores.adminLaboratorio(), () -> {
             BultoRequestDTO dto = new BultoRequestDTO();
             dto.setCircuitoId(circuito.getId());
             dto.setLoteId(lote.getId());
@@ -252,14 +262,11 @@ public class EscenarioIntegracion {
             dto.setCantidad(cantidad);
             return bultoService.armar(dto);
         });
-        viajarYRecibir(actores.adminLaboratorio(), actores.adminDistribuidora(), bulto, cantidad);
-        viajarYRecibir(actores.adminDistribuidora(), actores.adminFarmacia(), bulto, cantidad);
-        return bulto;
     }
 
-    /** Viaje con un bulto: lo crea y despacha "origen"; lo recibe conforme "destino". */
-    private void viajarYRecibir(Usuario origen, Usuario destino, Bulto bulto, int cantidad) {
-        DespachoLogistico viaje = ejecutor.ejecutarComo(origen, () -> {
+    /** "origen" crea un viaje con el bulto y registra su salida: el viaje queda EN_TRANSITO. */
+    public DespachoLogistico viajeEnTransito(Usuario origen, Bulto bulto) {
+        return ejecutor.ejecutarComo(origen, () -> {
             DespachoLogisticoRequestDTO dto = new DespachoLogisticoRequestDTO();
             dto.setPatente("AA" + String.format("%03d", CONTADOR.incrementAndGet() % 1000) + "BB");
             dto.setChofer("Chofer de prueba");
@@ -268,6 +275,10 @@ public class EscenarioIntegracion {
             DespachoLogistico creado = despachoService.crear(dto);
             return despachoService.salida(creado.getId());
         });
+    }
+
+    /** "destino" recibe el bulto conforme (precinto intacto, cantidad exacta, 20 °C). */
+    public void recibir(Usuario destino, Bulto bulto, int cantidad) {
         ejecutor.ejecutarComo(destino, () -> {
             RecepcionRequestDTO dto = new RecepcionRequestDTO();
             dto.setCodigoBulto(bulto.getCodigo());
@@ -276,9 +287,6 @@ public class EscenarioIntegracion {
             dto.setTemperatura(new BigDecimal("20"));
             return recepcionService.recibir(dto);
         });
-        if (viaje == null) {
-            throw new IllegalStateException("No se creó el viaje");
-        }
     }
 
     // ---------- Identificadores válidos ----------

@@ -71,10 +71,14 @@ public class EmpresaService {
 
     /** Devuelve una página de empresas según el rol del usuario autenticado. */
     @Transactional(readOnly = true)
-    public Page<Empresa> getAll(Pageable pageable) {
+    public Page<Empresa> getAll(EstadoHabilitacion estado, Pageable pageable) {
         UsuarioAutenticado actual = usuarioActual.obtener();
         if (veTodas(actual)) {
-            return repository.findAll(pageable);
+            return repository.findPorEstado(estado, pageable);
+        }
+        // Las empresas solo ven las HABILITADA: filtrar por otro estado no devuelve nada.
+        if (estado != null && estado != EstadoHabilitacion.HABILITADA) {
+            return Page.empty(pageable);
         }
         return repository.findByEstado(EstadoHabilitacion.HABILITADA, pageable);
     }

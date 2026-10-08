@@ -2,6 +2,7 @@ package com.medichain.modules.empresa;
 
 import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -45,12 +46,13 @@ public class EmpresaController {
 
     /** Lista las empresas de forma paginada. */
     @GetMapping
-    @Operation(operationId = "listarEmpresas", summary = "Listar empresas", description = "Devuelve una página de empresas. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "listarEmpresas", summary = "Listar empresas", description = "Devuelve una página de empresas. Filtro opcional ?estado=PENDIENTE, HABILITADA, RECHAZADA o SUSPENDIDA (las empresas solo ven las HABILITADA) (una sola por consulta; lo ajeno sigue sin verse). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
     @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<EmpresaResponseDTO>> getAll(
+            @Parameter(description = "Estado (opcional): PENDIENTE, HABILITADA, RECHAZADA o SUSPENDIDA") @RequestParam(required = false) EstadoHabilitacion estado,
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<EmpresaResponseDTO> page = service.getAll(pageable).map(mapper::toResponseDTO);
+        Page<EmpresaResponseDTO> page = service.getAll(estado, pageable).map(mapper::toResponseDTO);
         return ResponseEntity.status(HttpStatus.OK).body(page);
     }
 

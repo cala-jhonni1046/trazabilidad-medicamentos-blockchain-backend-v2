@@ -4,6 +4,7 @@ import com.medichain.config.RespuestasError;
 import com.medichain.modules.empresa.AsignacionInspectorRequestDTO;
 import com.medichain.modules.empresa.MotivoRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
@@ -46,12 +48,13 @@ public class EnlaceCuitController {
 
     /** Lista los circuitos visibles para el usuario. */
     @GetMapping
-    @Operation(operationId = "listarCircuitos", summary = "Listar circuitos", description = "SEDE e INSPECTOR ven todos; cada empresa, los circuitos donde participa. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "listarCircuitos", summary = "Listar circuitos", description = "SEDE e INSPECTOR ven todos; cada empresa, los circuitos donde participa. Filtro opcional ?estado=PENDIENTE_EMPRESAS, PENDIENTE_INSPECTOR, APROBADO, RECHAZADO o SUSPENDIDO (una sola por consulta; lo ajeno sigue sin verse). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
     @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<EnlaceCuitResponseDTO>> getAll(
+            @Parameter(description = "Estado (opcional): PENDIENTE_EMPRESAS, PENDIENTE_INSPECTOR, APROBADO, RECHAZADO o SUSPENDIDO") @RequestParam(required = false) EstadoEnlaceCuit estado,
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.OK).body(service.getAll(pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.status(HttpStatus.OK).body(service.getAll(estado, pageable).map(mapper::toResponseDTO));
     }
 
     /** Circuitos que esperan la aceptación de la empresa del usuario. */

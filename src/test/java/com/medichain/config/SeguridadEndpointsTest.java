@@ -1,6 +1,7 @@
 package com.medichain.config;
 
 import com.medichain.exceptions.ReglaNegocioException;
+import com.medichain.modules.cuarentena.EvaluadorBloqueo;
 import com.medichain.modules.registroblockchain.ErrorBlockchainException;
 import com.medichain.modules.registroblockchain.EstadoAnclajeResponseDTO;
 import com.medichain.modules.registroblockchain.RegistroBlockchainController;
@@ -29,6 +30,8 @@ import com.medichain.modules.cuarentena.CuarentenaService;
 import com.medichain.modules.reporteciudadano.ReporteCiudadanoController;
 import com.medichain.modules.reporteciudadano.ReporteCiudadanoMapper;
 import com.medichain.modules.reporteciudadano.ReporteCiudadanoService;
+import com.medichain.modules.telemetriatemperatura.TelemetriaTemperaturaMapper;
+import com.medichain.modules.telemetriatemperatura.TelemetriaTemperaturaService;
 import com.medichain.utils.seguridad.UsuarioActual;
 import com.medichain.modules.recepcion.RecepcionMapper;
 import com.medichain.modules.recepcion.RecepcionService;
@@ -110,6 +113,16 @@ class SeguridadEndpointsTest {
     // Lo pide SecurityConfig para el filtro JWT; acá la autenticación se inyecta con authentication(...).
     @MockitoBean
     private UsuarioRepository usuarioRepository;
+
+    // Los piden los controllers de bultos, lotes y cajas (indicador R10) y el de viajes (temperatura del viaje).
+    @MockitoBean
+    private EvaluadorBloqueo evaluadorBloqueo;
+
+    @MockitoBean
+    private TelemetriaTemperaturaService telemetriaTemperaturaService;
+
+    @MockitoBean
+    private TelemetriaTemperaturaMapper telemetriaTemperaturaMapper;
 
     @MockitoBean
     private EmpresaService empresaService;
@@ -210,7 +223,7 @@ class SeguridadEndpointsTest {
     @Test
     @DisplayName("GET /api/empresas como LABORATORIO → 200 (rol permitido)")
     void laboratorioListaEmpresas() throws Exception {
-        when(empresaService.getAll(any(Pageable.class))).thenReturn(Page.empty());
+        when(empresaService.getAll(any(), any(Pageable.class))).thenReturn(Page.empty());
         mockMvc.perform(get("/api/empresas").with(authentication(como(RolUsuario.LABORATORIO))))
                 .andExpect(status().isOk());
     }

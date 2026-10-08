@@ -149,7 +149,7 @@ public class RecepcionService {
                     + " no está en viaje (estado " + bulto.getEstado() + ")");
         }
 
-        boolean bloqueado = !evaluadorBloqueo.bultosBloqueados(List.of(bulto)).isEmpty();
+        boolean bloqueado = !evaluadorBloqueo.bloqueosDeBultos(List.of(bulto)).isEmpty();
         List<MotivoRechazoRecepcion> motivos = motivosDeRechazo(bulto, dto, bloqueado);
         Recepcion recepcion = repository.save(new Recepcion(bulto, viaje, receptora,
                 verificadorUsuario.obtener(actual.getUsuarioId()), dto.getTemperatura(), dto.getPrecintoIntacto(),

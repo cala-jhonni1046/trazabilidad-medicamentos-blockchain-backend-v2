@@ -100,7 +100,7 @@ class ContratoOpenApiIT extends IntegracionBase {
                 problemas.addAll(revisarRespuestas(donde, id, ruta, metodo, op, publica));
             }
         }
-        assertEquals(91, operaciones, "cantidad de operaciones del contrato");
+        assertEquals(92, operaciones, "cantidad de operaciones del contrato");
 
         List<String> tags = new ArrayList<>();
         contrato.path("tags").forEach(tag -> tags.add(tag.path("name").asString()));

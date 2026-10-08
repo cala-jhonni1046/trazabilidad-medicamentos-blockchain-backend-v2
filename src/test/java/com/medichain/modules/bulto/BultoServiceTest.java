@@ -3,6 +3,8 @@ package com.medichain.modules.bulto;
 import com.medichain.exceptions.ReglaNegocioException;
 import com.medichain.exceptions.ResourceNotFoundException;
 import com.medichain.modules.auth.UsuarioAutenticado;
+import com.medichain.modules.cuarentena.Bloqueo;
+import com.medichain.modules.cuarentena.CausaBloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
 import com.medichain.modules.despachologistico.TramoDespacho;
 import com.medichain.modules.empresa.Empresa;
@@ -204,7 +206,7 @@ class BultoServiceTest {
     @DisplayName("R10: lote bloqueado (vencido o con medida vigente)")
     void loteBloqueado() {
         prepararArmado();
-        when(evaluadorBloqueo.bloqueoDeLote(lote)).thenReturn(Optional.of("el lote está vencido"));
+        when(evaluadorBloqueo.bloqueoDeLote(lote)).thenReturn(Optional.of(new Bloqueo(CausaBloqueo.LOTE_VENCIDO, "el lote está vencido")));
 
         fallaCon("R10", () -> service().armar(conSeries("S1")));
     }

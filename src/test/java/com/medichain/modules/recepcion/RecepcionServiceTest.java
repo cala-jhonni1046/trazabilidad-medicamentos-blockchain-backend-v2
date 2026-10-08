@@ -7,6 +7,8 @@ import com.medichain.modules.bulto.Bulto;
 import com.medichain.modules.bulto.BultoRepository;
 import com.medichain.modules.bulto.EstadoBulto;
 import com.medichain.modules.cuarentena.AperturaCuarentenas;
+import com.medichain.modules.cuarentena.Bloqueo;
+import com.medichain.modules.cuarentena.CausaBloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
 import com.medichain.modules.despachologistico.DespachoLogistico;
 import com.medichain.modules.despachologistico.DespachoLogisticoRepository;
@@ -42,6 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -133,7 +136,7 @@ class RecepcionServiceTest {
         viaje = enViaje(TramoDespacho.LAB_A_DISTRIBUIDOR, laboratorio, bulto);
         lenient().when(bultoRepository.findByCodigo("BUL-0001")).thenReturn(Optional.of(bulto));
         lenient().when(unidadTrazableRepository.findByBultoId(bulto.getId())).thenReturn(cajas);
-        lenient().when(evaluadorBloqueo.bultosBloqueados(anyCollection())).thenReturn(Map.of());
+        lenient().when(evaluadorBloqueo.bloqueosDeBultos(anyCollection())).thenReturn(Map.of());
         lenient().when(repository.save(any(Recepcion.class))).thenAnswer(inv -> {
             Recepcion r = inv.getArgument(0);
             guardadas.add(r);
@@ -267,7 +270,8 @@ class RecepcionServiceTest {
     @DisplayName("R10: bulto bloqueado → se registra y se rechaza automáticamente, sin cuarentena nueva")
     void bultoBloqueado() {
         como(RolUsuario.DISTRIBUIDOR, distribuidora);
-        when(evaluadorBloqueo.bultosBloqueados(anyCollection())).thenReturn(Map.of("BUL-0001", "ruptura de frío"));
+        when(evaluadorBloqueo.bloqueosDeBultos(anyCollection()))
+                .thenReturn(Map.of(UUID.randomUUID(), new Bloqueo(CausaBloqueo.BULTO_CON_MEDIDA_VIGENTE, "ruptura de frío")));
 
         Recepcion recepcion = service().recibir(dto(true, 10, "20"));
 

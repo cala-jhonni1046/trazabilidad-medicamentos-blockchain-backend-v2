@@ -23,14 +23,24 @@ public interface EnlaceCuitRepository extends JpaRepository<EnlaceCuit, UUID> {
     List<EstadoEnlaceCuit> ESTADOS_VIGENTES = List.of(EstadoEnlaceCuit.PENDIENTE_EMPRESAS,
             EstadoEnlaceCuit.PENDIENTE_INSPECTOR, EstadoEnlaceCuit.APROBADO, EstadoEnlaceCuit.SUSPENDIDO);
 
-    /** Circuitos donde la empresa es el laboratorio. */
-    Page<EnlaceCuit> findByLaboratorioId(UUID empresaId, Pageable pageable);
+    /** Circuitos: todos, opcionalmente de un estado (Sede e inspectores). */
+    @Query("select e from EnlaceCuit e where (:estado is null or e.estado = :estado)")
+    Page<EnlaceCuit> findPorEstado(@Param("estado") EstadoEnlaceCuit estado, Pageable pageable);
 
-    /** Circuitos donde la empresa es la distribuidora. */
-    Page<EnlaceCuit> findByDistribuidorId(UUID empresaId, Pageable pageable);
+    /** Circuitos donde la empresa es el laboratorio, opcionalmente de un estado. */
+    @Query("select e from EnlaceCuit e where e.laboratorio.id = :empresaId and (:estado is null or e.estado = :estado)")
+    Page<EnlaceCuit> findDelLaboratorioPorEstado(@Param("empresaId") UUID empresaId, @Param("estado") EstadoEnlaceCuit estado,
+                            Pageable pageable);
 
-    /** Circuitos donde la empresa es la farmacia. */
-    Page<EnlaceCuit> findByFarmaciaId(UUID empresaId, Pageable pageable);
+    /** Circuitos donde la empresa es la distribuidora, opcionalmente de un estado. */
+    @Query("select e from EnlaceCuit e where e.distribuidor.id = :empresaId and (:estado is null or e.estado = :estado)")
+    Page<EnlaceCuit> findDeLaDistribuidoraPorEstado(@Param("empresaId") UUID empresaId, @Param("estado") EstadoEnlaceCuit estado,
+                            Pageable pageable);
+
+    /** Circuitos donde la empresa es la farmacia, opcionalmente de un estado. */
+    @Query("select e from EnlaceCuit e where e.farmacia.id = :empresaId and (:estado is null or e.estado = :estado)")
+    Page<EnlaceCuit> findDeLaFarmaciaPorEstado(@Param("empresaId") UUID empresaId, @Param("estado") EstadoEnlaceCuit estado,
+                            Pageable pageable);
 
     /** Circuitos en el estado dado donde la empresa participa en cualquiera de los tres roles. */
     @Query("select e from EnlaceCuit e where e.estado = :estado and "

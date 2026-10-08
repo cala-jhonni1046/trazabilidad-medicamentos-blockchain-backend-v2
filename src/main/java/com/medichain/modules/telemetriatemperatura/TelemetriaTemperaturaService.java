@@ -67,8 +67,9 @@ public class TelemetriaTemperaturaService {
         UsuarioAutenticado actual = usuarioActual.obtener();
         return switch (actual.getRol()) {
             case SEDE_CENTRAL, INSPECTOR -> repository.findAll(pageable);
-            case LABORATORIO, DISTRIBUIDOR -> repository.findByDespachoOrigenId(actual.getEmpresaId(), pageable);
-            case FARMACIA, PACIENTE -> Page.empty(pageable);
+            // La empresa ve las lecturas de sus viajes y las de los viajes que recibe (receptora de ese tramo).
+            case LABORATORIO, DISTRIBUIDOR, FARMACIA -> repository.findVisiblesParaEmpresa(actual.getEmpresaId(), pageable);
+            case PACIENTE -> Page.empty(pageable);
         };
     }
 
@@ -78,11 +79,38 @@ public class TelemetriaTemperaturaService {
         UsuarioAutenticado actual = usuarioActual.obtener();
         TelemetriaTemperatura lectura = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("TelemetriaTemperatura no encontrada con id: " + id));
-        boolean veTodo = actual.getRol() == RolUsuario.SEDE_CENTRAL || actual.getRol() == RolUsuario.INSPECTOR;
-        if (!veTodo && !lectura.getDespacho().getOrigen().getId().equals(actual.getEmpresaId())) {
+        if (!veLaTemperatura(actual, lectura.getDespacho())) {
             throw new ResourceNotFoundException("TelemetriaTemperatura no encontrada con id: " + id);
         }
         return lectura;
+    }
+
+    /**
+     * Lecturas de temperatura de un viaje, para su gráfico. Las ve la Sede, los
+     * inspectores, la empresa origen y la receptora de ese tramo (distribuidora
+     * en el tramo 1, farmacia en el tramo 2). Viaje inexistente o ajeno → 404.
+     */
+    @Transactional(readOnly = true)
+    public Page<TelemetriaTemperatura> lecturasDelViaje(UUID viajeId, Pageable pageable) {
+        UsuarioAutenticado actual = usuarioActual.obtener();
+        DespachoLogistico viaje = despachoLogisticoRepository.findById(viajeId)
+                .filter(d -> veLaTemperatura(actual, d))
+                .orElseThrow(() -> new ResourceNotFoundException("Viaje no encontrado con id: " + viajeId));
+        return repository.findDelViaje(viaje.getId(), pageable);
+    }
+
+    /** Regla de visibilidad de la temperatura de un viaje: Sede, inspectores, origen y receptora del tramo. */
+    private boolean veLaTemperatura(UsuarioAutenticado actual, DespachoLogistico viaje) {
+        if (actual.getRol() == RolUsuario.SEDE_CENTRAL || actual.getRol() == RolUsuario.INSPECTOR) {
+            return true;
+        }
+        if (actual.getEmpresaId() == null) {
+            return false;
+        }
+        if (viaje.getOrigen().getId().equals(actual.getEmpresaId())) {
+            return true;
+        }
+        return viaje.paradas().stream().anyMatch(parada -> parada.getId().equals(actual.getEmpresaId()));
     }
 
     /**

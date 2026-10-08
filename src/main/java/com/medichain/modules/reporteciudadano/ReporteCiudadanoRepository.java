@@ -17,8 +17,14 @@ import java.util.UUID;
 @Repository
 public interface ReporteCiudadanoRepository extends JpaRepository<ReporteCiudadano, UUID> {
 
-    /** Reportes presentados por el paciente dado. */
-    Page<ReporteCiudadano> findByPacienteId(UUID pacienteId, Pageable pageable);
+    /** Reportes presentados por el paciente dado, opcionalmente de un estado. */
+    @Query("select r from ReporteCiudadano r where r.paciente.id = :pacienteId and (:estado is null or r.estado = :estado)")
+    Page<ReporteCiudadano> findDelPacientePorEstado(@Param("pacienteId") UUID pacienteId,
+                                                    @Param("estado") EstadoAuditoria estado, Pageable pageable);
+
+    /** Reportes, opcionalmente de un estado (Sede e inspectores). */
+    @Query("select r from ReporteCiudadano r where (:estado is null or r.estado = :estado)")
+    Page<ReporteCiudadano> findPorEstado(@Param("estado") EstadoAuditoria estado, Pageable pageable);
 
     /** Bandeja del inspector: ABIERTO de su provincia sin tomar, más los EN_INVESTIGACION que tomó él. */
     @Query(value = "select r from ReporteCiudadano r left join r.investiga i where "

@@ -3,6 +3,7 @@ package com.medichain.modules.reporteciudadano;
 import com.medichain.config.RespuestasError;
 import com.medichain.utils.seguridad.UsuarioActual;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
@@ -54,12 +56,13 @@ public class ReporteCiudadanoController {
 
     /** Lista los reportes visibles para el usuario. */
     @GetMapping
-    @Operation(operationId = "listarReportes", summary = "Listar reportes", description = "PACIENTE: los suyos (estado y fechas). SEDE e INSPECTOR: todos. Roles: SEDE_CENTRAL, INSPECTOR, PACIENTE. Reglas: R13.")
+    @Operation(operationId = "listarReportes", summary = "Listar reportes", description = "PACIENTE: los suyos (estado y fechas). SEDE e INSPECTOR: todos. Filtro opcional ?estado=ABIERTO, EN_INVESTIGACION o CERRADO (una sola por consulta; lo ajeno sigue sin verse). Roles: SEDE_CENTRAL, INSPECTOR, PACIENTE. Reglas: R13.")
     @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'PACIENTE')")
     public ResponseEntity<Page<ReporteCiudadanoResponseDTO>> getAll(
+            @Parameter(description = "Estado (opcional): ABIERTO, EN_INVESTIGACION o CERRADO") @RequestParam(required = false) EstadoAuditoria estado,
             @ParameterObject @PageableDefault(size = 20, sort = "fechaReporte", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.OK).body(service.getAll(pageable).map(this::dto));
+        return ResponseEntity.status(HttpStatus.OK).body(service.getAll(estado, pageable).map(this::dto));
     }
 
     /** Bandeja del inspector. */

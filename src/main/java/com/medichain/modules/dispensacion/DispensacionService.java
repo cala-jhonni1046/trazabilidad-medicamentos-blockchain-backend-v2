@@ -3,6 +3,7 @@ package com.medichain.modules.dispensacion;
 import com.medichain.exceptions.ReglaNegocioException;
 import com.medichain.exceptions.ResourceNotFoundException;
 import com.medichain.modules.auth.UsuarioAutenticado;
+import com.medichain.modules.cuarentena.Bloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
 import com.medichain.modules.empresa.Empresa;
 import com.medichain.modules.trazabilidad.DatosEventos;
@@ -118,9 +119,9 @@ public class DispensacionService {
             throw new ReglaNegocioException("TRANSICION_INVALIDA",
                     "La caja está en estado " + caja.getEstado() + ": no se puede dispensar");
         }
-        Optional<String> bloqueo = evaluadorBloqueo.bloqueoDeCaja(caja);
+        Optional<Bloqueo> bloqueo = evaluadorBloqueo.bloqueoDeCaja(caja);
         if (bloqueo.isPresent()) {
-            throw new ReglaNegocioException("R10", "La caja está bloqueada: " + bloqueo.get());
+            throw new ReglaNegocioException("R10", "La caja está bloqueada: " + bloqueo.get().getMensaje());
         }
 
         // R13: el DNI completo se enmascara acá y no se guarda en ningún lado.

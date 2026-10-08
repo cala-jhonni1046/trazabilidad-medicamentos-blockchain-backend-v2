@@ -44,13 +44,20 @@ public interface CuarentenaRepository extends JpaRepository<Cuarentena, UUID> {
      */
     @Query(value = "select distinct c from Cuarentena c left join c.lote l left join c.despacho d "
             + "left join c.bultos b left join b.destino e "
-            + "where l.laboratorio.id = :empresaId or d.origen.id = :empresaId "
-            + "or e.laboratorio.id = :empresaId or e.distribuidor.id = :empresaId or e.farmacia.id = :empresaId",
+            + "where (l.laboratorio.id = :empresaId or d.origen.id = :empresaId "
+            + "or e.laboratorio.id = :empresaId or e.distribuidor.id = :empresaId or e.farmacia.id = :empresaId) "
+            + "and (:estado is null or c.estado = :estado)",
             countQuery = "select count(distinct c) from Cuarentena c left join c.lote l left join c.despacho d "
             + "left join c.bultos b left join b.destino e "
-            + "where l.laboratorio.id = :empresaId or d.origen.id = :empresaId "
-            + "or e.laboratorio.id = :empresaId or e.distribuidor.id = :empresaId or e.farmacia.id = :empresaId")
-    Page<Cuarentena> findVisiblesParaEmpresa(@Param("empresaId") UUID empresaId, Pageable pageable);
+            + "where (l.laboratorio.id = :empresaId or d.origen.id = :empresaId "
+            + "or e.laboratorio.id = :empresaId or e.distribuidor.id = :empresaId or e.farmacia.id = :empresaId) "
+            + "and (:estado is null or c.estado = :estado)")
+    Page<Cuarentena> findVisiblesParaEmpresa(@Param("empresaId") UUID empresaId,
+                                             @Param("estado") EstadoCuarentena estado, Pageable pageable);
+
+    /** Cuarentenas y recalls, opcionalmente de un estado (Sede e inspectores). */
+    @Query("select c from Cuarentena c where (:estado is null or c.estado = :estado)")
+    Page<Cuarentena> findPorEstado(@Param("estado") EstadoCuarentena estado, Pageable pageable);
 
     /** Bandeja del inspector: medidas ACTIVA de su provincia sin tomar, más las que tomó él. */
     @Query(value = "select c from Cuarentena c left join c.inspectorRevisor r "

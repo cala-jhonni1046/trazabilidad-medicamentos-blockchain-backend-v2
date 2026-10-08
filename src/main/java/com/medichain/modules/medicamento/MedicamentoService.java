@@ -1,5 +1,6 @@
 package com.medichain.modules.medicamento;
 
+import com.medichain.exceptions.ReglaNegocioException;
 import com.medichain.exceptions.ResourceNotFoundException;
 import com.medichain.modules.auth.UsuarioAutenticado;
 import com.medichain.modules.empresa.Empresa;
@@ -62,6 +63,11 @@ public class MedicamentoService {
         UsuarioAutenticado actual = usuarioActual.obtener();
         Empresa laboratorio = verificadorEmpresa.exigirHabilitada(actual.getEmpresaId());
         entity.setGtin(Gs1Util.normalizar(entity.getGtin()));
+        if (repository.existsByGtin(entity.getGtin())) {
+            // El índice uk_medicamentos_gtin frena igual una carrera (GlobalExceptionHandler → mismo código).
+            throw new ReglaNegocioException("MEDICAMENTO_DUPLICADO",
+                    "Ya existe un medicamento registrado con el GTIN " + entity.getGtin());
+        }
         entity.setLaboratorio(laboratorio);
         Medicamento guardado = repository.save(entity);
         registradorEventos.registrar(TipoEvento.MEDICAMENTO_REGISTRADO, "Medicamento", guardado.getId(),

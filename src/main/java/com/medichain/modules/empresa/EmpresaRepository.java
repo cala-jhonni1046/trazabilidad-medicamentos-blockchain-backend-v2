@@ -28,6 +28,10 @@ public interface EmpresaRepository extends JpaRepository<Empresa, UUID> {
     /** Indica si ya existe una empresa con el GLN dado. */
     boolean existsByGln(String gln);
 
+    /** Empresas, opcionalmente de un estado (Sede e inspectores ven todas). */
+    @Query("select e from Empresa e where (:estado is null or e.estado = :estado)")
+    Page<Empresa> findPorEstado(@Param("estado") EstadoHabilitacion estado, Pageable pageable);
+
     /**
      * Bandeja del inspector: solicitudes PENDIENTE de su provincia que
      * nadie tomó, más las que él tomó o le asignaron (de cualquier provincia).

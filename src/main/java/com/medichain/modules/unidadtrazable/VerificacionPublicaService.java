@@ -1,6 +1,7 @@
 package com.medichain.modules.unidadtrazable;
 
 import com.medichain.modules.bulto.Bulto;
+import com.medichain.modules.cuarentena.Bloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
 import com.medichain.modules.despachologistico.DespachoLogistico;
 import com.medichain.modules.despachologistico.DespachoLogisticoRepository;
@@ -141,7 +142,7 @@ public class VerificacionPublicaService {
             respuesta.setMensaje("Retiro del mercado (recall): no consumir. Devolvela en tu farmacia.");
             return;
         }
-        Optional<String> bloqueo = evaluadorBloqueo.bloqueoDeCaja(caja);
+        Optional<Bloqueo> bloqueo = evaluadorBloqueo.bloqueoDeCaja(caja);
         if (estado == EstadoUnidad.DEVUELTA || estado == EstadoUnidad.RECHAZADA || bloqueo.isPresent()) {
             respuesta.setEstado(EstadoVerificacion.BLOQUEADA);
             respuesta.setMensaje(mensajeDeBloqueo(caja, bloqueo));
@@ -164,7 +165,7 @@ public class VerificacionPublicaService {
     }
 
     /** Mensaje de una caja bloqueada que no está en recall: cuarentena, vencida, devuelta o rechazada. */
-    private String mensajeDeBloqueo(UnidadTrazable caja, Optional<String> bloqueo) {
+    private String mensajeDeBloqueo(UnidadTrazable caja, Optional<Bloqueo> bloqueo) {
         if (caja.getLote().getEstado() == EstadoLote.CUARENTENA) {
             return "Medicamento en cuarentena preventiva: no consumir hasta nuevo aviso.";
         }
@@ -174,7 +175,7 @@ public class VerificacionPublicaService {
         if (caja.getEstado() == EstadoUnidad.RECHAZADA) {
             return "No consumir: la caja fue rechazada en la cadena de distribución.";
         }
-        return "No consumir: " + bloqueo.orElse("la caja está bloqueada") + ".";
+        return "No consumir: " + bloqueo.map(Bloqueo::getMensaje).orElse("la caja está bloqueada") + ".";
     }
 
     /**

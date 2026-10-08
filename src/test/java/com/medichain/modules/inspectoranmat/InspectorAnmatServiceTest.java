@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -97,6 +98,48 @@ class InspectorAnmatServiceTest {
         Map<String, Object> liberadas = (Map<String, Object>) datos.getValue().get("solicitudesLiberadas");
         assertEquals(1, liberadas.get("cantidad"));
         assertEquals(List.of(tomada.getId()), liberadas.get("empresaIds"));
+    }
+
+    @Test
+    @DisplayName("Alta con un legajo ya usado → 409 INSPECTOR_DUPLICADO, sin crear la cuenta")
+    void altaConLegajoRepetido() {
+        InspectorAnmatService servicio = service();
+        when(repository.existsByLegajo("INSP-0042")).thenReturn(true);
+        InspectorAnmat nuevo = new InspectorAnmat("INSP-0042", "30111222", Provincia.MENDOZA);
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
+                () -> servicio.create(nuevo, solicitudDeAlta()));
+
+        assertEquals("INSPECTOR_DUPLICADO", ex.getCodigoRegla());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Alta con un DNI ya usado → 409 INSPECTOR_DUPLICADO; el mensaje no repite el DNI")
+    void altaConDniRepetido() {
+        InspectorAnmatService servicio = service();
+        when(repository.existsByDni("30111222")).thenReturn(true);
+        InspectorAnmat nuevo = new InspectorAnmat("INSP-0043", "30111222", Provincia.MENDOZA);
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
+                () -> servicio.create(nuevo, solicitudDeAlta()));
+
+        assertEquals("INSPECTOR_DUPLICADO", ex.getCodigoRegla());
+        assertFalse(ex.getMessage().contains("30111222"));
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    /** Datos de alta de un inspector (la cuenta). */
+    private static InspectorAnmatRequestDTO solicitudDeAlta() {
+        InspectorAnmatRequestDTO dto = new InspectorAnmatRequestDTO();
+        dto.setLegajo("INSP-0042");
+        dto.setDni("30111222");
+        dto.setProvincia(Provincia.MENDOZA);
+        dto.setEmail("nuevo.inspector@anmat.demo");
+        dto.setPassword("clave-de-ejemplo");
+        dto.setNombre("Marta");
+        dto.setApellido("Quiroga");
+        return dto;
     }
 
     @Test

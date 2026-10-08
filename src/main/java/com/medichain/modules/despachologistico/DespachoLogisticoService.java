@@ -7,6 +7,7 @@ import com.medichain.modules.bulto.Bulto;
 import com.medichain.modules.bulto.BultoRepository;
 import com.medichain.modules.bulto.EstadoBulto;
 import com.medichain.modules.cuarentena.AperturaCuarentenas;
+import com.medichain.modules.cuarentena.Bloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
 import com.medichain.modules.cuarentena.MotivoBloqueo;
 import com.medichain.modules.empresa.Empresa;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -270,7 +272,13 @@ public class DespachoLogisticoService {
 
     /** R10: si algún bulto está bloqueado, 409 con los códigos y el motivo. */
     private void exigirNoBloqueados(List<Bulto> bultos, String accion) {
-        Map<String, String> bloqueados = evaluadorBloqueo.bultosBloqueados(bultos);
+        Map<UUID, Bloqueo> porId = evaluadorBloqueo.bloqueosDeBultos(bultos);
+        Map<String, String> bloqueados = new LinkedHashMap<>();
+        for (Bulto bulto : bultos) {
+            if (porId.containsKey(bulto.getId())) {
+                bloqueados.put(bulto.getCodigo(), porId.get(bulto.getId()).getMensaje());
+            }
+        }
         if (!bloqueados.isEmpty()) {
             throw new ReglaNegocioException("R10", "No se puede " + accion + ": hay bultos bloqueados " + bloqueados);
         }

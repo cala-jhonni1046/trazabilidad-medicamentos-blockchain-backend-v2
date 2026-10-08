@@ -3,6 +3,7 @@ package com.medichain.modules.bulto;
 import com.medichain.exceptions.ReglaNegocioException;
 import com.medichain.exceptions.ResourceNotFoundException;
 import com.medichain.modules.auth.UsuarioAutenticado;
+import com.medichain.modules.cuarentena.Bloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
 import com.medichain.modules.enlacecuit.EnlaceCuit;
 import com.medichain.modules.enlacecuit.EnlaceCuitRepository;
@@ -69,13 +70,13 @@ public class BultoService {
 
     /** Devuelve una página de bultos según el rol del usuario. */
     @Transactional(readOnly = true)
-    public Page<Bulto> getAll(Pageable pageable) {
+    public Page<Bulto> getAll(EstadoBulto estado, Pageable pageable) {
         UsuarioAutenticado actual = usuarioActual.obtener();
         return switch (actual.getRol()) {
-            case SEDE_CENTRAL, INSPECTOR -> repository.findAll(pageable);
-            case LABORATORIO -> repository.findByLoteLaboratorioId(actual.getEmpresaId(), pageable);
-            case DISTRIBUIDOR -> repository.findByDestinoDistribuidorId(actual.getEmpresaId(), pageable);
-            case FARMACIA -> repository.findByDestinoFarmaciaId(actual.getEmpresaId(), pageable);
+            case SEDE_CENTRAL, INSPECTOR -> repository.findPorEstado(estado, pageable);
+            case LABORATORIO -> repository.findDelLaboratorioPorEstado(actual.getEmpresaId(), estado, pageable);
+            case DISTRIBUIDOR -> repository.findDeLaDistribuidoraPorEstado(actual.getEmpresaId(), estado, pageable);
+            case FARMACIA -> repository.findDeLaFarmaciaPorEstado(actual.getEmpresaId(), estado, pageable);
             case PACIENTE -> Page.empty(pageable);
         };
     }
@@ -108,9 +109,9 @@ public class BultoService {
             throw new ReglaNegocioException("R6", "El lote " + lote.getCodigo() + " no está LIBERADO (estado "
                     + lote.getEstado() + ")");
         }
-        Optional<String> bloqueo = evaluadorBloqueo.bloqueoDeLote(lote);
+        Optional<Bloqueo> bloqueo = evaluadorBloqueo.bloqueoDeLote(lote);
         if (bloqueo.isPresent()) {
-            throw new ReglaNegocioException("R10", "No se puede armar el bulto: " + bloqueo.get());
+            throw new ReglaNegocioException("R10", "No se puede armar el bulto: " + bloqueo.get().getMensaje());
         }
 
         UUID circuitoId = dto.getCircuitoId();
