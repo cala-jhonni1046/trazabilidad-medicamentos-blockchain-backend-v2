@@ -31,6 +31,7 @@
 | 08/10 | Paso 10 | Esquema con migraciones Flyway (V1 a V3); Hibernate solo valida; fechas de auditoría en UTC | 441 + 44 de integración · e2e 99/99 |
 | 08/10 | Paso B11a | Contrato OpenAPI para el frontend (operationId, errores, enums, required, páginas estables, docs/openapi.json) y login completo | 443 + 47 de integración · e2e 106/106 |
 | 08/10 | Paso B11b | Filtros por estado, temperatura del viaje para la receptora, indicador de bloqueo R10 y todo 409 con código | 453 + 58 de integración · e2e 114/114 |
+| 08/10 | Paso B11c | Tablero de la Sede: empresas y circuitos pendientes de provincias sin inspector | 453 + 60 de integración · e2e 119/119 |
 
 "Tests" es la cantidad de tests automáticos (JUnit) al cerrar cada paso; desde el paso 9 se suman los de integración, que corren contra PostgreSQL real. "e2e" es la prueba de punta a punta por la API real (`scripts/prueba-e2e.py`): verificaciones correctas / total.
 
@@ -490,6 +491,24 @@
   | Operaciones del contrato | 91 | 92 |
   | 409 sin código | posibles (versión, duplicados no previstos) | ninguno |
 
+## 08/10 · Paso B11c: tablero de la Sede (pendientes sin inspector)
+
+- **Objetivo:** que la Sede vea qué tiene que asignar: las solicitudes de habilitación y los circuitos de provincias que no tienen inspectores activos (R2, R5). Hasta ahora podía asignarlos, pero no había una lista.
+- **Decisión del autor:** dos endpoints, uno por recurso, y solo empresas y circuitos (los únicos que hoy tienen "asignar").
+- **Qué se hizo:**
+  - `GET /api/empresas/sin-inspector`: solicitudes PENDIENTE, sin revisor, de provincias sin inspectores ACTIVO.
+  - `GET /api/circuitos/sin-inspector`: circuitos PENDIENTE_INSPECTOR, sin revisor, cuya farmacia es de una provincia sin inspectores ACTIVO.
+  - Las dos consultas piden **exactamente** las mismas condiciones que "asignar", así todo lo que aparece en la lista se puede asignar. Solo para la Sede, de lo más viejo a lo más nuevo.
+  - **`SinInspectorIT`** (2 tests): aparece lo de Formosa y no lo de Mendoza (que tiene inspector); lo asignado sale; si el único inspector de Chaco se da de baja, su solicitud tomada vuelve a aparecer; un inspector recibe 403.
+  - **Prueba e2e:** sección B11c (5 verificaciones) con un caso completo sobre los datos de demo: una farmacia de Salta se registra, aparece, la Sede la asigna al inspector de Mendoza, que la habilita; un circuito hacia ella aparece y sale al asignarlo.
+- **Resultado:**
+
+  | | Antes | Después |
+  |---|---|---|
+  | Tests de integración | 58 | 60 |
+  | Prueba e2e | 114/114 | 119/119 |
+  | Operaciones del contrato | 92 | 94 |
+
 ---
 
 ## Estado al 08/10 (reconstruido del código)
@@ -502,9 +521,9 @@
 | Roles | 6 |
 | Reglas de negocio | 15 (R1 a R15) |
 | Tipos de evento | 47 |
-| Tests automáticos | 453 unitarios (en 53 clases) + 58 de integración contra PostgreSQL real (en 14 clases) |
-| Contrato OpenAPI | `docs/openapi.json` (92 operaciones), publicado solo con `SWAGGER_HABILITADO=true` |
-| Prueba e2e | 114 verificaciones. La variante con anclaje real (`--sepolia`) dio 94 el 05/10, antes de la sección 9 |
+| Tests automáticos | 453 unitarios (en 53 clases) + 60 de integración contra PostgreSQL real (en 15 clases) |
+| Contrato OpenAPI | `docs/openapi.json` (94 operaciones), publicado solo con `SWAGGER_HABILITADO=true` |
+| Prueba e2e | 119 verificaciones. La variante con anclaje real (`--sepolia`) dio 94 el 05/10, antes de la sección 9 |
 
 ## Metodología y uso de IA
 
@@ -527,7 +546,7 @@
 
 ## Pendiente
 
-- **Paso B11 (resto):** B11c (pendientes sin inspector para la Sede) y B11d (fechas del negocio a UTC).
+- **Paso B11 (resto):** B11d (fechas del negocio a UTC).
 - **Paso 11:** Actuator, Docker (imagen + docker-compose) y README.
 - **Pendientes ya anotados en `CLAUDE.md`, sin paso asignado:**
   - pasar a `Instant`/UTC las 25 fechas del negocio que siguen sin zona horaria, con su propio diseño (dos entran a eventos nuevos y una la escribe el usuario sin zona);
