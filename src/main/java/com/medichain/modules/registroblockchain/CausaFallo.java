@@ -1,5 +1,7 @@
 package com.medichain.modules.registroblockchain;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Enumeración CausaFallo en MediChain (R15).
  * Por qué un anclaje terminó FALLIDO. Las tres primeras son determinísticas
@@ -15,6 +17,7 @@ package com.medichain.modules.registroblockchain;
  *   <li>ERROR_DE_RED: max-intentos envíos fallidos por el RPC o el nodo.</li>
  * </ul>
  */
+@Schema(enumAsRef = true, description = "Por qué un anclaje terminó FALLIDO. Las tres primeras son determinísticas (reintentar igual volvería a fallar y gastaría gas): FRENAN la tarea automática hasta que la Sede ancle a mano (POST /api/registros-blockchain/anclar).")
 public enum CausaFallo {
     REVERT(true),
     SIN_GAS(true),

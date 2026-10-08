@@ -1,6 +1,8 @@
 package com.medichain.modules.registroblockchain;
 
+import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +43,8 @@ public class RegistroBlockchainController {
 
     /** Lista los anclajes de forma paginada. */
     @GetMapping
-    @Operation(summary = "Listar anclajes", description = "Página de anclajes (más nuevos primero) con estado, transacción, bloque, confirmaciones, gas, costo y enlace a Etherscan. Roles: SEDE_CENTRAL, INSPECTOR.")
+    @Operation(operationId = "listarAnclajes", summary = "Listar anclajes", description = "Página de anclajes (más nuevos primero) con estado, transacción, bloque, confirmaciones, gas, costo y enlace a Etherscan. Roles: SEDE_CENTRAL, INSPECTOR. Reglas: R15.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR')")
     public ResponseEntity<Page<RegistroBlockchainResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -51,7 +54,8 @@ public class RegistroBlockchainController {
 
     /** Tablero del anclaje: red, contrato, billetera, saldo, costo y último anclaje. */
     @GetMapping("/estado")
-    @Operation(summary = "Estado del anclaje", description = "Red, contrato y billetera (con enlaces a Etherscan), saldo, comisión actual; gas REAL del próximo anclaje (eth_estimateGas; primerAnclaje indica si es el primero del contrato, que cuesta más), límite de gas (estimación + 30 % dentro de [gasMinimo; gasMaximo]), costo, cuántos anclajes alcanzan y saldo mínimo de la tarea automática; si la tarea está frenada (FALLIDO por revert / sin gas / gas sobre el máximo, o saldo) y por qué, en mensaje; último evento local y anclado, anclaje en curso. Con el anclaje deshabilitado devuelve solo lo local. Roles: SEDE_CENTRAL, INSPECTOR.")
+    @Operation(operationId = "obtenerEstadoAnclaje", summary = "Estado del anclaje", description = "Red, contrato y billetera (con enlaces a Etherscan), saldo, comisión actual; gas REAL del próximo anclaje (eth_estimateGas; primerAnclaje indica si es el primero del contrato, que cuesta más), límite de gas (estimación + 30 % dentro de [gasMinimo; gasMaximo]), costo, cuántos anclajes alcanzan y saldo mínimo de la tarea automática; si la tarea está frenada (FALLIDO por revert / sin gas / gas sobre el máximo, o saldo) y por qué, en mensaje; último evento local y anclado, anclaje en curso. Con el anclaje deshabilitado devuelve solo lo local. Roles: SEDE_CENTRAL, INSPECTOR. Reglas: R15.")
+    @RespuestasError({401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR')")
     public ResponseEntity<EstadoAnclajeResponseDTO> estado() {
         return ResponseEntity.status(HttpStatus.OK).body(service.estado());
@@ -59,7 +63,9 @@ public class RegistroBlockchainController {
 
     /** Ancla ya el hash del último evento. */
     @PostMapping("/anclar")
-    @Operation(summary = "Anclar ya", description = "Ancla en Sepolia el hash del último evento sin esperar la tarea de 5 minutos (para la demo). Antes de enviar simula y estima el gas: si el contrato lo rechazaría o la estimación + 30 % supera gas-maximo, NO envía y responde 202 con el anclaje FALLIDO y el motivo (sin gastar). Si no, 202 con el anclaje ENVIADO (transactionHash y enlace a Etherscan); CONFIRMADO llega solo, unos 40 s después (GET /api/registros-blockchain/{id}). Destraba la tarea automática si estaba frenada. 409 ANCLAJE_DESHABILITADO, ANCLAJE_EN_CURSO, SIN_EVENTOS_NUEVOS, SALDO_INSUFICIENTE (no alcanza para un anclaje), o R15 si la cadena local no coincide con el último anclaje del contrato. 503 si Sepolia no responde. Roles: SEDE_CENTRAL.")
+    @Operation(operationId = "anclarAhora", summary = "Anclar ya", description = "Ancla en Sepolia el hash del último evento sin esperar la tarea de 5 minutos (para la demo). Antes de enviar simula y estima el gas: si el contrato lo rechazaría o la estimación + 30 % supera gas-maximo, NO envía y responde 202 con el anclaje FALLIDO y el motivo (sin gastar). Si no, 202 con el anclaje ENVIADO (transactionHash y enlace a Etherscan); CONFIRMADO llega solo, unos 40 s después (GET /api/registros-blockchain/{id}). Destraba la tarea automática si estaba frenada. 409 ANCLAJE_DESHABILITADO, ANCLAJE_EN_CURSO, SIN_EVENTOS_NUEVOS, SALDO_INSUFICIENTE (no alcanza para un anclaje), o R15 si la cadena local no coincide con el último anclaje del contrato. 503 si Sepolia no responde. Roles: SEDE_CENTRAL. Reglas: R15.")
+    @ApiResponse(responseCode = "202", description = "Aceptado: el anclaje quedó ENVIADO (o FALLIDO sin gastar, con su causa)")
+    @RespuestasError({401, 403, 409, 503})
     @PreAuthorize("hasRole('SEDE_CENTRAL')")
     public ResponseEntity<RegistroBlockchainResponseDTO> anclar() {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(mapper.toResponseDTO(service.anclarAhora()));
@@ -67,7 +73,8 @@ public class RegistroBlockchainController {
 
     /** Busca un anclaje por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener un anclaje", description = "Busca un anclaje por su id. Roles: SEDE_CENTRAL, INSPECTOR.")
+    @Operation(operationId = "obtenerAnclaje", summary = "Obtener un anclaje", description = "Busca un anclaje por su id. Roles: SEDE_CENTRAL, INSPECTOR. Reglas: R15.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR')")
     public ResponseEntity<RegistroBlockchainResponseDTO> getById(@PathVariable UUID id) {
         RegistroBlockchainResponseDTO dto = mapper.toResponseDTO(service.getById(id));

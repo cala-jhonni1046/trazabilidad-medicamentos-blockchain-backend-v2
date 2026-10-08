@@ -1,5 +1,6 @@
 package com.medichain.modules.unidadtrazable;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,18 +14,31 @@ import java.util.List;
  */
 public class VerificacionPublicaResponseDTO {
 
+    @Schema(example = "07799000001010", requiredMode = Schema.RequiredMode.REQUIRED)
     private String gtin;
+    @Schema(example = "L20260415S000001", requiredMode = Schema.RequiredMode.REQUIRED)
     private String serie;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoVerificacion estado;
+    @Schema(example = "Caja apta: recorrido completo y sin medidas sanitarias", requiredMode = Schema.RequiredMode.REQUIRED)
     private String mensaje;
+    @Schema(nullable = true)
     private String producto;
+    @Schema(nullable = true)
     private String principioActivo;
+    @Schema(nullable = true)
     private String concentracion;
+    @Schema(nullable = true)
     private String presentacion;
+    @Schema(nullable = true)
     private String laboratorio;
+    @Schema(nullable = true)
     private String lote;
+    @Schema(nullable = true)
     private LocalDate vencimiento;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private List<EtapaRecorridoDTO> recorrido = new ArrayList<>();
+    @Schema(nullable = true)
     private AnclajeDTO anclaje;
 
     /** Constructor vacío exigido por Jackson. */

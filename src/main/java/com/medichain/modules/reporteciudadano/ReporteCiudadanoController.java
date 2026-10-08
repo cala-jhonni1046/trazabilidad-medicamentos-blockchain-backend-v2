@@ -1,7 +1,9 @@
 package com.medichain.modules.reporteciudadano;
 
+import com.medichain.config.RespuestasError;
 import com.medichain.utils.seguridad.UsuarioActual;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -52,7 +54,8 @@ public class ReporteCiudadanoController {
 
     /** Lista los reportes visibles para el usuario. */
     @GetMapping
-    @Operation(summary = "Listar reportes", description = "PACIENTE: los suyos (estado y fechas). SEDE e INSPECTOR: todos. Roles: SEDE_CENTRAL, INSPECTOR, PACIENTE.")
+    @Operation(operationId = "listarReportes", summary = "Listar reportes", description = "PACIENTE: los suyos (estado y fechas). SEDE e INSPECTOR: todos. Roles: SEDE_CENTRAL, INSPECTOR, PACIENTE. Reglas: R13.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'PACIENTE')")
     public ResponseEntity<Page<ReporteCiudadanoResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaReporte", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -61,7 +64,8 @@ public class ReporteCiudadanoController {
 
     /** Bandeja del inspector. */
     @GetMapping("/bandeja")
-    @Operation(summary = "Bandeja de reportes", description = "ABIERTO de tu provincia, más los que investigás. Roles: INSPECTOR.")
+    @Operation(operationId = "bandejaReportes", summary = "Bandeja de reportes", description = "ABIERTO de tu provincia, más los que investigás. Roles: INSPECTOR. Reglas: R12.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasRole('INSPECTOR')")
     public ResponseEntity<Page<ReporteCiudadanoResponseDTO>> bandeja(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaReporte", direction = Sort.Direction.ASC) Pageable pageable) {
@@ -70,7 +74,8 @@ public class ReporteCiudadanoController {
 
     /** Busca un reporte por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener un reporte", description = "El paciente solo ve los suyos (ajeno → 404). Roles: SEDE_CENTRAL, INSPECTOR, PACIENTE.")
+    @Operation(operationId = "obtenerReporte", summary = "Obtener un reporte", description = "El paciente solo ve los suyos (ajeno → 404). Roles: SEDE_CENTRAL, INSPECTOR, PACIENTE. Reglas: R13.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'PACIENTE')")
     public ResponseEntity<ReporteCiudadanoResponseDTO> getById(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(dto(service.getById(id)));
@@ -78,8 +83,10 @@ public class ReporteCiudadanoController {
 
     /** El paciente presenta un reporte. */
     @PostMapping
-    @Operation(summary = "Reportar una caja", description = "GTIN + serie escaneados (la caja puede no existir), motivo, provincia donde la conseguiste y descripción opcional. "
-            + "Código REP-0001 generado. Ni tus datos ni la descripción van a la cadena. Evento REPORTE_CIUDADANO. Roles: PACIENTE.")
+    @Operation(operationId = "reportarCaja", summary = "Reportar una caja", description = "GTIN + serie escaneados (la caja puede no existir), motivo, provincia donde la conseguiste y descripción opcional. "
+            + "Código REP-0001 generado. Ni tus datos ni la descripción van a la cadena. Evento REPORTE_CIUDADANO. Roles: PACIENTE. Reglas: R13.")
+    @ApiResponse(responseCode = "201", description = "Creado")
+    @RespuestasError({400, 401, 403, 409})
     @PreAuthorize("hasRole('PACIENTE')")
     public ResponseEntity<ReporteCiudadanoResponseDTO> reportar(@Valid @RequestBody ReporteCiudadanoRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(dto(service.reportar(dto)));
@@ -87,7 +94,8 @@ public class ReporteCiudadanoController {
 
     /** Un inspector toma el reporte. */
     @PostMapping("/{id}/tomar")
-    @Operation(summary = "Tomar un reporte", description = "ABIERTO → EN_INVESTIGACION. Reporte de tu provincia (si no, 404). Evento REPORTE_TOMADO. Roles: INSPECTOR.")
+    @Operation(operationId = "tomarReporte", summary = "Tomar un reporte", description = "ABIERTO → EN_INVESTIGACION. Reporte de tu provincia (si no, 404). Evento REPORTE_TOMADO. Roles: INSPECTOR. Reglas: R12.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('INSPECTOR')")
     public ResponseEntity<ReporteCiudadanoResponseDTO> tomar(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(dto(service.tomar(id)));
@@ -95,8 +103,9 @@ public class ReporteCiudadanoController {
 
     /** El inspector que investiga cierra el reporte. */
     @PostMapping("/{id}/cerrar")
-    @Operation(summary = "Cerrar un reporte", description = "EN_INVESTIGACION → CERRADO, con conclusión (exige haberlo tomado). El paciente no ve la conclusión; al evento va su hash. "
-            + "Evento REPORTE_CERRADO. Roles: INSPECTOR.")
+    @Operation(operationId = "cerrarReporte", summary = "Cerrar un reporte", description = "EN_INVESTIGACION → CERRADO, con conclusión (exige haberlo tomado). El paciente no ve la conclusión; al evento va su hash. "
+            + "Evento REPORTE_CERRADO. Roles: INSPECTOR. Reglas: R12.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('INSPECTOR')")
     public ResponseEntity<ReporteCiudadanoResponseDTO> cerrar(@PathVariable UUID id, @Valid @RequestBody ConclusionRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.OK).body(dto(service.cerrar(id, dto.getConclusion())));

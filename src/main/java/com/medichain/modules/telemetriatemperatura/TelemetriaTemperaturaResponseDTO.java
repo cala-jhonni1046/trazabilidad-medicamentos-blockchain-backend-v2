@@ -1,5 +1,6 @@
 package com.medichain.modules.telemetriatemperatura;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -12,14 +13,23 @@ import java.util.UUID;
  */
 public class TelemetriaTemperaturaResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String sensorId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private BigDecimal temperatura;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean fueraDeRango;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime fechaHora;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID despachoId;
 
     /** Constructor vacío exigido por Jackson. */

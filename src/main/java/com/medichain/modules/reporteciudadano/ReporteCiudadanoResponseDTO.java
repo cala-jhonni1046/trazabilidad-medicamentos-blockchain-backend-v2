@@ -1,6 +1,7 @@
 package com.medichain.modules.reporteciudadano;
 
 import com.medichain.utils.enums.Provincia;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -13,32 +14,46 @@ import java.util.UUID;
  */
 public class ReporteCiudadanoResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
 
+    @Schema(example = "REP-0001", requiredMode = Schema.RequiredMode.REQUIRED)
     private String codigo;
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String gtinReportado;
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String serieReportada;
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private MotivoReporte motivo;
 
+    @Schema(nullable = true)
     private String descripcion;
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoAuditoria estado;
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Provincia provincia;
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime fechaReporte;
 
+    @Schema(nullable = true)
     private LocalDateTime fechaCierre;
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean cajaExiste;
 
+    @Schema(nullable = true)
     private String conclusion;
 
+    @Schema(nullable = true)
     private UUID investigaId;
 
+    @Schema(nullable = true)
     private Provincia provinciaCaja;
 
     /** Constructor vacío exigido por Jackson. */

@@ -1,5 +1,6 @@
 package com.medichain.modules.bulto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -11,18 +12,31 @@ import java.util.UUID;
  */
 public class BultoResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(example = "BUL-0001", requiredMode = Schema.RequiredMode.REQUIRED)
     private String codigo;
+    @Schema(example = "10", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer cantidad;
+    @Schema(example = "PRE-000123", requiredMode = Schema.RequiredMode.REQUIRED)
     private String precinto;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoBulto estado;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime fechaArmado;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID loteId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID destinoId;
+    @Schema(nullable = true)
     private UUID ubicacionId;
+    @Schema(nullable = true)
     private UUID viajeActualId;
 
     /** Constructor vacío exigido por Jackson. */

@@ -1,5 +1,6 @@
 package com.medichain.modules.lote;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,19 +13,33 @@ import java.util.UUID;
  */
 public class LoteResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(example = "L2026-0415", requiredMode = Schema.RequiredMode.REQUIRED)
     private String codigo;
+    @Schema(example = "2026-09-01", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDate fechaFabricacion;
+    @Schema(example = "2028-09-01", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDate fechaVencimiento;
+    @Schema(example = "100", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer cantidad;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoLote estado;
+    @Schema(nullable = true)
     private EstadoLote estadoPrevio;
+    @Schema(nullable = true)
     private LocalDateTime fechaLiberacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID medicamentoId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID laboratorioId;
+    @Schema(nullable = true)
     private UUID liberadoPorId;
 
     /** Constructor vacío exigido por Jackson. */

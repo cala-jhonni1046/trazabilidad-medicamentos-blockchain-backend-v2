@@ -1,7 +1,9 @@
 package com.medichain.modules.despachologistico;
 
+import com.medichain.config.RespuestasError;
 import com.medichain.modules.empresa.MotivoRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -43,7 +45,8 @@ public class DespachoLogisticoController {
 
     /** Lista los viajes visibles para el usuario. */
     @GetMapping
-    @Operation(summary = "Listar viajes", description = "SEDE e INSPECTOR ven todos; LABORATORIO los que origina; DISTRIBUIDOR los que origina y los del tramo 1 que vienen a su depósito; FARMACIA los del tramo 2 con parada en ella.")
+    @Operation(operationId = "listarViajes", summary = "Listar viajes", description = "SEDE e INSPECTOR ven todos; LABORATORIO los que origina; DISTRIBUIDOR los que origina y los del tramo 1 que vienen a su depósito; FARMACIA los del tramo 2 con parada en ella. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<DespachoLogisticoResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -52,7 +55,8 @@ public class DespachoLogisticoController {
 
     /** Busca un viaje por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener un viaje", description = "404 si no te corresponde. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "obtenerViaje", summary = "Obtener un viaje", description = "404 si no te corresponde. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<DespachoLogisticoResponseDTO> getById(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.getById(id)));
@@ -60,9 +64,11 @@ public class DespachoLogisticoController {
 
     /** Crea un viaje PROGRAMADO con sus bultos. */
     @PostMapping
-    @Operation(summary = "Crear un viaje", description = "El tramo lo decide tu rol. LABORATORIO (tramo 1): bultos ARMADO propios hacia UNA distribuidora. "
+    @Operation(operationId = "crearViaje", summary = "Crear un viaje", description = "El tramo lo decide tu rol. LABORATORIO (tramo 1): bultos ARMADO propios hacia UNA distribuidora. "
             + "DISTRIBUIDOR (tramo 2): bultos EN_DEPOSITO en tu depósito, varias farmacias. Ningún bulto bloqueado (R10). "
-            + "Los bultos quedan fijos. Código VJ-0001 generado. Evento VIAJE_CREADO. Roles: LABORATORIO, DISTRIBUIDOR.")
+            + "Los bultos quedan fijos. Código VJ-0001 generado. Evento VIAJE_CREADO. Roles: LABORATORIO, DISTRIBUIDOR. Reglas: R7, R10.")
+    @ApiResponse(responseCode = "201", description = "Creado")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasAnyRole('LABORATORIO', 'DISTRIBUIDOR')")
     public ResponseEntity<DespachoLogisticoResponseDTO> crear(@Valid @RequestBody DespachoLogisticoRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponseDTO(service.crear(dto)));
@@ -70,7 +76,8 @@ public class DespachoLogisticoController {
 
     /** Registra la salida del viaje. */
     @PostMapping("/{id}/salida")
-    @Operation(summary = "Registrar la salida", description = "PROGRAMADO → EN_TRANSITO; bultos y cajas pasan a EN_TRANSITO. Si algún bulto está bloqueado → 409 R10. Evento VIAJE_SALIDA. Roles: la empresa origen del viaje.")
+    @Operation(operationId = "registrarSalidaViaje", summary = "Registrar la salida", description = "PROGRAMADO → EN_TRANSITO; bultos y cajas pasan a EN_TRANSITO. Si algún bulto está bloqueado → 409 R10. Evento VIAJE_SALIDA. Roles: la empresa origen del viaje. Reglas: R7, R10.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasAnyRole('LABORATORIO', 'DISTRIBUIDOR')")
     public ResponseEntity<DespachoLogisticoResponseDTO> salida(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.salida(id)));
@@ -78,7 +85,8 @@ public class DespachoLogisticoController {
 
     /** Cancela un viaje que no salió. */
     @PostMapping("/{id}/cancelar")
-    @Operation(summary = "Cancelar un viaje", description = "PROGRAMADO → CANCELADO, con motivo; sus bultos quedan sin viaje. Evento VIAJE_CANCELADO. Roles: la empresa origen del viaje.")
+    @Operation(operationId = "cancelarViaje", summary = "Cancelar un viaje", description = "PROGRAMADO → CANCELADO, con motivo; sus bultos quedan sin viaje. Evento VIAJE_CANCELADO. Roles: la empresa origen del viaje. Reglas: R7.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasAnyRole('LABORATORIO', 'DISTRIBUIDOR')")
     public ResponseEntity<DespachoLogisticoResponseDTO> cancelar(@PathVariable UUID id, @Valid @RequestBody MotivoRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.cancelar(id, dto.getMotivo())));
@@ -86,7 +94,8 @@ public class DespachoLogisticoController {
 
     /** Reporta robo o extravío del viaje. */
     @PostMapping("/{id}/robo")
-    @Operation(summary = "Reportar robo o extravío", description = "EN_TRANSITO → ROBADO; bultos ROBADO, cajas ROBADA y cuarentena DESPACHO automática (R14). Eventos ROBO_EXTRAVIO y CUARENTENA. Roles: la empresa origen del viaje.")
+    @Operation(operationId = "reportarRoboViaje", summary = "Reportar robo o extravío", description = "EN_TRANSITO → ROBADO; bultos ROBADO, cajas ROBADA y cuarentena DESPACHO automática (R14). Eventos ROBO_EXTRAVIO y CUARENTENA. Roles: la empresa origen del viaje. Reglas: R14.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasAnyRole('LABORATORIO', 'DISTRIBUIDOR')")
     public ResponseEntity<DespachoLogisticoResponseDTO> robo(@PathVariable UUID id, @Valid @RequestBody MotivoRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.robo(id, dto.getMotivo())));

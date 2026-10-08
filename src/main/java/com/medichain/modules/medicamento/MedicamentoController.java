@@ -1,6 +1,8 @@
 package com.medichain.modules.medicamento;
 
+import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -39,7 +41,8 @@ public class MedicamentoController {
 
     /** Lista los medicamentos de forma paginada. */
     @GetMapping
-    @Operation(summary = "Listar medicamentos", description = "Devuelve una página de medicamentos. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "listarMedicamentos", summary = "Listar medicamentos", description = "Devuelve una página de medicamentos. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<MedicamentoResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -49,7 +52,8 @@ public class MedicamentoController {
 
     /** Busca un medicamento por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener un medicamento", description = "Busca un medicamento por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "obtenerMedicamento", summary = "Obtener un medicamento", description = "Busca un medicamento por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<MedicamentoResponseDTO> getById(@PathVariable UUID id) {
         MedicamentoResponseDTO dto = mapper.toResponseDTO(service.getById(id));
@@ -58,7 +62,9 @@ public class MedicamentoController {
 
     /** Registra un nuevo medicamento. */
     @PostMapping
-    @Operation(summary = "Registrar un medicamento", description = "Crea un medicamento en el catálogo. Roles: LABORATORIO.")
+    @Operation(operationId = "registrarMedicamento", summary = "Registrar un medicamento", description = "Crea un medicamento en el catálogo. Roles: LABORATORIO. Reglas: R2, R3.")
+    @ApiResponse(responseCode = "201", description = "Creado")
+    @RespuestasError({400, 401, 403, 409})
     @PreAuthorize("hasAnyRole('LABORATORIO')")
     public ResponseEntity<MedicamentoResponseDTO> create(@Valid @RequestBody MedicamentoRequestDTO dto) {
         Medicamento entity = mapper.toEntity(dto);

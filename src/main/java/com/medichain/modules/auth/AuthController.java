@@ -1,6 +1,8 @@
 package com.medichain.modules.auth;
 
+import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +32,9 @@ public class AuthController {
 
     /** Autentica con email y contraseña y devuelve el JWT. */
     @PostMapping("/login")
-    @Operation(summary = "Iniciar sesión", description = "Devuelve un JWT válido por 8 horas.")
+    @Operation(operationId = "iniciarSesion", summary = "Iniciar sesión", description = "Devuelve un JWT válido por 8 horas. Público: no necesita token.")
+    @RespuestasError({400, 401})
+    @SecurityRequirements
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.OK).body(authService.login(dto));
     }

@@ -1,5 +1,6 @@
 package com.medichain.modules.enlacecuit;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -12,25 +13,45 @@ import java.util.UUID;
  */
 public class EnlaceCuitResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(example = "CIR-0001", requiredMode = Schema.RequiredMode.REQUIRED)
     private String codigo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoEnlaceCuit estado;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime fechaPropuesta;
+    @Schema(nullable = true)
     private LocalDateTime fechaAceptacionDistribuidor;
+    @Schema(nullable = true)
     private LocalDateTime fechaAceptacionFarmacia;
+    @Schema(nullable = true)
     private LocalDateTime fechaAprobacion;
+    @Schema(nullable = true)
     private String motivoRechazo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID laboratorioId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID distribuidorId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID farmaciaId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID propuestoPorId;
+    @Schema(nullable = true)
     private UUID inspectorAprobadorId;
+    @Schema(nullable = true)
     private UUID inspectorRevisorId;
+    @Schema(nullable = true)
     private OrigenRechazo rechazadoPor;
+    @Schema(nullable = true)
     private String motivoSuspension;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean suspendidoPorEmpresa;
 
     /** Constructor vacío exigido por Jackson. */

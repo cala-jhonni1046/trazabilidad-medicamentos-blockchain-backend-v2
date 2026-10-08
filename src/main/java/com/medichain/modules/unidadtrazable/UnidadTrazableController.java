@@ -1,5 +1,6 @@
 package com.medichain.modules.unidadtrazable;
 
+import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
@@ -39,7 +40,8 @@ public class UnidadTrazableController {
 
     /** Lista las unidades trazables de forma paginada. */
     @GetMapping
-    @Operation(summary = "Listar unidades trazables", description = "Devuelve una página de unidades trazables. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "listarCajas", summary = "Listar unidades trazables", description = "Devuelve una página de unidades trazables. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<UnidadTrazableResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -49,7 +51,8 @@ public class UnidadTrazableController {
 
     /** Busca una unidad trazable por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener una unidad trazable", description = "Busca una unidad trazable por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "obtenerCaja", summary = "Obtener una unidad trazable", description = "Busca una unidad trazable por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<UnidadTrazableResponseDTO> getById(@PathVariable UUID id) {
         UnidadTrazableResponseDTO dto = mapper.toResponseDTO(service.getById(id));
@@ -58,8 +61,9 @@ public class UnidadTrazableController {
 
     /** Devuelve una caja del stock de la farmacia (R14). */
     @PostMapping("/devolucion")
-    @Operation(summary = "Devolver una caja", description = "La farmacia que tiene la caja EN_STOCK la devuelve (GTIN + serie, motivo DANADA / VENCIDA / RETIRO_DEL_MERCADO / OTRO). "
-            + "Queda DEVUELTA y no vuelve a dispensarse. Evento DEVOLUCION. Roles: FARMACIA.")
+    @Operation(operationId = "devolverCaja", summary = "Devolver una caja", description = "La farmacia que tiene la caja EN_STOCK la devuelve (GTIN + serie, motivo DANADA / VENCIDA / RETIRO_DEL_MERCADO / OTRO). "
+            + "Queda DEVUELTA y no vuelve a dispensarse. Evento DEVOLUCION. Roles: FARMACIA. Reglas: R14.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('FARMACIA')")
     public ResponseEntity<UnidadTrazableResponseDTO> devolver(@Valid @RequestBody DevolucionRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.devolver(dto)));

@@ -1,5 +1,6 @@
 package com.medichain.modules.empresa;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -12,6 +13,7 @@ public class MotivoRequestDTO {
 
     @NotBlank(message = "El motivo es obligatorio")
     @Size(max = 1000, message = "El motivo no puede superar 1000 caracteres")
+    @Schema(description = "Motivo (queda en la entidad; nunca va a la cadena)", example = "La documentación de habilitación está vencida")
     private String motivo;
 
     /** Constructor vacío exigido por Spring/Jackson. */

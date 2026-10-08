@@ -1,6 +1,7 @@
 package com.medichain.modules.medicamento;
 
 import com.medichain.utils.validacion.Gtin;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -20,36 +21,45 @@ public class MedicamentoRequestDTO {
 
     @NotBlank(message = "El campo gtin es obligatorio")
     @Gtin
+    @Schema(description = "GTIN-14 con dígito verificador GS1 válido (R3)", example = "07799000001010")
     private String gtin;
 
     @NotBlank(message = "El campo nombreComercial es obligatorio")
     @Size(max = 200, message = "El campo nombreComercial no puede superar 200 caracteres")
+    @Schema(description = "Nombre comercial", example = "Cuyafen")
     private String nombreComercial;
 
     @NotBlank(message = "El campo principioActivo es obligatorio")
     @Size(max = 200, message = "El campo principioActivo no puede superar 200 caracteres")
+    @Schema(description = "Principio activo", example = "Ibuprofeno")
     private String principioActivo;
 
     @NotBlank(message = "El campo concentracion es obligatorio")
     @Size(max = 100, message = "El campo concentracion no puede superar 100 caracteres")
+    @Schema(description = "Concentración", example = "400 mg")
     private String concentracion;
 
     @NotBlank(message = "El campo formaFarmaceutica es obligatorio")
     @Size(max = 100, message = "El campo formaFarmaceutica no puede superar 100 caracteres")
+    @Schema(description = "Forma farmacéutica", example = "Comprimido")
     private String formaFarmaceutica;
 
     @NotBlank(message = "El campo presentacion es obligatorio")
     @Size(max = 100, message = "El campo presentacion no puede superar 100 caracteres")
+    @Schema(description = "Presentación", example = "Caja x 20")
     private String presentacion;
 
     @DecimalMin(value = "-99.99", message = "El campo temperaturaMinima no puede ser menor a -99.99")
     @DecimalMax(value = "999.99", message = "El campo temperaturaMinima no puede ser mayor a 999.99")
+    @Schema(description = "Temperatura mínima de conservación (°C)", example = "15")
     private BigDecimal temperaturaMinima;
 
     @DecimalMin(value = "-99.99", message = "El campo temperaturaMaxima no puede ser menor a -99.99")
     @DecimalMax(value = "999.99", message = "El campo temperaturaMaxima no puede ser mayor a 999.99")
+    @Schema(description = "Temperatura máxima de conservación (°C)", example = "30")
     private BigDecimal temperaturaMaxima;
 
+    @Schema(description = "true: lo libera un inspector (R4); false: el director técnico", example = "false")
     private Boolean biologico;
 
     /** Constructor vacío exigido por Jackson. */

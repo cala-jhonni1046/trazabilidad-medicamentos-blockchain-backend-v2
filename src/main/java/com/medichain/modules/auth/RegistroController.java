@@ -1,5 +1,6 @@
 package com.medichain.modules.auth;
 
+import com.medichain.config.RespuestasError;
 import com.medichain.modules.empresa.Empresa;
 import com.medichain.modules.empresa.EmpresaService;
 import com.medichain.modules.empresa.RegistroEmpresaRequestDTO;
@@ -7,6 +8,8 @@ import com.medichain.modules.usuario.RegistroPacienteRequestDTO;
 import com.medichain.modules.usuario.Usuario;
 import com.medichain.modules.usuario.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +49,10 @@ public class RegistroController {
 
     /** Registra una empresa PENDIENTE, su administrador inicial y el PDF de habilitación. */
     @PostMapping(value = "/empresas", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Registrar una empresa", description = "Formulario multipart, no necesita token. Campos de la empresa (tipo, cuit, razonSocial, gln, provincia, localidad, domicilio; opcionales numeroHabilitacion y directorTecnico), del administrador inicial (adminEmail, adminPassword, adminNombre, adminApellido, adminDni; adminEsDirectorTecnico solo para LABORATORIO) y documento: el PDF (hasta 5 MB). Respuestas: 201 {identificador = CUIT, estado = PENDIENTE}; 400 con el campo que falló; 409 EMPRESA_DUPLICADA (CUIT o GLN ya registrado) o REGISTRO_NO_COMPLETADO (email). Queda en la bandeja de los inspectores de su provincia. Evento SOLICITUD_HABILITACION.")
+    @Operation(operationId = "registrarEmpresa", summary = "Registrar una empresa", description = "Formulario multipart, no necesita token. Campos de la empresa (tipo, cuit, razonSocial, gln, provincia, localidad, domicilio; opcionales numeroHabilitacion y directorTecnico), del administrador inicial (adminEmail, adminPassword, adminNombre, adminApellido, adminDni; adminEsDirectorTecnico solo para LABORATORIO) y documento: el PDF (hasta 5 MB). Respuestas: 201 {identificador = CUIT, estado = PENDIENTE}; 400 con el campo que falló; 409 EMPRESA_DUPLICADA (CUIT o GLN ya registrado) o REGISTRO_NO_COMPLETADO (email). Queda en la bandeja de los inspectores de su provincia. Evento SOLICITUD_HABILITACION. Público: no necesita token. Reglas: R2.")
+    @ApiResponse(responseCode = "201", description = "Creado")
+    @RespuestasError({400, 409})
+    @SecurityRequirements
     public ResponseEntity<RegistroResponseDTO> registrarEmpresa(@Valid @ModelAttribute RegistroEmpresaRequestDTO dto) {
         byte[] pdf;
         try {
@@ -61,7 +67,10 @@ public class RegistroController {
 
     /** Registra un paciente. */
     @PostMapping("/pacientes")
-    @Operation(summary = "Registrar un paciente", description = "Crea una cuenta PACIENTE activa (después hay que hacer login). Público.")
+    @Operation(operationId = "registrarPaciente", summary = "Registrar un paciente", description = "Crea una cuenta PACIENTE activa (después hay que hacer login). Público. Público: no necesita token.")
+    @ApiResponse(responseCode = "201", description = "Creado")
+    @RespuestasError({400, 409})
+    @SecurityRequirements
     public ResponseEntity<RegistroResponseDTO> registrarPaciente(@Valid @RequestBody RegistroPacienteRequestDTO dto) {
         Usuario paciente = usuarioService.registrarPaciente(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta(paciente.getEmail(), "ACTIVO",

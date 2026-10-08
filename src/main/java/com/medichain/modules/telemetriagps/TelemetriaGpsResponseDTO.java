@@ -1,5 +1,6 @@
 package com.medichain.modules.telemetriagps;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -11,15 +12,25 @@ import java.util.UUID;
  */
 public class TelemetriaGpsResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String sensorId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Double latitud;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Double longitud;
+    @Schema(nullable = true)
     private String lugar;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime fechaHora;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID despachoId;
 
     /** Constructor vacío exigido por Jackson. */

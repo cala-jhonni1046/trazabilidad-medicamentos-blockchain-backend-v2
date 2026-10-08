@@ -1,5 +1,6 @@
 package com.medichain.modules.empresa;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ import java.util.UUID;
 public class AsignacionInspectorRequestDTO {
 
     @NotNull(message = "El campo inspectorId es obligatorio")
+    @Schema(description = "Inspector ACTIVO de otra provincia al que la Sede asigna la solicitud")
     private UUID inspectorId;
 
     /** Constructor vacío exigido por Spring/Jackson. */

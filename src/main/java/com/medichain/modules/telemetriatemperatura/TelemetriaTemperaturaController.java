@@ -1,6 +1,8 @@
 package com.medichain.modules.telemetriatemperatura;
 
+import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -39,7 +41,8 @@ public class TelemetriaTemperaturaController {
 
     /** Lista las lecturas de temperatura de forma paginada. */
     @GetMapping
-    @Operation(summary = "Listar lecturas de temperatura", description = "Devuelve una página de lecturas de temperatura. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.")
+    @Operation(operationId = "listarLecturasTemperatura", summary = "Listar lecturas de temperatura", description = "Devuelve una página de lecturas de temperatura. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR')")
     public ResponseEntity<Page<TelemetriaTemperaturaResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -49,7 +52,8 @@ public class TelemetriaTemperaturaController {
 
     /** Busca una lectura de temperatura por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener una lectura", description = "Busca una lectura de temperatura por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.")
+    @Operation(operationId = "obtenerLecturaTemperatura", summary = "Obtener una lectura", description = "Busca una lectura de temperatura por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR')")
     public ResponseEntity<TelemetriaTemperaturaResponseDTO> getById(@PathVariable UUID id) {
         TelemetriaTemperaturaResponseDTO dto = mapper.toResponseDTO(service.getById(id));
@@ -58,7 +62,9 @@ public class TelemetriaTemperaturaController {
 
     /** Registra una nueva lectura de temperatura. */
     @PostMapping
-    @Operation(summary = "Registrar una lectura", description = "Crea una lectura de temperatura de un despacho. Roles: LABORATORIO, DISTRIBUIDOR.")
+    @Operation(operationId = "registrarLecturaTemperatura", summary = "Registrar una lectura", description = "Crea una lectura de temperatura de un despacho. Roles: LABORATORIO, DISTRIBUIDOR. Reglas: R9.")
+    @ApiResponse(responseCode = "201", description = "Creado")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasAnyRole('LABORATORIO', 'DISTRIBUIDOR')")
     public ResponseEntity<TelemetriaTemperaturaResponseDTO> create(@Valid @RequestBody TelemetriaTemperaturaRequestDTO dto) {
         TelemetriaTemperatura created = service.create(dto);

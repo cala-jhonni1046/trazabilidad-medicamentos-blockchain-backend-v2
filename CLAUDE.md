@@ -34,6 +34,7 @@ Java 21 · Spring Boot 4.1.1 · PostgreSQL · Spring Data JPA · Spring Security
 - El esquema de los IT lo crean las mismas migraciones de Flyway que en producción (al levantar el contexto). Antes de cada IT, `LimpiadorBase` vacía la base (TRUNCATE de todas las tablas salvo `cadena_estado` y `flyway_schema_history`, cadena en GENESIS, secuencias en 1) y se recrea la Sede. NUNCA `@Transactional` en un IT: el rollback ocultaría REQUIRES_NEW, la concurrencia y el bloqueo de la cadena.
 - Datos con `EscenarioIntegracion` (services reales como cada usuario, igual que DatosDemo; contraseña `EscenarioIntegracion.CLAVE`). Carreras con `EnParalelo`; las de índices únicos, deterministas (la primera transacción queda abierta hasta que la segunda se bloquea en PostgreSQL).
 - Al tocar persistencia, transacciones, concurrencia o seguridad, agregar su IT además del unitario.
+- `ContratoOpenApiIT` cuida el contrato: reglas (operationId, roles, tags en orden, éxito real, errores con `ErrorResponseDTO`, enums con nombre, required), `docs/openapi.json` al día y las respuestas reales de un recorrido completo validadas contra su esquema (`ValidadorContrato`).
 - `MigracionesIT` cubre las migraciones: nombres y versiones, historial, aplicar limpio en una base nueva, que una base con tablas y sin historial no se adopte, validación de Hibernate y la DERIVA entre entidades y migraciones (compara el esquema de Flyway con el que deduce Hibernate de las entidades: columnas con tipo, largo y NOT NULL, PK, UNIQUE, FK y valores de cada CHECK, ignorando nombres). Si falla, falta una migración o una anotación.
 
 ## Migraciones (Flyway)
@@ -80,8 +81,21 @@ Java 21 · Spring Boot 4.1.1 · PostgreSQL · Spring Data JPA · Spring Security
 
 - Los estados cambian solo por endpoints de acción: `POST /api/<recurso>/{id}/<accion>` (aprobar, aceptar, liberar, salida, levantar, anular…). Nunca con PUT genérico.
 - No hay DELETE de negocio. `EventoTrazabilidad` y `RegistroBlockchain` solo tienen GET.
-- Listados paginados con `Page<T>` (máximo 100 por página).
+- Listados paginados con `Page<T>` (máximo 100 por página). JSON estable (`spring.data.web.pageable.serialization-mode=via-dto`): `{content, page{size, number, totalElements, totalPages}}`.
 - Recurso de otra empresa → 404, no 403.
+
+## Contrato OpenAPI (el frontend genera su cliente de acá)
+
+- Ruta oficial `/api-docs` (y Swagger UI en `/swagger-ui.html`), publicadas SOLO con `SWAGGER_HABILITADO=true` (desarrollo y demo; `.env.example` la trae en true). Sin la variable (producción) responden 404. `/v3/api-docs` no existe.
+- Copia versionada en `docs/openapi.json`: `ContratoOpenApiIT` falla si difiere del contrato generado. Todo cambio de la API va con el archivo regenerado en el mismo commit (`./mvnw verify -Dit.test=ContratoOpenApiIT -Dmedichain.contrato.actualizar=true`) y se avisa al frontend.
+- Cada operación: `@Operation(operationId = "verboRecurso", summary, description)` con operationId explícito, único, en español camelCase (`listarBultos`, `armarBulto`, `recibirBulto`); la descripción termina en `Roles: …` (o `Público: no necesita token.`) y `Reglas: Rn, …` cuando aplica alguna.
+- Éxito: `@ApiResponse(responseCode = "201")` en las altas y `"202"` en `/anclar` (igual al `ResponseEntity.status` real); el resto, 200.
+- Errores: `@RespuestasError({…})` en cada operación (`config/RespuestasError`; `OpenApiConfig` los convierte en respuestas con `ErrorResponseDTO`). Criterios: 400 si recibe datos (body, path, query o paginación); 401 si no es pública (y el login); 403 si restringe por rol; 404 si tiene `{id}` o referencia otro recurso; 409 en las escrituras; 503 solo si consulta la blockchain en vivo.
+- Operaciones públicas (login, registro de empresa y de paciente, verificación pública): `@SecurityRequirements` vacío (sin `bearerAuth`).
+- Enums: `@Schema(enumAsRef = true, description = …)` en cada enum (esquema con nombre, nunca en línea).
+- ResponseDTO: cada campo con `@Schema(requiredMode = REQUIRED)` si siempre viene no null (columna `nullable = false`, listas, calculados) o `@Schema(nullable = true)` si puede venir null; ejemplos (`example`) en los DTO del flujo principal. `ContratoOpenApiIT` recorre el flujo real y valida cada respuesta contra su esquema.
+- Tags en el orden del flujo (declarados en `OpenApiConfig`): Registro público → Autenticación → Empresas → Inspectores ANMAT → Usuarios → Circuitos → Medicamentos → Lotes → Unidades trazables → Bultos → Viajes → Telemetría de temperatura → Telemetría GPS → Recepciones → Dispensaciones → Cuarentenas → Reportes ciudadanos → Verificación pública → Eventos de trazabilidad → Registros blockchain. Un controller nuevo usa uno de esos tags (o se agrega a la lista).
+- `ErrorResponseDTO` (`status`, `message`, `regla`, `errors[{field, message}]`) es el cuerpo de TODO error.
 
 ## Roles
 
@@ -210,7 +224,7 @@ ALTA_INSPECTOR, BAJA_INSPECTOR, REACTIVACION_INSPECTOR, SOLICITUD_HABILITACION, 
 - Intentos que deben quedar aunque la operación falle (BULTO_INEXISTENTE, BULTO_DUPLICADO, INTENTO_DUPLICADO, SERIE_ROBADA): `RegistradorEventosAparte` (REQUIRES_NEW), llamado antes de cualquier evento propio de la transacción.
 - Secuencias `circuito_codigo_seq`, `bulto_codigo_seq`, `viaje_codigo_seq`, `reporte_codigo_seq`, índices únicos parciales `ux_circuito_par_vigente` y `ux_anclaje_en_curso`, y la fila inicial de `cadena_estado`: en `V1__esquema_inicial` (ver "Migraciones (Flyway)").
 - Carreras contra índices únicos: el Service valida antes, pero dos altas simultáneas pueden pasar las dos; la base deja entrar a una. Se guarda con `saveAndFlush` / `saveAllAndFlush` y la `DataIntegrityViolationException` se traduce por el nombre de la restricción (`utils/RestriccionUnica`): `ux_circuito_par_vigente` → 409 R5; `ux_lote_laboratorio_codigo` → 409 LOTE_DUPLICADO; `ux_unidad_gtin_serie` → 409 R3 + INTENTO_SERIE_INVALIDA (`RegistroIntentos.registrarChoqueDeSeries`, REQUIRES_NEW, antes de cualquier evento propio). Otra restricción se propaga (409 genérico). Las ediciones concurrentes de una misma fila las frena `@Version` (409).
-- Contraseñas con BCrypt. JWT de 8 h con `sub`, `rol`, `empresaId`, `provincia`. En cada request con token, `JwtAuthenticationFilter` confirma en la base que la cuenta siga activa (`UsuarioRepository.existsByIdAndActivoTrue`): el token todavía vigente de una cuenta desactivada (inspector dado de baja, empleado desactivado) → 401.
+- Contraseñas con BCrypt. JWT de 8 h con `sub`, `rol`, `empresaId`, `provincia`. El login (`LoginResponseDTO`) devuelve además `rol`, `empresaId`, `esAdminEmpresa`, `esDirectorTecnico` y `provincia` (solo del inspector, como en el JWT) y `expiraEn` como `Instant` UTC con `Z`: el frontend no decodifica el token. Las marcas son informativas; el backend las vuelve a verificar contra la base en cada acción. En cada request con token, `JwtAuthenticationFilter` confirma en la base que la cuenta siga activa (`UsuarioRepository.existsByIdAndActivoTrue`): el token todavía vigente de una cuenta desactivada (inspector dado de baja, empleado desactivado) → 401.
 - Los Services filtran por empresa (empleados) y por provincia (inspectores).
 - Errores sin detalles internos.
 - Fechas: las de auditoría de `BaseEntity` (`fechaCreacion`, `fechaActualizacion`) son `Instant` en UTC truncado a microsegundos (`timestamptz` en la base, V2) y la API las devuelve en UTC con `Z` (ej. `2026-10-08T14:49:09.734512Z`). `EventoTrazabilidad.fechaHora` también es `Instant`/`timestamptz`. PENDIENTE (con su propio diseño): las otras 25 fechas del negocio siguen como `LocalDateTime`/`timestamp` sin zona, escritas con `LocalDateTime.now()` (zona de la JVM, hoy UTC); dos entran a eventos nuevos (`fechaEstimadaEntrega` en VIAJE_CREADO y `fechaHoraLectura` en RUPTURA_FRIO), y `fechaEstimadaEntrega` la escribe el usuario sin zona.

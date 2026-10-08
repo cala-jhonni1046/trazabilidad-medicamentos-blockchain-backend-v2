@@ -1,11 +1,14 @@
 package com.medichain.modules.trazabilidad;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Enumeración TipoEvento en MediChain.
  * Cataloga todos los hechos de negocio que quedan asentados en la
  * cadena de eventos de trazabilidad (EventoTrazabilidad), a lo largo de
  * los 17 módulos del dominio.
  */
+@Schema(enumAsRef = true, description = "Cataloga todos los hechos de negocio que quedan asentados en la cadena de eventos de trazabilidad (EventoTrazabilidad), a lo largo de los 17 módulos del dominio.")
 public enum TipoEvento {
     ALTA_INSPECTOR,
     BAJA_INSPECTOR,

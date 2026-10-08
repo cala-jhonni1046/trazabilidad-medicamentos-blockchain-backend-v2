@@ -1,6 +1,8 @@
 package com.medichain.modules.telemetriagps;
 
+import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -39,7 +41,8 @@ public class TelemetriaGpsController {
 
     /** Lista las lecturas GPS de forma paginada. */
     @GetMapping
-    @Operation(summary = "Listar lecturas GPS", description = "Devuelve una página de lecturas GPS. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.")
+    @Operation(operationId = "listarLecturasGps", summary = "Listar lecturas GPS", description = "Devuelve una página de lecturas GPS. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR')")
     public ResponseEntity<Page<TelemetriaGpsResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -49,7 +52,8 @@ public class TelemetriaGpsController {
 
     /** Busca una lectura GPS por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener una lectura", description = "Busca una lectura GPS por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.")
+    @Operation(operationId = "obtenerLecturaGps", summary = "Obtener una lectura", description = "Busca una lectura GPS por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR')")
     public ResponseEntity<TelemetriaGpsResponseDTO> getById(@PathVariable UUID id) {
         TelemetriaGpsResponseDTO dto = mapper.toResponseDTO(service.getById(id));
@@ -58,7 +62,9 @@ public class TelemetriaGpsController {
 
     /** Registra una nueva lectura GPS. */
     @PostMapping
-    @Operation(summary = "Registrar una lectura", description = "Crea una lectura GPS de un despacho. Roles: LABORATORIO, DISTRIBUIDOR.")
+    @Operation(operationId = "registrarLecturaGps", summary = "Registrar una lectura", description = "Crea una lectura GPS de un despacho. Roles: LABORATORIO, DISTRIBUIDOR.")
+    @ApiResponse(responseCode = "201", description = "Creado")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasAnyRole('LABORATORIO', 'DISTRIBUIDOR')")
     public ResponseEntity<TelemetriaGpsResponseDTO> create(@Valid @RequestBody TelemetriaGpsRequestDTO dto) {
         TelemetriaGps created = service.create(dto);

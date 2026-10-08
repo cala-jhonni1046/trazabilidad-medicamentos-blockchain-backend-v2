@@ -1,5 +1,7 @@
 package com.medichain.modules.unidadtrazable;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * DTO de salida AnclajeDTO en MediChain (R15).
  * Anclaje en blockchain que cubre el último hito del recorrido público de
@@ -9,10 +11,15 @@ package com.medichain.modules.unidadtrazable;
  */
 public class AnclajeDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String estado;
+    @Schema(nullable = true)
     private String red;
+    @Schema(nullable = true)
     private String transactionHash;
+    @Schema(nullable = true)
     private Long bloque;
+    @Schema(nullable = true)
     private String enlace;
 
     /** Constructor vacío exigido por Jackson. */

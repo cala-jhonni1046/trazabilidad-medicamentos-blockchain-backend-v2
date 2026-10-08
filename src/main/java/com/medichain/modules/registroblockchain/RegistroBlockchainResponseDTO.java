@@ -1,5 +1,6 @@
 package com.medichain.modules.registroblockchain;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -12,27 +13,49 @@ import java.util.UUID;
  */
 public class RegistroBlockchainResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long desdeNumero;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long hastaNumero;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String hashAnclado;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String red;
+    @Schema(nullable = true)
     private String direccionContrato;
+    @Schema(nullable = true)
     private String transactionHash;
+    @Schema(nullable = true)
     private Long nonce;
+    @Schema(nullable = true)
     private Long bloque;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer confirmaciones;
+    @Schema(nullable = true)
     private Long gasUsado;
+    @Schema(nullable = true)
     private String costoEth;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoAnclaje estado;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer intentos;
+    @Schema(nullable = true)
     private String ultimoError;
+    @Schema(nullable = true)
     private LocalDateTime proximoIntento;
+    @Schema(nullable = true)
     private LocalDateTime fechaEnvio;
+    @Schema(nullable = true)
     private LocalDateTime fechaConfirmacion;
+    @Schema(nullable = true)
     private String enlaceEtherscan;
 
     /** Constructor vacío exigido por Jackson. */

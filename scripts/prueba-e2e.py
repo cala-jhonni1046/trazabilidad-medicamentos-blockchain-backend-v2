@@ -124,6 +124,12 @@ def contenido(respuesta):
     return respuesta.cuerpo.get("content", []) if isinstance(respuesta.cuerpo, dict) else []
 
 
+def total(respuesta):
+    """Total de elementos de una página {content, page{...}} (formato estable desde B11a)."""
+    pagina = respuesta.campo("page") or {}
+    return pagina.get("totalElements")
+
+
 def buscar(lista, clave, valor):
     """Primer elemento de la lista con lista[clave] == valor, o None."""
     for elemento in lista:
@@ -170,7 +176,7 @@ def seccion_5b_permisos(ctx, demo, admin):
 
     r = pedir("GET", ctx.url("/api/lotes"), token=farmacia)
     ctx.verificar("5b.1", "farmacia lista lotes → vacío (ninguno salió hacia ella)", 200, r,
-                  r.campo("totalElements") == 0)
+                  total(r) == 0)
     r = pedir("GET", ctx.url("/api/lotes/" + lote["id"]), token=farmacia)
     ctx.verificar("5b.2", "farmacia pide un lote ajeno por id → 404", 404, r)
     r = pedir("GET", ctx.url("/api/dispensaciones"), token=paciente)
@@ -260,7 +266,7 @@ def seccion_7c_lotes(ctx, demo, admin):
     r = pedir("GET", ctx.url("/api/lotes/%s/unidades?size=100" % lote_id), token=lab)
     cajas = contenido(r)
     ctx.verificar("7c.2", "sus 50 cajas, la primera L20260003S000001", 200, r,
-                  r.campo("totalElements") == 50 and cajas and cajas[0]["serie"] == "L20260003S000001")
+                  total(r) == 50 and cajas and cajas[0]["serie"] == "L20260003S000001")
 
     r = pedir("POST", ctx.url("/api/lotes"), {"codigo": "L2026-0004", "fechaFabricacion": "2026-09-01",
                                                "fechaVencimiento": "2028-09-01", "medicamentoId": cuyafen,
@@ -741,6 +747,42 @@ def seccion_9_cuentas(ctx, demo, admin):
     ctx.verificar("9.7", "reactivado, con un login nuevo vuelve a operar → 200", 200, r)
 
 
+def seccion_b11a_contrato(ctx, demo, admin):
+    """B11a: contrato para el frontend: Swagger apagado sin SWAGGER_HABILITADO, login completo, páginas y errores."""
+    r = pedir("GET", ctx.url("/api-docs"))
+    ctx.verificar("b11a.1", "sin SWAGGER_HABILITADO el contrato /api-docs no se publica → 404", 404, r)
+    r = pedir("GET", ctx.url("/swagger-ui.html"))
+    ctx.verificar("b11a.2", "sin SWAGGER_HABILITADO Swagger UI no se publica → 404", 404, r)
+
+    r = pedir("POST", ctx.url("/api/auth/login"), {"email": EMAIL_LABORATORIO, "password": demo})
+    ctx.verificar("b11a.3", "login del admin y DT del laboratorio: marcas en true, sin provincia, expiraEn en UTC con Z",
+                  200, r, r.campo("esAdminEmpresa") is True and r.campo("esDirectorTecnico") is True
+                  and r.campo("provincia") is None and str(r.campo("expiraEn", "")).endswith("Z")
+                  and r.campo("rol") == "LABORATORIO" and r.campo("empresaId") is not None)
+    r = pedir("POST", ctx.url("/api/auth/login"), {"email": EMAIL_INSPECTOR, "password": demo})
+    ctx.verificar("b11a.4", "login del inspector: su provincia (MENDOZA) y sin marcas de empresa", 200, r,
+                  r.campo("provincia") == "MENDOZA" and r.campo("esAdminEmpresa") is False
+                  and r.campo("esDirectorTecnico") is False and r.campo("empresaId") is None)
+
+    lab = ctx.token(EMAIL_LABORATORIO, demo)
+    r = pedir("GET", ctx.url("/api/lotes?size=5"), token=lab)
+    pagina = r.campo("page") or {}
+    ctx.verificar("b11a.5", "página estable {content, page{size, number, totalElements, totalPages}}", 200, r,
+                  isinstance(r.campo("content"), list) and pagina.get("size") == 5 and pagina.get("number") == 0
+                  and (pagina.get("totalElements") or 0) > 0 and "totalPages" in pagina
+                  and r.campo("pageable") is None and r.campo("totalElements") is None)
+
+    r = pedir("POST", ctx.url("/api/lotes"), {}, token=lab)
+    errores = r.campo("errors") or []
+    ctx.verificar("b11a.6", "400 de validación: ErrorResponseDTO con errors[] {field, message} y sin regla", 400, r,
+                  r.campo("status") == 400 and r.campo("regla") is None and len(errores) > 0
+                  and all(e.get("field") and e.get("message") for e in errores))
+    r = pedir("POST", ctx.url("/api/circuitos"), {"cuitDistribuidor": CUIT_DISTRIBUIDORA,
+                                                  "cuitFarmacia": CUIT_FARMACIA_DOS}, token=lab)
+    ctx.verificar("b11a.7", "409: ErrorResponseDTO con status, message y el código en regla", 409, r,
+                  r.campo("status") == 409 and r.campo("regla") == "R5" and bool(r.campo("message")))
+
+
 def seccion_final_cadena(ctx, demo, admin):
     """Final: la cadena sigue íntegra después de todo el recorrido."""
     sede = ctx.token(admin[0], admin[1])
@@ -761,6 +803,7 @@ SECCIONES = [
     ("7f · Dictamen de cuarentenas y reportes ciudadanos", seccion_7f_dictamen_reportes),
     ("8  · Anclaje (deshabilitado)", seccion_8_anclaje_deshabilitado),
     ("9  · Cuentas desactivadas con token vigente", seccion_9_cuentas),
+    ("B11a · Contrato para el frontend", seccion_b11a_contrato),
     ("Final · Cadena íntegra", seccion_final_cadena),
 ]
 

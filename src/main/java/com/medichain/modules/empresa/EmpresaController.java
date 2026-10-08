@@ -1,5 +1,6 @@
 package com.medichain.modules.empresa;
 
+import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -44,7 +45,8 @@ public class EmpresaController {
 
     /** Lista las empresas de forma paginada. */
     @GetMapping
-    @Operation(summary = "Listar empresas", description = "Devuelve una página de empresas. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "listarEmpresas", summary = "Listar empresas", description = "Devuelve una página de empresas. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<EmpresaResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -54,7 +56,8 @@ public class EmpresaController {
 
     /** Bandeja del inspector: solicitudes PENDIENTE de su provincia y las que tiene tomadas o asignadas. */
     @GetMapping("/bandeja")
-    @Operation(summary = "Bandeja del inspector", description = "Solicitudes PENDIENTE de la provincia del inspector sin tomar, más las que tomó o le asignaron. Roles: INSPECTOR.")
+    @Operation(operationId = "bandejaEmpresas", summary = "Bandeja del inspector", description = "Solicitudes PENDIENTE de la provincia del inspector sin tomar, más las que tomó o le asignaron. Roles: INSPECTOR. Reglas: R2.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasRole('INSPECTOR')")
     public ResponseEntity<Page<EmpresaResponseDTO>> bandeja(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.ASC) Pageable pageable) {
@@ -64,7 +67,8 @@ public class EmpresaController {
 
     /** Busca una distribuidora o farmacia HABILITADA por CUIT, para armar un circuito. */
     @GetMapping("/por-cuit")
-    @Operation(summary = "Buscar empresa por CUIT", description = "Para armar un circuito: CUIT con o sin guiones y tipo DISTRIBUIDOR o FARMACIA. Devuelve una sola empresa HABILITADA (resumen) o 404. Roles: LABORATORIO.")
+    @Operation(operationId = "buscarEmpresaPorCuit", summary = "Buscar empresa por CUIT", description = "Para armar un circuito: CUIT con o sin guiones y tipo DISTRIBUIDOR o FARMACIA. Devuelve una sola empresa HABILITADA (resumen) o 404. Roles: LABORATORIO. Reglas: R5.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasRole('LABORATORIO')")
     public ResponseEntity<EmpresaResumenDTO> buscarPorCuit(@RequestParam("cuit") String cuit,
                                                            @RequestParam("tipo") TipoEmpresa tipo) {
@@ -73,7 +77,8 @@ public class EmpresaController {
 
     /** Busca una empresa por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener una empresa", description = "Busca una empresa por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "obtenerEmpresa", summary = "Obtener una empresa", description = "Busca una empresa por su id. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<EmpresaResponseDTO> getById(@PathVariable UUID id) {
         EmpresaResponseDTO dto = mapper.toResponseDTO(service.getById(id));
@@ -82,7 +87,8 @@ public class EmpresaController {
 
     /** Descarga el PDF de habilitación de la empresa. */
     @GetMapping(value = "/{id}/documento", produces = MediaType.APPLICATION_PDF_VALUE)
-    @Operation(summary = "Descargar el PDF de habilitación", description = "Roles: SEDE_CENTRAL; INSPECTOR de la provincia de la empresa o su revisor.")
+    @Operation(operationId = "descargarDocumentoEmpresa", summary = "Descargar el PDF de habilitación", description = "Roles: SEDE_CENTRAL; INSPECTOR de la provincia de la empresa o su revisor.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR')")
     public ResponseEntity<byte[]> documento(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).contentType(MediaType.APPLICATION_PDF).body(service.documento(id));
@@ -90,7 +96,8 @@ public class EmpresaController {
 
     /** El inspector toma una solicitud de su provincia. */
     @PostMapping("/{id}/tomar")
-    @Operation(summary = "Tomar una solicitud", description = "PENDIENTE sin revisor → el inspector queda como revisor. Evento SOLICITUD_TOMADA. Roles: INSPECTOR de la provincia de la empresa.")
+    @Operation(operationId = "tomarEmpresa", summary = "Tomar una solicitud", description = "PENDIENTE sin revisor → el inspector queda como revisor. Evento SOLICITUD_TOMADA. Roles: INSPECTOR de la provincia de la empresa. Reglas: R2.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('INSPECTOR')")
     public ResponseEntity<EmpresaResponseDTO> tomar(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.tomar(id)));
@@ -98,7 +105,8 @@ public class EmpresaController {
 
     /** La Sede asigna la solicitud a un inspector cuando la provincia no tiene inspectores (R2). */
     @PostMapping("/{id}/asignar")
-    @Operation(summary = "Asignar una solicitud", description = "Solo si la provincia de la empresa no tiene inspectores activos (R2). Evento SOLICITUD_ASIGNADA. Roles: SEDE_CENTRAL.")
+    @Operation(operationId = "asignarEmpresa", summary = "Asignar una solicitud", description = "Solo si la provincia de la empresa no tiene inspectores activos (R2). Evento SOLICITUD_ASIGNADA. Roles: SEDE_CENTRAL. Reglas: R2.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('SEDE_CENTRAL')")
     public ResponseEntity<EmpresaResponseDTO> asignar(@PathVariable UUID id,
                                                       @Valid @RequestBody AsignacionInspectorRequestDTO dto) {
@@ -107,7 +115,8 @@ public class EmpresaController {
 
     /** El inspector revisor habilita la empresa. */
     @PostMapping("/{id}/habilitar")
-    @Operation(summary = "Habilitar una empresa", description = "PENDIENTE → HABILITADA. Exige haber tomado o tener asignada la solicitud. Evento HABILITACION_APROBADA. Roles: INSPECTOR.")
+    @Operation(operationId = "habilitarEmpresa", summary = "Habilitar una empresa", description = "PENDIENTE → HABILITADA. Exige haber tomado o tener asignada la solicitud. Evento HABILITACION_APROBADA. Roles: INSPECTOR. Reglas: R2.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('INSPECTOR')")
     public ResponseEntity<EmpresaResponseDTO> habilitar(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.habilitar(id)));
@@ -115,7 +124,8 @@ public class EmpresaController {
 
     /** El inspector revisor rechaza la solicitud con motivo. */
     @PostMapping("/{id}/rechazar")
-    @Operation(summary = "Rechazar una solicitud", description = "PENDIENTE → RECHAZADA, con motivo obligatorio. Evento HABILITACION_RECHAZADA. Roles: INSPECTOR.")
+    @Operation(operationId = "rechazarEmpresa", summary = "Rechazar una solicitud", description = "PENDIENTE → RECHAZADA, con motivo obligatorio. Evento HABILITACION_RECHAZADA. Roles: INSPECTOR. Reglas: R2.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('INSPECTOR')")
     public ResponseEntity<EmpresaResponseDTO> rechazar(@PathVariable UUID id, @Valid @RequestBody MotivoRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.rechazar(id, dto.getMotivo())));
@@ -123,7 +133,8 @@ public class EmpresaController {
 
     /** La Sede suspende la empresa y sus circuitos aprobados. */
     @PostMapping("/{id}/suspender")
-    @Operation(summary = "Suspender una empresa", description = "HABILITADA → SUSPENDIDA, con motivo obligatorio; sus circuitos APROBADO pasan a SUSPENDIDO. Eventos EMPRESA_SUSPENDIDA y CIRCUITO_SUSPENDIDO. Roles: SEDE_CENTRAL.")
+    @Operation(operationId = "suspenderEmpresa", summary = "Suspender una empresa", description = "HABILITADA → SUSPENDIDA, con motivo obligatorio; sus circuitos APROBADO pasan a SUSPENDIDO. Eventos EMPRESA_SUSPENDIDA y CIRCUITO_SUSPENDIDO. Roles: SEDE_CENTRAL. Reglas: R2.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('SEDE_CENTRAL')")
     public ResponseEntity<EmpresaResponseDTO> suspender(@PathVariable UUID id, @Valid @RequestBody MotivoRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.suspender(id, dto.getMotivo())));
@@ -131,7 +142,8 @@ public class EmpresaController {
 
     /** La Sede rehabilita la empresa y los circuitos que se suspendieron por ella. */
     @PostMapping("/{id}/rehabilitar")
-    @Operation(summary = "Rehabilitar una empresa", description = "SUSPENDIDA → HABILITADA; vuelven a APROBADO los circuitos suspendidos por cascada cuyas tres empresas estén HABILITADA. Eventos EMPRESA_REHABILITADA y CIRCUITO_REHABILITADO. Roles: SEDE_CENTRAL.")
+    @Operation(operationId = "rehabilitarEmpresa", summary = "Rehabilitar una empresa", description = "SUSPENDIDA → HABILITADA; vuelven a APROBADO los circuitos suspendidos por cascada cuyas tres empresas estén HABILITADA. Eventos EMPRESA_REHABILITADA y CIRCUITO_REHABILITADO. Roles: SEDE_CENTRAL. Reglas: R2.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('SEDE_CENTRAL')")
     public ResponseEntity<EmpresaResponseDTO> rehabilitar(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.rehabilitar(id)));

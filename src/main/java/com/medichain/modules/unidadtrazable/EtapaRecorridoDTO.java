@@ -1,5 +1,6 @@
 package com.medichain.modules.unidadtrazable;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 
 /**
@@ -9,8 +10,11 @@ import java.time.LocalDate;
  */
 public class EtapaRecorridoDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String etapa;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String empresa;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDate fecha;
 
     /** Constructor vacío exigido por Jackson. */

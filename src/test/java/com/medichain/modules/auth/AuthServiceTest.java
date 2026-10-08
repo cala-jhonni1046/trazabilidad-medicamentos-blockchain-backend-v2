@@ -1,10 +1,13 @@
 package com.medichain.modules.auth;
 
 import com.medichain.exceptions.CredencialesInvalidasException;
+import com.medichain.modules.inspectoranmat.InspectorAnmat;
 import com.medichain.modules.inspectoranmat.InspectorAnmatRepository;
 import com.medichain.modules.usuario.RolUsuario;
 import com.medichain.modules.usuario.Usuario;
 import com.medichain.modules.usuario.UsuarioRepository;
+import com.medichain.testutil.DatosDePrueba;
+import com.medichain.utils.enums.Provincia;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,8 +23,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -82,8 +88,52 @@ class AuthServiceTest {
         assertEquals("token.de.prueba", respuesta.getToken());
         assertEquals("Bearer", respuesta.getTipo());
         assertEquals(usuario.getId(), respuesta.getUsuarioId());
+        assertEquals(vencimiento, respuesta.getExpiraEn(), "el vencimiento es el Instant del token (UTC)");
+        assertFalse(respuesta.isEsAdminEmpresa());
+        assertFalse(respuesta.isEsDirectorTecnico());
+        assertNull(respuesta.getProvincia(), "la provincia solo va para el inspector");
         assertNotNull(usuario.getUltimoLogin(), "debe registrar el último login");
         verify(usuarioRepository).save(usuario);
+    }
+
+    @Test
+    @DisplayName("Login de un admin que es director técnico: las dos marcas en true, sin provincia")
+    void loginDevuelveLasMarcasDelUsuario() {
+        Usuario usuario = new Usuario(EMAIL, HASH, "Elena", "Sosa", "12345678", RolUsuario.LABORATORIO);
+        usuario.setId(UUID.randomUUID());
+        usuario.setEsAdminEmpresa(true);
+        usuario.setEsDirectorTecnico(true);
+        prepararLogin(usuario, null);
+
+        LoginResponseDTO respuesta = authService.login(new LoginRequestDTO(EMAIL, "claveCorrecta"));
+
+        assertTrue(respuesta.isEsAdminEmpresa());
+        assertTrue(respuesta.isEsDirectorTecnico());
+        assertNull(respuesta.getProvincia());
+    }
+
+    @Test
+    @DisplayName("Login de un inspector: la provincia de su jurisdicción, la misma que va en el JWT")
+    void loginDeInspectorDevuelveSuProvincia() {
+        InspectorAnmat inspector = DatosDePrueba.inspector(Provincia.SALTA);
+        Usuario usuario = inspector.getUsuario();
+        prepararLogin(usuario, "SALTA");
+        when(inspectorAnmatRepository.findByUsuarioId(usuario.getId())).thenReturn(Optional.of(inspector));
+
+        LoginResponseDTO respuesta = authService.login(new LoginRequestDTO(EMAIL, "claveCorrecta"));
+
+        assertEquals(Provincia.SALTA, respuesta.getProvincia());
+        assertEquals("token.de.prueba", respuesta.getToken(), "el JWT se generó con la misma provincia");
+    }
+
+    /** Login correcto para el usuario dado; el token se genera con la provincia indicada. */
+    private void prepararLogin(Usuario usuario, String provinciaEnElToken) {
+        when(usuarioDetailsService.loadUserByUsername(EMAIL)).thenReturn(new User(EMAIL, HASH, List.of()));
+        when(passwordEncoder.matches("claveCorrecta", HASH)).thenReturn(true);
+        when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario));
+        Instant vencimiento = Instant.now().plusSeconds(3600);
+        when(jwtService.calcularVencimiento()).thenReturn(vencimiento);
+        when(jwtService.generarToken(usuario, provinciaEnElToken, vencimiento)).thenReturn("token.de.prueba");
     }
 
     @Test

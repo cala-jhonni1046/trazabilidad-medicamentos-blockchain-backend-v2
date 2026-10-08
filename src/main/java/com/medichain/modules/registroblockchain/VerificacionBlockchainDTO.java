@@ -1,5 +1,7 @@
 package com.medichain.modules.registroblockchain;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * DTO de salida VerificacionBlockchainDTO en MediChain (R15).
  * Parte "blockchain" de la verificación de la cadena: compara cada
@@ -11,14 +13,23 @@ package com.medichain.modules.registroblockchain;
  */
 public class VerificacionBlockchainDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoVerificacionBlockchain estado;
+    @Schema(nullable = true)
     private String red;
+    @Schema(nullable = true)
     private String contrato;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private long anclajesVerificados;
+    @Schema(nullable = true)
     private Long ultimoNumeroAnclado;
+    @Schema(nullable = true)
     private Long eventosSinAnclar;
+    @Schema(nullable = true)
     private Long alteradoDesde;
+    @Schema(nullable = true)
     private Long alteradoHasta;
+    @Schema(nullable = true)
     private String motivo;
 
     /** Constructor vacío exigido por Jackson. */

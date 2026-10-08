@@ -1,6 +1,8 @@
 package com.medichain.modules.recepcion;
 
+import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +43,8 @@ public class RecepcionController {
 
     /** Lista las recepciones de forma paginada. */
     @GetMapping
-    @Operation(summary = "Listar recepciones", description = "Devuelve una página de actas de recepción. Roles: SEDE_CENTRAL, INSPECTOR, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "listarRecepciones", summary = "Listar recepciones", description = "Devuelve una página de actas de recepción. Roles: SEDE_CENTRAL, INSPECTOR, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<RecepcionResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -51,7 +54,8 @@ public class RecepcionController {
 
     /** Busca una recepción por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener una recepción", description = "Busca un acta de recepción por su id. Roles: SEDE_CENTRAL, INSPECTOR, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "obtenerRecepcion", summary = "Obtener una recepción", description = "Busca un acta de recepción por su id. Roles: SEDE_CENTRAL, INSPECTOR, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<RecepcionResponseDTO> getById(@PathVariable UUID id) {
         RecepcionResponseDTO dto = mapper.toResponseDTO(service.getById(id));
@@ -60,12 +64,14 @@ public class RecepcionController {
 
     /** Recibe un bulto escaneando su código (R8). */
     @PostMapping
-    @Operation(summary = "Recibir un bulto", description = "Escaneás el código del bulto e informás precinto, cantidad contada y temperatura de llegada. "
+    @Operation(operationId = "recibirBulto", summary = "Recibir un bulto", description = "Escaneás el código del bulto e informás precinto, cantidad contada y temperatura de llegada. "
             + "Solo la empresa destino actual (tramo 1: distribuidora; tramo 2: farmacia) con el viaje EN_TRANSITO; otra → 404. "
             + "El servidor decide si es conforme (precinto intacto, cantidad igual y temperatura en el rango del medicamento). "
             + "Conforme: tramo 1 → EN_DEPOSITO, tramo 2 → RECIBIDO (cajas EN_STOCK). No conforme o bulto bloqueado (R10): RECHAZADO + cuarentena BULTO. "
             + "Código inexistente → 404 (BULTO_INEXISTENTE); ya recibido → 409 (BULTO_DUPLICADO). "
-            + "Cuando no quedan bultos en curso, el viaje se FINALIZA. Roles: DISTRIBUIDOR, FARMACIA.")
+            + "Cuando no quedan bultos en curso, el viaje se FINALIZA. Roles: DISTRIBUIDOR, FARMACIA. Reglas: R8, R10.")
+    @ApiResponse(responseCode = "201", description = "Creado")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasAnyRole('DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<RecepcionResponseDTO> recibir(@Valid @RequestBody RecepcionRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponseDTO(service.recibir(dto)));

@@ -1,6 +1,7 @@
 package com.medichain.modules.cuarentena;
 
 import com.medichain.utils.enums.Provincia;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
@@ -14,25 +15,45 @@ import java.util.UUID;
  */
 public class CuarentenaResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private AlcanceCuarentena alcance;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private TipoMedida tipo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private MotivoBloqueo motivo;
+    @Schema(nullable = true)
     private String descripcion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean automatica;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoCuarentena estado;
+    @Schema(nullable = true)
     private String dictamen;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Provincia provincia;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime fechaInicio;
+    @Schema(nullable = true)
     private LocalDateTime fechaFin;
+    @Schema(nullable = true)
     private UUID loteId;
+    @Schema(nullable = true)
     private UUID despachoId;
+    @Schema(nullable = true)
     private UUID inspectorId;
+    @Schema(nullable = true)
     private UUID inspectorRevisorId;
+    @Schema(nullable = true)
     private String reporteOrigen;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Set<UUID> bultoIds = new LinkedHashSet<>();
 
     /** Constructor vacío exigido por Jackson. */

@@ -1,6 +1,7 @@
 package com.medichain.modules.empresa;
 
 import com.medichain.utils.enums.Provincia;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -13,27 +14,49 @@ import java.util.UUID;
  */
 public class EmpresaResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private TipoEmpresa tipo;
+    @Schema(example = "30-71000001-4", requiredMode = Schema.RequiredMode.REQUIRED)
     private String cuit;
+    @Schema(example = "Laboratorio Andino S.A.", requiredMode = Schema.RequiredMode.REQUIRED)
     private String razonSocial;
+    @Schema(nullable = true)
     private String gln;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Provincia provincia;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String localidad;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String domicilio;
+    @Schema(nullable = true)
     private String numeroHabilitacion;
+    @Schema(nullable = true)
     private String directorTecnico;
+    @Schema(nullable = true)
     private String documentoNombre;
+    @Schema(nullable = true)
     private String documentoHash;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoHabilitacion estado;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime fechaSolicitud;
+    @Schema(nullable = true)
     private LocalDateTime fechaHabilitacion;
+    @Schema(nullable = true)
     private String motivoRechazo;
+    @Schema(nullable = true)
     private String motivoSuspension;
+    @Schema(nullable = true)
     private UUID inspectorRevisorId;
+    @Schema(nullable = true)
     private UUID inspectorHabilitadorId;
 
     /** Constructor vacío exigido por Jackson. */

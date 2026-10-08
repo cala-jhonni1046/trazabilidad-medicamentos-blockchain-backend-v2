@@ -1,6 +1,7 @@
 package com.medichain.modules.inspectoranmat;
 
 import com.medichain.utils.enums.Provincia;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -12,17 +13,29 @@ import java.util.UUID;
  */
 public class InspectorAnmatResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String legajo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String dni;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Provincia provincia;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoInspector estado;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime fechaAlta;
+    @Schema(nullable = true)
     private LocalDateTime fechaBaja;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID usuarioId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID usuarioAltaId;
 
     /** Constructor vacío exigido por Jackson. */

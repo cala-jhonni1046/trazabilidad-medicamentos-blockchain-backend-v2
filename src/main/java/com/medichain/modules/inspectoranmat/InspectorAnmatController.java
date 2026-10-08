@@ -1,6 +1,8 @@
 package com.medichain.modules.inspectoranmat;
 
+import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -39,7 +41,8 @@ public class InspectorAnmatController {
 
     /** Lista los inspectores de forma paginada. */
     @GetMapping
-    @Operation(summary = "Listar inspectores", description = "Devuelve una página de inspectores ANMAT. Roles: SEDE_CENTRAL, INSPECTOR.")
+    @Operation(operationId = "listarInspectores", summary = "Listar inspectores", description = "Devuelve una página de inspectores ANMAT. Roles: SEDE_CENTRAL, INSPECTOR.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR')")
     public ResponseEntity<Page<InspectorAnmatResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -49,7 +52,8 @@ public class InspectorAnmatController {
 
     /** Busca un inspector por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener un inspector", description = "Busca un inspector ANMAT por su id. Roles: SEDE_CENTRAL, INSPECTOR.")
+    @Operation(operationId = "obtenerInspector", summary = "Obtener un inspector", description = "Busca un inspector ANMAT por su id. Roles: SEDE_CENTRAL, INSPECTOR.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR')")
     public ResponseEntity<InspectorAnmatResponseDTO> getById(@PathVariable UUID id) {
         InspectorAnmatResponseDTO dto = mapper.toResponseDTO(service.getById(id));
@@ -58,7 +62,9 @@ public class InspectorAnmatController {
 
     /** Da de alta un inspector ANMAT. */
     @PostMapping
-    @Operation(summary = "Registrar un inspector", description = "Crea un inspector ANMAT en estado ACTIVO. Roles: SEDE_CENTRAL.")
+    @Operation(operationId = "crearInspector", summary = "Registrar un inspector", description = "Crea un inspector ANMAT en estado ACTIVO. Roles: SEDE_CENTRAL. Reglas: R1.")
+    @ApiResponse(responseCode = "201", description = "Creado")
+    @RespuestasError({400, 401, 403, 409})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL')")
     public ResponseEntity<InspectorAnmatResponseDTO> create(@Valid @RequestBody InspectorAnmatRequestDTO dto) {
         InspectorAnmat entity = mapper.toEntity(dto);
@@ -68,7 +74,8 @@ public class InspectorAnmatController {
 
     /** Da de baja a un inspector (R1). */
     @PostMapping("/{id}/baja")
-    @Operation(summary = "Dar de baja un inspector", description = "ACTIVO → BAJA: su cuenta queda inactiva y sus solicitudes tomadas vuelven a la bandeja. Evento BAJA_INSPECTOR. Roles: SEDE_CENTRAL.")
+    @Operation(operationId = "darDeBajaInspector", summary = "Dar de baja un inspector", description = "ACTIVO → BAJA: su cuenta queda inactiva y sus solicitudes tomadas vuelven a la bandeja. Evento BAJA_INSPECTOR. Roles: SEDE_CENTRAL. Reglas: R1.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('SEDE_CENTRAL')")
     public ResponseEntity<InspectorAnmatResponseDTO> darDeBaja(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.darDeBaja(id)));
@@ -76,7 +83,8 @@ public class InspectorAnmatController {
 
     /** Reactiva a un inspector dado de baja (R1). */
     @PostMapping("/{id}/reactivar")
-    @Operation(summary = "Reactivar un inspector", description = "BAJA → ACTIVO y su cuenta vuelve a estar activa (no recupera solicitudes). Evento REACTIVACION_INSPECTOR. Roles: SEDE_CENTRAL.")
+    @Operation(operationId = "reactivarInspector", summary = "Reactivar un inspector", description = "BAJA → ACTIVO y su cuenta vuelve a estar activa (no recupera solicitudes). Evento REACTIVACION_INSPECTOR. Roles: SEDE_CENTRAL. Reglas: R1.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('SEDE_CENTRAL')")
     public ResponseEntity<InspectorAnmatResponseDTO> reactivar(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.reactivar(id)));

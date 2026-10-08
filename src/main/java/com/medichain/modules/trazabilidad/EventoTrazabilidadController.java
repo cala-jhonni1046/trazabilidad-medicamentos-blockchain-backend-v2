@@ -1,5 +1,6 @@
 package com.medichain.modules.trazabilidad;
 
+import com.medichain.config.RespuestasError;
 import com.medichain.modules.registroblockchain.VerificadorAnclajes;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,7 +47,8 @@ public class EventoTrazabilidadController {
 
     /** Recalcula la cadena completa y devuelve si está íntegra. */
     @GetMapping("/verificacion")
-    @Operation(summary = "Verificar la cadena", description = "1) Cadena local: recorre todos los eventos, recalcula cada hash y comprueba el encadenado y la numeración sin huecos (integra). 2) Blockchain: compara cada anclaje del contrato en Sepolia con el evento local de ese número (blockchain.estado VERIFICADA, ALTERADA, NO_CONSULTADA o NO_DISPONIBLE); detecta una alteración aunque se hayan recalculado todos los hashes. Roles: SEDE_CENTRAL, INSPECTOR.")
+    @Operation(operationId = "verificarCadena", summary = "Verificar la cadena", description = "1) Cadena local: recorre todos los eventos, recalcula cada hash y comprueba el encadenado y la numeración sin huecos (integra). 2) Blockchain: compara cada anclaje del contrato en Sepolia con el evento local de ese número (blockchain.estado VERIFICADA, ALTERADA, NO_CONSULTADA o NO_DISPONIBLE); detecta una alteración aunque se hayan recalculado todos los hashes. Roles: SEDE_CENTRAL, INSPECTOR. Reglas: R15.")
+    @RespuestasError({401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR')")
     public ResponseEntity<VerificacionCadenaResponseDTO> verificar() {
         VerificacionCadenaResponseDTO resultado = verificadorCadena.verificar();
@@ -57,7 +59,8 @@ public class EventoTrazabilidadController {
 
     /** Lista los eventos de trazabilidad de forma paginada. */
     @GetMapping
-    @Operation(summary = "Listar eventos", description = "Devuelve una página de eventos de trazabilidad, del más reciente al más antiguo. Roles: SEDE_CENTRAL, INSPECTOR.")
+    @Operation(operationId = "listarEventos", summary = "Listar eventos", description = "Devuelve una página de eventos de trazabilidad, del más reciente al más antiguo. Roles: SEDE_CENTRAL, INSPECTOR. Reglas: R15.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR')")
     public ResponseEntity<Page<EventoTrazabilidadResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "numero", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -67,7 +70,8 @@ public class EventoTrazabilidadController {
 
     /** Busca un evento de trazabilidad por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener un evento", description = "Busca un evento de trazabilidad por su id. Roles: SEDE_CENTRAL, INSPECTOR.")
+    @Operation(operationId = "obtenerEvento", summary = "Obtener un evento", description = "Busca un evento de trazabilidad por su id. Roles: SEDE_CENTRAL, INSPECTOR. Reglas: R15.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR')")
     public ResponseEntity<EventoTrazabilidadResponseDTO> getById(@PathVariable UUID id) {
         EventoTrazabilidadResponseDTO dto = mapper.toResponseDTO(service.getById(id));

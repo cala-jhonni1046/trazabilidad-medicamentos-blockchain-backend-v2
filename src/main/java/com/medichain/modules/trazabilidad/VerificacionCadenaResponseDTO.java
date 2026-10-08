@@ -1,6 +1,7 @@
 package com.medichain.modules.trazabilidad;
 
 import com.medichain.modules.registroblockchain.VerificacionBlockchainDTO;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * DTO de salida VerificacionCadenaResponseDTO en MediChain.
@@ -12,11 +13,17 @@ import com.medichain.modules.registroblockchain.VerificacionBlockchainDTO;
  */
 public class VerificacionCadenaResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private boolean integra;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private long eventosVerificados;
+    @Schema(nullable = true)
     private Long primerNumeroRoto;
+    @Schema(nullable = true)
     private String motivo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private VerificacionBlockchainDTO blockchain;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String resumen;
 
     /** Constructor vacío exigido por Jackson. */

@@ -1,5 +1,6 @@
 package com.medichain.modules.trazabilidad;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -11,19 +12,33 @@ import java.util.UUID;
  */
 public class EventoTrazabilidadResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long numero;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private TipoEvento tipo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaHora;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String entidadTipo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID entidadId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String datosJson;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String hashAnterior;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String hash;
+    @Schema(nullable = true)
     private UUID actorUsuarioId;
+    @Schema(nullable = true)
     private UUID actorEmpresaId;
 
     /** Constructor vacío exigido por Jackson. */

@@ -1,5 +1,6 @@
 package com.medichain.modules.auth;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
@@ -11,9 +12,11 @@ public class LoginRequestDTO {
 
     @NotBlank(message = "El email es obligatorio")
     @Email(message = "El email debe tener un formato válido")
+    @Schema(description = "Email de la cuenta", example = "admin@laboratorio-andino.demo")
     private String email;
 
     @NotBlank(message = "La contraseña es obligatoria")
+    @Schema(description = "Contraseña", example = "clave-de-ejemplo")
     private String password;
 
     /** Constructor vacío exigido por Jackson. */

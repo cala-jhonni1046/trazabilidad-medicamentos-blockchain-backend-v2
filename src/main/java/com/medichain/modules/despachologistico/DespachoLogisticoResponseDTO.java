@@ -1,5 +1,6 @@
 package com.medichain.modules.despachologistico;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
@@ -14,21 +15,37 @@ import java.util.UUID;
  */
 public class DespachoLogisticoResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(example = "VJ-0001", requiredMode = Schema.RequiredMode.REQUIRED)
     private String codigo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private TramoDespacho tramo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String patente;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String chofer;
+    @Schema(nullable = true)
     private LocalDateTime fechaSalida;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime fechaEstimadaEntrega;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoDespacho estado;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID origenId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID creadoPorId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Set<UUID> bultoIds = new LinkedHashSet<>();
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private List<String> bultoCodigos;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private List<UUID> paradaIds;
 
     /** Constructor vacío exigido por Jackson. */

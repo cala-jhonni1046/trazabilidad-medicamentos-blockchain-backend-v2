@@ -1,5 +1,6 @@
 package com.medichain.modules.telemetriatemperatura;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -18,11 +19,13 @@ public class TelemetriaTemperaturaRequestDTO {
 
     @NotBlank(message = "El campo sensorId es obligatorio")
     @Size(max = 100, message = "El campo sensorId no puede superar 100 caracteres")
+    @Schema(description = "Identificador del sensor", example = "SENSOR-CAMION-01")
     private String sensorId;
 
     @NotNull(message = "El campo temperatura es obligatorio")
     @DecimalMin(value = "-99.99", message = "El campo temperatura no puede ser menor a -99.99")
     @DecimalMax(value = "999.99", message = "El campo temperatura no puede ser mayor a 999.99")
+    @Schema(description = "Temperatura medida (°C)", example = "5.5")
     private BigDecimal temperatura;
 
     @NotNull(message = "El campo fechaHora es obligatorio")
@@ -30,6 +33,7 @@ public class TelemetriaTemperaturaRequestDTO {
 
     // Campo 'despachoId': UUID del despacho al que pertenece la lectura (obligatorio).
     @NotNull(message = "El campo despachoId es obligatorio")
+    @Schema(description = "Viaje EN_TRANSITO de tu empresa")
     private UUID despachoId;
 
     /** Constructor vacío exigido por Jackson. */

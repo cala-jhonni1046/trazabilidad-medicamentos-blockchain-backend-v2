@@ -1,8 +1,10 @@
 package com.medichain.modules.enlacecuit;
 
+import com.medichain.config.RespuestasError;
 import com.medichain.modules.empresa.AsignacionInspectorRequestDTO;
 import com.medichain.modules.empresa.MotivoRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -44,7 +46,8 @@ public class EnlaceCuitController {
 
     /** Lista los circuitos visibles para el usuario. */
     @GetMapping
-    @Operation(summary = "Listar circuitos", description = "SEDE e INSPECTOR ven todos; cada empresa, los circuitos donde participa. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "listarCircuitos", summary = "Listar circuitos", description = "SEDE e INSPECTOR ven todos; cada empresa, los circuitos donde participa. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<EnlaceCuitResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -53,7 +56,8 @@ public class EnlaceCuitController {
 
     /** Circuitos que esperan la aceptación de la empresa del usuario. */
     @GetMapping("/pendientes-aceptacion")
-    @Operation(summary = "Pendientes de aceptación", description = "PENDIENTE_EMPRESAS donde tu empresa todavía no aceptó. Roles: DISTRIBUIDOR, FARMACIA (admin de la empresa).")
+    @Operation(operationId = "listarCircuitosPendientesDeAceptacion", summary = "Pendientes de aceptación", description = "PENDIENTE_EMPRESAS donde tu empresa todavía no aceptó. Roles: DISTRIBUIDOR, FARMACIA (admin de la empresa). Reglas: R5.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<EnlaceCuitResponseDTO>> pendientesDeAceptacion(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.ASC) Pageable pageable) {
@@ -62,7 +66,8 @@ public class EnlaceCuitController {
 
     /** Bandeja del inspector. */
     @GetMapping("/bandeja")
-    @Operation(summary = "Bandeja del inspector", description = "Solo PENDIENTE_INSPECTOR: de farmacias de tu provincia sin tomar, más los que tomaste o te asignaron. Roles: INSPECTOR.")
+    @Operation(operationId = "bandejaCircuitos", summary = "Bandeja del inspector", description = "Solo PENDIENTE_INSPECTOR: de farmacias de tu provincia sin tomar, más los que tomaste o te asignaron. Roles: INSPECTOR. Reglas: R5.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasRole('INSPECTOR')")
     public ResponseEntity<Page<EnlaceCuitResponseDTO>> bandeja(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.ASC) Pageable pageable) {
@@ -71,7 +76,8 @@ public class EnlaceCuitController {
 
     /** Busca un circuito por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener un circuito", description = "404 si tu empresa no participa. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "obtenerCircuito", summary = "Obtener un circuito", description = "404 si tu empresa no participa. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<EnlaceCuitResponseDTO> getById(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.getById(id)));
@@ -79,7 +85,9 @@ public class EnlaceCuitController {
 
     /** El DT del laboratorio propone un circuito por CUIT. */
     @PostMapping
-    @Operation(summary = "Proponer un circuito", description = "CUIT de la distribuidora y de la farmacia (HABILITADA). Exige director técnico. Un solo circuito vigente por par laboratorio–farmacia (R5). Código CIR-0001 generado por el servidor. Evento CIRCUITO_PROPUESTO. Roles: LABORATORIO (DT).")
+    @Operation(operationId = "proponerCircuito", summary = "Proponer un circuito", description = "CUIT de la distribuidora y de la farmacia (HABILITADA). Exige director técnico. Un solo circuito vigente por par laboratorio–farmacia (R5). Código CIR-0001 generado por el servidor. Evento CIRCUITO_PROPUESTO. Roles: LABORATORIO (DT). Reglas: R5.")
+    @ApiResponse(responseCode = "201", description = "Creado")
+    @RespuestasError({400, 401, 403, 409})
     @PreAuthorize("hasRole('LABORATORIO')")
     public ResponseEntity<EnlaceCuitResponseDTO> proponer(@Valid @RequestBody EnlaceCuitRequestDTO dto) {
         EnlaceCuit creado = service.proponer(dto.getCuitDistribuidor(), dto.getCuitFarmacia());
@@ -88,7 +96,8 @@ public class EnlaceCuitController {
 
     /** La distribuidora o la farmacia acepta su parte. */
     @PostMapping("/{id}/aceptar")
-    @Operation(summary = "Aceptar un circuito", description = "Tu empresa acepta su parte; con las dos aceptaciones pasa a PENDIENTE_INSPECTOR. Evento CIRCUITO_ACEPTADO. Roles: DISTRIBUIDOR, FARMACIA (admin).")
+    @Operation(operationId = "aceptarCircuito", summary = "Aceptar un circuito", description = "Tu empresa acepta su parte; con las dos aceptaciones pasa a PENDIENTE_INSPECTOR. Evento CIRCUITO_ACEPTADO. Roles: DISTRIBUIDOR, FARMACIA (admin). Reglas: R5.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasAnyRole('DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<EnlaceCuitResponseDTO> aceptar(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.aceptar(id)));
@@ -96,7 +105,8 @@ public class EnlaceCuitController {
 
     /** La distribuidora o la farmacia rechaza el circuito. */
     @PostMapping("/{id}/rechazar-empresa")
-    @Operation(summary = "Rechazar un circuito (empresa)", description = "PENDIENTE_EMPRESAS → RECHAZADO (definitivo), con motivo. Evento CIRCUITO_RECHAZADO. Roles: DISTRIBUIDOR, FARMACIA (admin).")
+    @Operation(operationId = "rechazarCircuitoPorEmpresa", summary = "Rechazar un circuito (empresa)", description = "PENDIENTE_EMPRESAS → RECHAZADO (definitivo), con motivo. Evento CIRCUITO_RECHAZADO. Roles: DISTRIBUIDOR, FARMACIA (admin). Reglas: R5.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasAnyRole('DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<EnlaceCuitResponseDTO> rechazarPorEmpresa(@PathVariable UUID id,
                                                                     @Valid @RequestBody MotivoRequestDTO dto) {
@@ -105,7 +115,8 @@ public class EnlaceCuitController {
 
     /** Un inspector de la provincia de la farmacia toma el circuito. */
     @PostMapping("/{id}/tomar")
-    @Operation(summary = "Tomar un circuito", description = "PENDIENTE_INSPECTOR sin revisor → el inspector queda como revisor. Evento CIRCUITO_TOMADO. Roles: INSPECTOR de la provincia de la farmacia.")
+    @Operation(operationId = "tomarCircuito", summary = "Tomar un circuito", description = "PENDIENTE_INSPECTOR sin revisor → el inspector queda como revisor. Evento CIRCUITO_TOMADO. Roles: INSPECTOR de la provincia de la farmacia. Reglas: R5.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('INSPECTOR')")
     public ResponseEntity<EnlaceCuitResponseDTO> tomar(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.tomar(id)));
@@ -113,7 +124,8 @@ public class EnlaceCuitController {
 
     /** La Sede asigna el circuito cuando la provincia de la farmacia no tiene inspectores. */
     @PostMapping("/{id}/asignar")
-    @Operation(summary = "Asignar un circuito", description = "Solo si la provincia de la farmacia no tiene inspectores ACTIVO. Evento CIRCUITO_ASIGNADO. Roles: SEDE_CENTRAL.")
+    @Operation(operationId = "asignarCircuito", summary = "Asignar un circuito", description = "Solo si la provincia de la farmacia no tiene inspectores ACTIVO. Evento CIRCUITO_ASIGNADO. Roles: SEDE_CENTRAL. Reglas: R5.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('SEDE_CENTRAL')")
     public ResponseEntity<EnlaceCuitResponseDTO> asignar(@PathVariable UUID id,
                                                          @Valid @RequestBody AsignacionInspectorRequestDTO dto) {
@@ -122,7 +134,8 @@ public class EnlaceCuitController {
 
     /** El revisor aprueba el circuito. */
     @PostMapping("/{id}/aprobar")
-    @Operation(summary = "Aprobar un circuito", description = "PENDIENTE_INSPECTOR → APROBADO. Exige haberlo tomado (o tenerlo asignado) y las tres empresas HABILITADA. Evento CIRCUITO_APROBADO. Roles: INSPECTOR.")
+    @Operation(operationId = "aprobarCircuito", summary = "Aprobar un circuito", description = "PENDIENTE_INSPECTOR → APROBADO. Exige haberlo tomado (o tenerlo asignado) y las tres empresas HABILITADA. Evento CIRCUITO_APROBADO. Roles: INSPECTOR. Reglas: R5.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('INSPECTOR')")
     public ResponseEntity<EnlaceCuitResponseDTO> aprobar(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.aprobar(id)));
@@ -130,7 +143,8 @@ public class EnlaceCuitController {
 
     /** El revisor rechaza el circuito. */
     @PostMapping("/{id}/rechazar")
-    @Operation(summary = "Rechazar un circuito (inspector)", description = "PENDIENTE_INSPECTOR → RECHAZADO (definitivo), con motivo; el laboratorio puede volver a proponer. Evento CIRCUITO_RECHAZADO. Roles: INSPECTOR.")
+    @Operation(operationId = "rechazarCircuito", summary = "Rechazar un circuito (inspector)", description = "PENDIENTE_INSPECTOR → RECHAZADO (definitivo), con motivo; el laboratorio puede volver a proponer. Evento CIRCUITO_RECHAZADO. Roles: INSPECTOR. Reglas: R5.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('INSPECTOR')")
     public ResponseEntity<EnlaceCuitResponseDTO> rechazar(@PathVariable UUID id, @Valid @RequestBody MotivoRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.rechazarPorInspector(id, dto.getMotivo())));
@@ -138,7 +152,8 @@ public class EnlaceCuitController {
 
     /** Suspensión manual. */
     @PostMapping("/{id}/suspender")
-    @Operation(summary = "Suspender un circuito", description = "APROBADO → SUSPENDIDO, con motivo. Evento CIRCUITO_SUSPENDIDO. Roles: INSPECTOR de la provincia de la farmacia, SEDE_CENTRAL.")
+    @Operation(operationId = "suspenderCircuito", summary = "Suspender un circuito", description = "APROBADO → SUSPENDIDO, con motivo. Evento CIRCUITO_SUSPENDIDO. Roles: INSPECTOR de la provincia de la farmacia, SEDE_CENTRAL. Reglas: R5.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasAnyRole('INSPECTOR', 'SEDE_CENTRAL')")
     public ResponseEntity<EnlaceCuitResponseDTO> suspender(@PathVariable UUID id, @Valid @RequestBody MotivoRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.suspender(id, dto.getMotivo())));
@@ -146,7 +161,8 @@ public class EnlaceCuitController {
 
     /** Rehabilitación manual. */
     @PostMapping("/{id}/rehabilitar")
-    @Operation(summary = "Rehabilitar un circuito", description = "SUSPENDIDO a mano → APROBADO, con las tres empresas HABILITADA (los suspendidos por una empresa vuelven al rehabilitarla). Evento CIRCUITO_REHABILITADO. Roles: INSPECTOR de la provincia de la farmacia, SEDE_CENTRAL.")
+    @Operation(operationId = "rehabilitarCircuito", summary = "Rehabilitar un circuito", description = "SUSPENDIDO a mano → APROBADO, con las tres empresas HABILITADA (los suspendidos por una empresa vuelven al rehabilitarla). Evento CIRCUITO_REHABILITADO. Roles: INSPECTOR de la provincia de la farmacia, SEDE_CENTRAL. Reglas: R5.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasAnyRole('INSPECTOR', 'SEDE_CENTRAL')")
     public ResponseEntity<EnlaceCuitResponseDTO> rehabilitar(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.rehabilitar(id)));

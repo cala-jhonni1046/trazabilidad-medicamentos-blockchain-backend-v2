@@ -1,5 +1,6 @@
 package com.medichain.modules.medicamento;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -11,20 +12,35 @@ import java.util.UUID;
  */
 public class MedicamentoResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(example = "07799000001010", requiredMode = Schema.RequiredMode.REQUIRED)
     private String gtin;
+    @Schema(example = "Cuyafen", requiredMode = Schema.RequiredMode.REQUIRED)
     private String nombreComercial;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String principioActivo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String concentracion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String formaFarmaceutica;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String presentacion;
+    @Schema(nullable = true)
     private BigDecimal temperaturaMinima;
+    @Schema(nullable = true)
     private BigDecimal temperaturaMaxima;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean biologico;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean activo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID laboratorioId;
 
     /** Constructor vacío exigido por Jackson. */

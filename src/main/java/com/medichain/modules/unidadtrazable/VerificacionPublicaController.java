@@ -1,8 +1,10 @@
 package com.medichain.modules.unidadtrazable;
 
+import com.medichain.config.RespuestasError;
 import com.medichain.utils.validacion.Gtin;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -36,9 +38,11 @@ public class VerificacionPublicaController {
 
     /** Verifica una caja por GTIN + serie. */
     @GetMapping
-    @Operation(summary = "Verificar una caja", description = "Público, sin token. Devuelve producto, laboratorio, lote, vencimiento, el estado "
+    @Operation(operationId = "verificarCaja", summary = "Verificar una caja", description = "Público, sin token. Devuelve producto, laboratorio, lote, vencimiento, el estado "
             + "(APTA, YA_DISPENSADA, BLOQUEADA, ROBADA, EN_DISTRIBUCION o NO_EXISTE) con un mensaje y el recorrido resumido. "
-            + "Nunca datos del paciente ni de la dispensación. El anclaje en blockchain se completa en el paso 8.")
+            + "Nunca datos del paciente ni de la dispensación. El anclaje en blockchain se completa en el paso 8. Público: no necesita token. Reglas: R10, R13.")
+    @RespuestasError({400})
+    @SecurityRequirements
     public ResponseEntity<VerificacionPublicaResponseDTO> verificar(
             @Parameter(description = "GTIN (14 dígitos, con dígito verificador GS1)", example = "07799000001010")
             @RequestParam("gtin") @NotBlank @Gtin String gtin,

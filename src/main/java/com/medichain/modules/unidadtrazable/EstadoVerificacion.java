@@ -1,9 +1,12 @@
 package com.medichain.modules.unidadtrazable;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Enumeración EstadoVerificacion en MediChain.
  * Estado simple de una caja para el paciente en la verificación pública.
  */
+@Schema(enumAsRef = true, description = "Estado simple de una caja para el paciente en la verificación pública.")
 public enum EstadoVerificacion {
     APTA,
     YA_DISPENSADA,

@@ -1,7 +1,9 @@
 package com.medichain.modules.dispensacion;
 
+import com.medichain.config.RespuestasError;
 import com.medichain.modules.empresa.MotivoRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +44,8 @@ public class DispensacionController {
 
     /** Lista las dispensaciones de forma paginada. */
     @GetMapping
-    @Operation(summary = "Listar dispensaciones", description = "Devuelve una página de dispensaciones. Roles: SEDE_CENTRAL, INSPECTOR, FARMACIA.")
+    @Operation(operationId = "listarDispensaciones", summary = "Listar dispensaciones", description = "Devuelve una página de dispensaciones. Roles: SEDE_CENTRAL, INSPECTOR, FARMACIA. Reglas: R13.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'FARMACIA')")
     public ResponseEntity<Page<DispensacionResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -52,7 +55,8 @@ public class DispensacionController {
 
     /** Busca una dispensación por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener una dispensación", description = "Busca una dispensación por su id. Roles: SEDE_CENTRAL, INSPECTOR, FARMACIA.")
+    @Operation(operationId = "obtenerDispensacion", summary = "Obtener una dispensación", description = "Busca una dispensación por su id. Roles: SEDE_CENTRAL, INSPECTOR, FARMACIA. Reglas: R13.")
+    @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'FARMACIA')")
     public ResponseEntity<DispensacionResponseDTO> getById(@PathVariable UUID id) {
         DispensacionResponseDTO dto = mapper.toResponseDTO(service.getById(id));
@@ -61,9 +65,11 @@ public class DispensacionController {
 
     /** Dispensa una caja escaneada (GTIN + serie). */
     @PostMapping
-    @Operation(summary = "Dispensar una caja", description = "Escaneás GTIN + serie de una caja EN_STOCK en tu farmacia. Cobertura: particular, u obra social + afiliado. "
+    @Operation(operationId = "dispensarCaja", summary = "Dispensar una caja", description = "Escaneás GTIN + serie de una caja EN_STOCK en tu farmacia. Cobertura: particular, u obra social + afiliado. "
             + "DNI opcional: se guarda SOLO enmascarado (*****006). Ya dispensada → 409 R11 (INTENTO_DUPLICADO); robada → 409 R14 (SERIE_ROBADA); "
-            + "bloqueada → 409 R10; no está en tu stock → 404. El evento DISPENSACION no lleva ningún dato del paciente. Roles: FARMACIA.")
+            + "bloqueada → 409 R10; no está en tu stock → 404. El evento DISPENSACION no lleva ningún dato del paciente. Roles: FARMACIA. Reglas: R10, R11, R13, R14.")
+    @ApiResponse(responseCode = "201", description = "Creado")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('FARMACIA')")
     public ResponseEntity<DispensacionResponseDTO> dispensar(@Valid @RequestBody DispensacionRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponseDTO(service.dispensar(dto)));
@@ -71,8 +77,9 @@ public class DispensacionController {
 
     /** Anula una dispensación dentro de las 2 h. */
     @PostMapping("/{id}/anular")
-    @Operation(summary = "Anular una dispensación", description = "Solo la misma farmacia, dentro de las 2 horas (si no, 409 R11), con motivo obligatorio. "
-            + "La caja vuelve a EN_STOCK. Evento ANULACION_DISPENSA (al evento va solo el hash del motivo). Roles: FARMACIA.")
+    @Operation(operationId = "anularDispensacion", summary = "Anular una dispensación", description = "Solo la misma farmacia, dentro de las 2 horas (si no, 409 R11), con motivo obligatorio. "
+            + "La caja vuelve a EN_STOCK. Evento ANULACION_DISPENSA (al evento va solo el hash del motivo). Roles: FARMACIA. Reglas: R11.")
+    @RespuestasError({400, 401, 403, 404, 409})
     @PreAuthorize("hasRole('FARMACIA')")
     public ResponseEntity<DispensacionResponseDTO> anular(@PathVariable UUID id, @Valid @RequestBody MotivoRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.OK).body(mapper.toResponseDTO(service.anular(id, dto.getMotivo())));

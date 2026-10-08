@@ -1,5 +1,6 @@
 package com.medichain.modules.usuario;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -11,19 +12,33 @@ import java.util.UUID;
  */
 public class UsuarioResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String email;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String nombre;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String apellido;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String dni;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private RolUsuario rol;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean activo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean esAdminEmpresa;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean esDirectorTecnico;
+    @Schema(nullable = true)
     private LocalDateTime ultimoLogin;
+    @Schema(nullable = true)
     private UUID empresaId;
 
     /** Constructor vacío exigido por Jackson. */

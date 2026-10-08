@@ -1,6 +1,8 @@
 package com.medichain.modules.usuario;
 
+import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -40,7 +42,8 @@ public class UsuarioController {
 
     /** Lista los usuarios de forma paginada. */
     @GetMapping
-    @Operation(summary = "Listar usuarios", description = "Devuelve una página de usuarios. Roles: SEDE_CENTRAL, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "listarUsuarios", summary = "Listar usuarios", description = "Devuelve una página de usuarios. Roles: SEDE_CENTRAL, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<UsuarioResponseDTO>> getAll(
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -50,7 +53,8 @@ public class UsuarioController {
 
     /** Busca un usuario por id. */
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener un usuario", description = "Busca un usuario por su id. Roles: cualquier usuario autenticado.")
+    @Operation(operationId = "obtenerUsuario", summary = "Obtener un usuario", description = "Busca un usuario por su id. Roles: cualquier usuario autenticado.")
+    @RespuestasError({400, 401, 404})
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioResponseDTO> getById(@PathVariable UUID id) {
         UsuarioResponseDTO dto = mapper.toResponseDTO(service.getById(id));
@@ -59,7 +63,9 @@ public class UsuarioController {
 
     /** Da de alta un usuario. */
     @PostMapping
-    @Operation(summary = "Registrar un usuario", description = "Crea una cuenta de usuario activa. Roles: SEDE_CENTRAL, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "crearUsuario", summary = "Registrar un usuario", description = "Crea una cuenta de usuario activa. Roles: SEDE_CENTRAL, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R1, R2.")
+    @ApiResponse(responseCode = "201", description = "Creado")
+    @RespuestasError({400, 401, 403, 409})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<UsuarioResponseDTO> create(@Valid @RequestBody UsuarioRequestDTO dto) {
         Usuario entity = mapper.toEntity(dto);

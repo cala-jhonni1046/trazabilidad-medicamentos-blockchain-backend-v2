@@ -1,5 +1,6 @@
 package com.medichain.modules.dispensacion;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -12,22 +13,39 @@ import java.util.UUID;
  */
 public class DispensacionResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime fechaHora;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean particular;
+    @Schema(nullable = true)
     private String obraSocial;
+    @Schema(nullable = true)
     private String numeroAfiliado;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String numeroReceta;
+    @Schema(example = "*****006", nullable = true)
     private String dniEnmascarado;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean anulada;
+    @Schema(nullable = true)
     private LocalDateTime fechaAnulacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID unidadTrazableId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String gtin;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String serie;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID farmaciaId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID farmaceuticoId;
 
     /** Constructor vacío exigido por Jackson. */

@@ -1,5 +1,6 @@
 package com.medichain.modules.unidadtrazable;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -10,16 +11,27 @@ import java.util.UUID;
  */
 public class UnidadTrazableResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(example = "L20260415S000001", requiredMode = Schema.RequiredMode.REQUIRED)
     private String serie;
+    @Schema(example = "07799000001010", requiredMode = Schema.RequiredMode.REQUIRED)
     private String gtin;
+    @Schema(example = "(01)07799000001010(21)L20260415S000001", requiredMode = Schema.RequiredMode.REQUIRED)
     private String codigoGS1;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoUnidad estado;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID loteId;
+    @Schema(nullable = true)
     private UUID empresaActualId;
+    @Schema(nullable = true)
     private UUID bultoId;
 
     /** Constructor vacío exigido por Jackson. */

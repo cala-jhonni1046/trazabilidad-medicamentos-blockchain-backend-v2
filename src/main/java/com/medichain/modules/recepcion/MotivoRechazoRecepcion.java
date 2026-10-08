@@ -1,10 +1,13 @@
 package com.medichain.modules.recepcion;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Enumeración MotivoRechazoRecepcion en MediChain (R8, R10).
  * Por qué una recepción no fue conforme. Los calcula el servidor; son
  * códigos fijos (no texto libre), así pueden ir al evento BULTO_RECHAZADO.
  */
+@Schema(enumAsRef = true, description = "Por qué una recepción no fue conforme. Los calcula el servidor; son códigos fijos (no texto libre), así pueden ir al evento BULTO_RECHAZADO.")
 public enum MotivoRechazoRecepcion {
     PRECINTO_ROTO,
     CANTIDAD_DISTINTA,

@@ -1,5 +1,7 @@
 package com.medichain.modules.registroblockchain;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * DTO de salida EstadoAnclajeResponseDTO en MediChain (R15).
  * Tablero del anclaje para la Sede y los inspectores: red, contrato y
@@ -12,29 +14,53 @@ package com.medichain.modules.registroblockchain;
  */
 public class EstadoAnclajeResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private boolean habilitado;
+    @Schema(nullable = true)
     private String red;
+    @Schema(nullable = true)
     private Long chainId;
+    @Schema(nullable = true)
     private String contrato;
+    @Schema(nullable = true)
     private String enlaceContrato;
+    @Schema(nullable = true)
     private String billetera;
+    @Schema(nullable = true)
     private String enlaceBilletera;
+    @Schema(nullable = true)
     private String saldoEth;
+    @Schema(nullable = true)
     private String comisionActualGwei;
+    @Schema(nullable = true)
     private Long gasPorAnclaje;
+    @Schema(nullable = true)
     private Boolean primerAnclaje;
+    @Schema(nullable = true)
     private Long limiteGas;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long gasMinimo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long gasMaximo;
+    @Schema(nullable = true)
     private String costoPorAnclajeEth;
+    @Schema(nullable = true)
     private Long anclajesEstimados;
+    @Schema(nullable = true)
     private String saldoMinimoEth;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private boolean anclajeAutomaticoFrenado;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long ultimoNumeroLocal;
+    @Schema(nullable = true)
     private Long ultimoNumeroAnclado;
+    @Schema(nullable = true)
     private Long eventosSinAnclar;
+    @Schema(nullable = true)
     private RegistroBlockchainResponseDTO ultimoAnclaje;
+    @Schema(nullable = true)
     private RegistroBlockchainResponseDTO anclajeEnCurso;
+    @Schema(nullable = true)
     private String mensaje;
 
     /** Constructor vacío exigido por Jackson. */

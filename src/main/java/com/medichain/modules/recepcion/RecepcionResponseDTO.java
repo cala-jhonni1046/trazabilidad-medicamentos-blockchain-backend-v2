@@ -1,5 +1,6 @@
 package com.medichain.modules.recepcion;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -13,21 +14,37 @@ import java.util.UUID;
  */
 public class RecepcionResponseDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaCreacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Instant fechaActualizacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime fechaHora;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private BigDecimal temperatura;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean precintoIntacto;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer cantidadVerificada;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean conforme;
+    @Schema(nullable = true)
     private String motivoRechazo;
+    @Schema(nullable = true)
     private String observacion;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String codigoBulto;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID bultoId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID despachoId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID receptoraId;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID registradaPorId;
 
     /** Constructor vacío exigido por Jackson. */

@@ -1,5 +1,6 @@
 package com.medichain.modules.usuario;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -19,31 +20,39 @@ public class UsuarioRequestDTO {
     @NotBlank(message = "El campo email es obligatorio")
     @Email(message = "El campo email debe tener un formato válido")
     @Size(max = 150, message = "El campo email no puede superar 150 caracteres")
+    @Schema(description = "Email de la cuenta", example = "deposito@distribuidora.demo")
     private String email;
 
     // max = 72: es el límite real de BCrypt (ignora silenciosamente lo que exceda 72 bytes de entrada).
     @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 8, max = 72, message = "La contraseña debe tener entre 8 y 72 caracteres")
+    @Schema(description = "Contraseña inicial (8 a 72 caracteres)", example = "clave-de-ejemplo")
     private String password;
 
     @NotBlank(message = "El campo nombre es obligatorio")
     @Size(max = 150, message = "El campo nombre no puede superar 150 caracteres")
+    @Schema(description = "Nombre", example = "Lucía")
     private String nombre;
 
     @NotBlank(message = "El campo apellido es obligatorio")
     @Size(max = 150, message = "El campo apellido no puede superar 150 caracteres")
+    @Schema(description = "Apellido", example = "Funes")
     private String apellido;
 
     @NotBlank(message = "El campo dni es obligatorio")
     @Size(min = 8, max = 8, message = "El campo dni debe tener 8 caracteres")
     @Pattern(regexp = "\\d{8}", message = "El campo dni debe contener solo 8 dígitos numéricos")
+    @Schema(description = "DNI: 8 dígitos", example = "28777666")
     private String dni;
 
     @NotNull(message = "El campo rol es obligatorio")
+    @Schema(description = "El rol del tipo de tu empresa (la Sede solo crea SEDE_CENTRAL)", example = "DISTRIBUIDOR")
     private RolUsuario rol;
 
+    @Schema(description = "Administra la empresa (crea empleados, acepta circuitos)", example = "false")
     private Boolean esAdminEmpresa;
 
+    @Schema(description = "Director técnico (libera lotes comunes, propone circuitos)", example = "false")
     private Boolean esDirectorTecnico;
 
     /** Constructor vacío exigido por Jackson. */
