@@ -30,6 +30,7 @@
 | 08/10 | Paso 9 | Tests de integración con PostgreSQL real (Testcontainers); 3 problemas encontrados y corregidos | 441 + 37 de integración · e2e 99/99 |
 | 08/10 | Paso 10 | Esquema con migraciones Flyway (V1 a V3); Hibernate solo valida; fechas de auditoría en UTC | 441 + 44 de integración · e2e 99/99 |
 | 08/10 | Paso B11a | Contrato OpenAPI para el frontend (operationId, errores, enums, required, páginas estables, docs/openapi.json) y login completo | 443 + 47 de integración · e2e 106/106 |
+| 08/10 | Paso B11b | Filtros por estado, temperatura del viaje para la receptora, indicador de bloqueo R10 y todo 409 con código | 453 + 58 de integración · e2e 114/114 |
 
 "Tests" es la cantidad de tests automáticos (JUnit) al cerrar cada paso; desde el paso 9 se suman los de integración, que corren contra PostgreSQL real. "e2e" es la prueba de punta a punta por la API real (`scripts/prueba-e2e.py`): verificaciones correctas / total.
 
@@ -464,6 +465,31 @@
   | Respuestas de error documentadas | 0 | 363 |
   | Enums en línea / con nombre | 38 / 0 | 0 / 25 |
 
+## 08/10 · Paso B11b: filtros, temperatura del viaje, indicador de bloqueo y códigos de error
+
+- **Objetivo:** lo que el frontend necesita para sus tableros y listados, sin que decida reglas: filtrar por estado, graficar la temperatura de un viaje, mostrar si algo está bloqueado (R10) y recibir siempre un código en los 409.
+- **Decisión de regla del autor:** la temperatura de un viaje la ve también la empresa **receptora** de ese tramo (distribuidora en el tramo 1, farmacia en el tramo 2), además del origen, la Sede y los inspectores. El GPS sigue igual (solo el origen).
+- **Qué se hizo:**
+  - **Filtros `?estado=`** (uno por consulta) en bultos, empresas, circuitos, inspectores, lotes, cuarentenas y reportes. El filtro va **dentro** de la consulta de alcance de cada rol: solo achica lo que el rol ya ve; lo ajeno sigue sin verse y un estado inválido responde 400.
+  - **Temperatura de un viaje:** `GET /api/viajes/{id}/telemetria-temperatura`, ordenada por hora, para el gráfico. La nueva regla de visibilidad vale también para el listado y el detalle de lecturas (antes una farmacia no podía ni consultarlos).
+  - **Indicador R10** en lotes, bultos y cajas: `bloqueado`, `motivoBloqueo` (LOTE_VENCIDO, LOTE_EN_CUARENTENA, LOTE_EN_RECALL, LOTE_CON_MEDIDA_VIGENTE, BULTO_CON_MEDIDA_VIGENTE) y `mensajeBloqueo`. Lo sigue calculando un solo lugar (`EvaluadorBloqueo`), ahora también en bloque: una vez por página, no una vez por elemento.
+  - **Todo 409 con código:** CONFLICTO_VERSION (dos ediciones simultáneas), MEDICAMENTO_DUPLICADO, INSPECTOR_DUPLICADO (con chequeo previo del GTIN y del legajo y DNI), DATO_DUPLICADO y RESTRICCION_DE_DATOS; los duplicados que llegan a la base se traducen en un solo lugar por el nombre de la restricción.
+  - **Tests de integración nuevos:** `FiltrosListadosIT` (3), `BloqueoIT` (5) y `ErroresIT` (3); prueba e2e: sección B11b (8 verificaciones); el contrato (`docs/openapi.json`) se regeneró: 92 operaciones.
+- **Problemas encontrados y solución:**
+  1. **Datos personales en los logs.** Ante una violación de unicidad, el manejador de errores logueaba el detalle de PostgreSQL (`Key (dni)=(…)`), y **Hibernate logueaba además el insert completo con sus valores**: en una dispensación que fallara, la obra social y el número de afiliado (R13, Ley 25.326). **Solución:** el driver de PostgreSQL corre con `logServerErrorDetail=false` (ni el detalle ni los valores llegan a ningún mensaje) y el manejador loguea solo el nombre de la restricción. Comprobado en las dos direcciones: con la opción apagada, el test que busca el DNI en el log falla; con la opción, en la instancia real de la e2e el log no tuvo ni el DNI, ni `Detail: Key`, ni inserts con valores.
+  2. **Un enum `MotivoBloqueo` ya existía** (motivo de una medida sanitaria): los códigos del indicador se llaman `CausaBloqueo`; el campo de la API sigue siendo `motivoBloqueo`.
+  3. **La farmacia receptora no podía consultar temperaturas:** los endpoints de telemetría excluían su rol antes de llegar a la regla. Se sumó el rol y la regla quedó en el Service.
+  4. **Medir el costo de un listado:** la primera versión del test comparaba una página de 5 cajas sueltas con una de 50 que mezclaba cajas en bultos, y daba distinto por la composición, no por el tamaño. Se comparan páginas de igual composición (20 y 60 cajas, ambas con bultos y cajas sueltas): mismas consultas. Prueba del test: sin la carga en tandas (`default_batch_fetch_size`), 9 contra 15 consultas → falla.
+- **Resultado:**
+
+  | | Antes | Después |
+  |---|---|---|
+  | Tests unitarios | 443 | 453 |
+  | Tests de integración | 47 | 58 |
+  | Prueba e2e | 106/106 | 114/114 |
+  | Operaciones del contrato | 91 | 92 |
+  | 409 sin código | posibles (versión, duplicados no previstos) | ninguno |
+
 ---
 
 ## Estado al 08/10 (reconstruido del código)
@@ -476,9 +502,9 @@
 | Roles | 6 |
 | Reglas de negocio | 15 (R1 a R15) |
 | Tipos de evento | 47 |
-| Tests automáticos | 443 unitarios (en 52 clases) + 47 de integración contra PostgreSQL real (en 11 clases) |
-| Contrato OpenAPI | `docs/openapi.json` (91 operaciones), publicado solo con `SWAGGER_HABILITADO=true` |
-| Prueba e2e | 106 verificaciones. La variante con anclaje real (`--sepolia`) dio 94 el 05/10, antes de la sección 9 |
+| Tests automáticos | 453 unitarios (en 53 clases) + 58 de integración contra PostgreSQL real (en 14 clases) |
+| Contrato OpenAPI | `docs/openapi.json` (92 operaciones), publicado solo con `SWAGGER_HABILITADO=true` |
+| Prueba e2e | 114 verificaciones. La variante con anclaje real (`--sepolia`) dio 94 el 05/10, antes de la sección 9 |
 
 ## Metodología y uso de IA
 
@@ -501,7 +527,7 @@
 
 ## Pendiente
 
-- **Paso B11 (resto):** B11b (filtros por estado, telemetría por viaje, indicador de bloqueo R10 y códigos de error en todo 409), B11c (pendientes sin inspector para la Sede) y B11d (fechas del negocio a UTC).
+- **Paso B11 (resto):** B11c (pendientes sin inspector para la Sede) y B11d (fechas del negocio a UTC).
 - **Paso 11:** Actuator, Docker (imagen + docker-compose) y README.
 - **Pendientes ya anotados en `CLAUDE.md`, sin paso asignado:**
   - pasar a `Instant`/UTC las 25 fechas del negocio que siguen sin zona horaria, con su propio diseño (dos entran a eventos nuevos y una la escribe el usuario sin zona);
