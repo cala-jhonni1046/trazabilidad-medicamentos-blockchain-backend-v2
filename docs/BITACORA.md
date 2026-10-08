@@ -2,7 +2,7 @@
 
 **MediChain** es el backend de un sistema de trazabilidad de medicamentos para Argentina, pensado para la ANMAT con un piloto en Mendoza. Registra cada movimiento de un medicamento, del laboratorio al paciente, en una cadena de eventos encadenados por hash (SHA-256). Cada 5 minutos ancla el último hash en la blockchain pública **Ethereum Sepolia**. Así ni siquiera quien administra la base de datos puede alterar la historia sin que se note.
 
-- **Stack:** Java 21 · Spring Boot 4.1.1 · Spring Security (JWT, BCrypt) · Spring Data JPA · PostgreSQL · springdoc (Swagger) · web3j 6.0.0 · Solidity 0.8.37 (contrato `MediChainAnchor`) · Ethereum Sepolia · Tests: JUnit 5, Mockito y Testcontainers.
+- **Stack:** Java 21 · Spring Boot 4.1.1 · Spring Security (JWT, BCrypt) · Spring Data JPA · PostgreSQL · springdoc (Swagger) · web3j 6.0.0 · Solidity 0.8.37 (contrato `MediChainAnchor`) · Ethereum Sepolia · Flyway (migraciones) · Tests: JUnit 5, Mockito y Testcontainers.
 - **Objetivo:** que cada caja (identificada por GTIN + número de serie, lo que codifica el DataMatrix) tenga un recorrido verificable. Que un paciente pueda comprobar con su caja si es auténtica, si fue retirada del mercado o si ya se dispensó, sin exponer datos personales (Ley 25.326). Que la integridad del registro sea demostrable frente a terceros.
 - **Alcance de esta bitácora:** del 27/09/2026 al 08/10/2026. Las fechas son de Argentina. Lo marcado **(aprox.)** o **(reconstruido del código)** no tiene un registro exacto de fecha o contenido.
 
@@ -28,6 +28,7 @@
 | 06/10 | Paso 8 (corrección) | Gas después de la actualización Glamsterdam de Sepolia, frenos y verificación del bytecode | 432 · e2e 92/92 |
 | 06/10 | Repositorio | Primer commit y publicación en GitHub (ramas `main` y `develop`) | — |
 | 08/10 | Paso 9 | Tests de integración con PostgreSQL real (Testcontainers); 3 problemas encontrados y corregidos | 441 + 37 de integración · e2e 99/99 |
+| 08/10 | Paso 10 | Esquema con migraciones Flyway (V1 a V3); Hibernate solo valida; fechas de auditoría en UTC | 441 + 44 de integración · e2e 99/99 |
 
 "Tests" es la cantidad de tests automáticos (JUnit) al cerrar cada paso; desde el paso 9 se suman los de integración, que corren contra PostgreSQL real. "e2e" es la prueba de punta a punta por la API real (`scripts/prueba-e2e.py`): verificaciones correctas / total.
 
@@ -381,18 +382,63 @@
   | Tests de integración (`./mvnw verify`) | 0 | 37, en 9 clases |
   | Prueba e2e | 92/92 | 99/99 |
 
+## 08/10 · Paso 10: esquema con migraciones Flyway
+
+- **Objetivo:** que el esquema de la base lo creen migraciones versionadas (Flyway) y no Hibernate. Resuelve el problema 4 del relevamiento del 28/09.
+- **Antes de diseñar, se midió** el esquema real que creaba Hibernate, en una base descartable:
+  - 21 tablas, 45 claves foráneas, 18 restricciones UNIQUE y 26 CHECK de enums;
+  - **ningún índice sobre las 45 claves foráneas** (PostgreSQL no los crea solo);
+  - 63 columnas de fecha sin zona horaria (`LocalDateTime`) y una sola con zona: `eventos_trazabilidad.fecha_hora`, la que entra al hash.
+- **Dos experimentos:**
+  - con `ddl-auto=update`, un CHECK de enum desactualizado **no se corrige** al arrancar;
+  - `ddl-auto=validate` detecta una columna faltante, pero **no detecta** un CHECK desactualizado, un largo cambiado ni un `NOT NULL` perdido.
+- **Decisiones del autor:**
+  - **Bases existentes: reset.** La base local del autor tenía el anclaje apagado; el contrato `0xB126…` queda como histórico y para la demo se despliega uno nuevo, compilado con optimizador.
+  - **Fechas en una migración aparte (V2), solo las de auditoría** (`fecha_creacion` y `fecha_actualizacion`). Las otras 25 fechas del negocio quedan pendientes, con su propio diseño.
+  - **Nombres de restricciones legibles** (`pk_`, `uk_`, `ck_`, `fk_`, `ix_`); los `ux_` se mantienen porque los usa el código.
+  - **Índices sobre las claves foráneas que se consultan,** en una migración propia (V3).
+  - **Los CHECK de enums se mantienen** en la base.
+  - **`InicializadorBaseDatos` se borra entero,** con la conversión de provincia del paso 9.
+- **Qué se hizo:**
+  - **Flyway 12** (gestionado por Spring Boot) y `ddl-auto=validate`: Hibernate solo verifica el esquema al arrancar, nunca crea ni modifica tablas.
+  - **`V1__esquema_inicial`:** el esquema que creaba Hibernate, más el SQL de arranque (4 secuencias, 2 índices únicos parciales y la fila inicial de la cadena). Se escribió a partir del script de Hibernate y se revisó a mano: columnas en el orden de cada entidad, un comentario por tabla y nombres legibles.
+  - **`V2__fechas_auditoria_utc`:** las 38 columnas de auditoría pasan a `timestamptz` (`Instant`, UTC, microsegundos). La API devuelve esas fechas en UTC con `Z`. No toca la cadena de hashes: esas fechas no entran al hash, y `fecha_hora` de los eventos ya tenía zona.
+  - **`V3__indices_claves_foraneas`:** 29 índices, cada uno con la consulta que lo usa. Las 16 claves foráneas sin índice están explicadas en el encabezado (ya cubiertas por otro índice, o nunca se busca por ellas).
+  - **`MigracionesIT`** (8 tests): nombres y versiones de los archivos, historial completo, aplicar las migraciones en una base vacía, que una base con tablas y sin historial no se adopte, validación de Hibernate, la **deriva** entre entidades y migraciones, que V2 conserva el instante exacto y los hashes, que V3 está sobre claves foráneas y que la API devuelve las fechas con `Z`.
+  - **Test de deriva:** Hibernate crea en otra base el esquema que deducen las entidades, y se compara con el de las migraciones: columnas (tipo, largo, `NOT NULL`), PK, UNIQUE, FK y los valores de cada CHECK, sin mirar los nombres. Cubre justo lo que `validate` no ve.
+  - **Reglas nuevas en `CLAUDE.md`:** nunca editar una migración ya aplicada; cada cambio de esquema es una V nueva en el mismo commit que la entidad; un valor nuevo en un enum guardado exige reemplazar su CHECK; formato y nombres de los archivos.
+  - **`reset-demo.sh`** sigue igual (borra el esquema entero, incluido el historial de Flyway); solo cambiaron sus mensajes.
+- **Problemas encontrados y solución:**
+  1. **`validate` no alcanza.** Un enum con un valor nuevo sin su migración arrancaría igual y fallaría recién al insertar ese valor. **Solución:** el test de deriva. Se comprobó agregando a propósito un tipo de evento sin migración y cambiando el largo de una columna: el test falló en los dos casos, mientras la validación de Hibernate pasaba. Después se restauró el código.
+  2. **El orden de las columnas de dos claves primarias.** En las tablas de unión (`despacho_bulto`, `cuarentena_bulto`), el script de Hibernate ordenaba las columnas alfabéticamente, pero la base que creaba Hibernate al arrancar las tenía al revés. Lo detectó la comparación de V1 contra el esquema anterior. **Solución:** V1 sigue a la base real, y el índice de V3 en esas tablas va sobre `bulto_id`, la columna que la clave primaria no cubre.
+  3. **Ninguna clave foránea tenía índice.** **Solución:** V3, con 29 índices sobre las columnas que usan las consultas.
+- **Verificaciones finales:**
+  - **V1 contra el esquema anterior,** comparando los catálogos de las dos bases: 279 columnas, 21 PK, 18 UNIQUE, 26 CHECK con los mismos valores, 45 FK, 2 índices parciales, 4 secuencias y la fila inicial. Iguales salvo los nombres.
+  - **Copia limpia:** `git clone` en una carpeta temporal y `./mvnw verify` sin `.env` y con el entorno vacío: pasó completo.
+  - **Prueba e2e sobre una base creada solo por Flyway:** Flyway aplicó V1, V2 y V3 en 1,1 s y la e2e dio 99/99, con la cadena íntegra (86 eventos).
+  - **Revisión del commit:** se buscaron en lo preparado los valores reales de los secretos, sin imprimirlos: 0 apariciones.
+- **Resultado:**
+
+  | | Antes | Después |
+  |---|---|---|
+  | Tests unitarios (`./mvnw test`) | 441 | 441 |
+  | Tests de integración (`./mvnw verify`) | 37 (9 clases) | 44 (10 clases): +8 de migraciones, −1 de la conversión de provincia que se borró |
+  | Prueba e2e | 99/99 (base creada por Hibernate) | 99/99 (base creada por Flyway) |
+  | Esquema | `ddl-auto=update` + SQL de arranque en Java | 3 migraciones Flyway; Hibernate solo valida |
+
 ---
 
 ## Estado al 08/10 (reconstruido del código)
 
 | Métrica | Valor |
 |---|---|
-| Entidades / tablas | 19 (17 del dominio + `CadenaEstado` + `IntentoVerificacion`) |
+| Entidades / tablas | 19 entidades (17 del dominio + `CadenaEstado` + `IntentoVerificacion`) en 21 tablas (más 2 de unión) |
+| Esquema | 3 migraciones Flyway (V1 a V3); Hibernate solo valida |
 | Controllers / endpoints | 21 / 91. Ningún PUT ni DELETE: los estados cambian solo con acciones POST |
 | Roles | 6 |
 | Reglas de negocio | 15 (R1 a R15) |
 | Tipos de evento | 47 |
-| Tests automáticos | 441 unitarios (en 52 clases) + 37 de integración contra PostgreSQL real (en 9 clases) |
+| Tests automáticos | 441 unitarios (en 52 clases) + 44 de integración contra PostgreSQL real (en 10 clases) |
 | Prueba e2e | 99 verificaciones. La variante con anclaje real (`--sepolia`) dio 94 el 05/10, antes de la sección 9 |
 
 ## Metodología y uso de IA
@@ -416,9 +462,9 @@
 
 ## Pendiente
 
-- **Paso 10:** migración inicial con Flyway, que reemplaza el SQL de arranque (`InicializadorBaseDatos`) y `ddl-auto=update` (problema 4 del relevamiento del 28/09).
 - **Paso 11:** Actuator, Docker (imagen + docker-compose) y README.
 - **Pendientes ya anotados en `CLAUDE.md`, sin paso asignado:**
+  - pasar a `Instant`/UTC las 25 fechas del negocio que siguen sin zona horaria, con su propio diseño (dos entran a eventos nuevos y una la escribe el usuario sin zona);
   - rate limiting en login, registro, verificación pública e intentos de lote inválidos;
   - captcha y verificación de email en el registro;
   - que la Sede asigne cuarentenas, reportes y lotes biológicos de provincias sin inspectores;
