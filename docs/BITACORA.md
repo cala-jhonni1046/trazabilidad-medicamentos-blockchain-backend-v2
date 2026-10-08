@@ -29,6 +29,7 @@
 | 06/10 | Repositorio | Primer commit y publicación en GitHub (ramas `main` y `develop`) | — |
 | 08/10 | Paso 9 | Tests de integración con PostgreSQL real (Testcontainers); 3 problemas encontrados y corregidos | 441 + 37 de integración · e2e 99/99 |
 | 08/10 | Paso 10 | Esquema con migraciones Flyway (V1 a V3); Hibernate solo valida; fechas de auditoría en UTC | 441 + 44 de integración · e2e 99/99 |
+| 08/10 | Paso B11a | Contrato OpenAPI para el frontend (operationId, errores, enums, required, páginas estables, docs/openapi.json) y login completo | 443 + 47 de integración · e2e 106/106 |
 
 "Tests" es la cantidad de tests automáticos (JUnit) al cerrar cada paso; desde el paso 9 se suman los de integración, que corren contra PostgreSQL real. "e2e" es la prueba de punta a punta por la API real (`scripts/prueba-e2e.py`): verificaciones correctas / total.
 
@@ -426,6 +427,43 @@
   | Prueba e2e | 99/99 (base creada por Hibernate) | 99/99 (base creada por Flyway) |
   | Esquema | `ddl-auto=update` + SQL de arranque en Java | 3 migraciones Flyway; Hibernate solo valida |
 
+## 08/10 · Paso B11a: contrato OpenAPI para el frontend y login completo
+
+- **Contexto:** el frontend en Angular (repositorio aparte) leyó el contrato real (`/api-docs`) para generar su cliente y pidió ajustes. El paso B11 se dividió en cuatro sub-pasos (B11a a B11d); este es el primero, el que destraba al frontend.
+- **Cómo estaba el contrato** (medido en una instancia descartable): 78 rutas y 91 operaciones; 47 operationId con sufijo automático (`asignar_1`, `bandeja_2`); las 91 documentaban solo `200` (aunque 15 altas responden `201` y `/anclar` `202`) y ningún error; `ErrorResponseDTO` no figuraba; 38 enums en línea; ningún campo obligatorio en las respuestas; tags sin orden; páginas con el formato interno de Spring (`pageable`, `sort`, `first`…), que el propio Spring advierte que no es estable.
+- **Decisiones del autor:** formato de página estable ya; errores declarados por operación con una anotación propia; `enumAsRef` explícito en cada enum; ruta oficial `/api-docs`, publicada solo con `SWAGGER_HABILITADO=true`; contrato versionado en `docs/openapi.json` con un test que falla si queda desactualizado; en el login, `provincia` solo para el inspector y `expiraEn` en UTC con `Z`.
+- **Qué se hizo:**
+  - **operationId explícito** en las 91 operaciones (`listarBultos`, `armarBulto`, `recibirBulto`…), en español.
+  - **Respuestas reales:** `201` y `202` donde corresponde, y los errores de cada operación con la anotación `@RespuestasError({...})`, que `OpenApiConfig` convierte en respuestas con `ErrorResponseDTO`. Criterios fijos (400 si recibe datos, 401 si no es pública, 403 si restringe por rol, 404 con `{id}` o con referencia a otro recurso, 409 en escrituras, 503 solo en `/anclar`).
+  - **`ErrorResponseDTO` y `ErrorCampoDTO`** como esquemas con nombre (el JSON de los errores no cambió).
+  - **25 enums** como esquemas con nombre, con su descripción.
+  - **Campos obligatorios:** en las respuestas, cada campo marcado como obligatorio (siempre viene) o como que puede venir null, derivado de la nulabilidad de cada columna y relación; también en las páginas.
+  - **Swagger para personas:** cada descripción termina con los roles (o "Público") y las reglas que aplica; ejemplos en los DTO del flujo principal; tags en el orden del flujo.
+  - **Páginas estables:** `{content, page{size, number, totalElements, totalPages}}`.
+  - **Login completo:** suma `esAdminEmpresa`, `esDirectorTecnico` y `provincia`; `expiraEn` pasa a `Instant` (UTC con `Z`).
+  - **Operaciones públicas** marcadas sin seguridad en el contrato (antes pedían token en el cliente generado).
+  - **`SWAGGER_HABILITADO`** (por defecto apagado): sin la variable, `/api-docs` y Swagger UI responden 404.
+  - **`ContratoOpenApiIT`** (3 tests): las reglas del contrato; que `docs/openapi.json` esté al día; y un recorrido completo cuyas respuestas reales se validan contra su esquema (`ValidadorContrato`).
+  - **Prueba e2e:** sección B11a (7 verificaciones).
+- **Problemas encontrados y solución:**
+  1. **Los campos obligatorios no se podían deducir del mapper a ciegas.** Varios mappers copian las relaciones de forma defensiva (`x != null ? x.getId() : null`) aunque la columna sea `NOT NULL`; la primera pasada marcaba como "puede venir null" campos que siempre vienen. **Solución:** decidir por la nulabilidad real de la relación en la entidad, y comprobarlo con respuestas reales. Prueba del validador: marcar a propósito como obligatorio un campo que viene null hizo fallar el test en el listado y en el detalle.
+  2. **springdoc perdía el orden de los tags** y publicaba las respuestas como `*/*`. **Solución:** un ajuste en `OpenApiConfig` que los ordena según el flujo, y `application/json` como tipo por defecto.
+  3. **Las páginas no marcaban `content`, `page` ni sus totales como obligatorios.** **Solución:** se marcan en el contrato.
+  4. **Ya existía un enum `MotivoBloqueo`** (el motivo de una medida sanitaria): los códigos del indicador de bloqueo de B11b van a necesitar otro nombre de tipo.
+- **Verificaciones finales:**
+  - **Interruptor de Swagger,** en una instancia real: sin `SWAGGER_HABILITADO`, `/api-docs` y Swagger UI → 404 (verificado por la e2e); con `SWAGGER_HABILITADO=true`, `/api-docs` → 200 y **el contrato publicado es idéntico a `docs/openapi.json`**.
+  - **Prueba e2e:** 106/106 (99 + 7 de B11a).
+- **Resultado:**
+
+  | | Antes | Después |
+  |---|---|---|
+  | Tests unitarios | 441 | 443 |
+  | Tests de integración | 44 | 47 |
+  | Prueba e2e | 99/99 | 106/106 |
+  | operationId con sufijo automático | 47 | 0 |
+  | Respuestas de error documentadas | 0 | 363 |
+  | Enums en línea / con nombre | 38 / 0 | 0 / 25 |
+
 ---
 
 ## Estado al 08/10 (reconstruido del código)
@@ -438,8 +476,9 @@
 | Roles | 6 |
 | Reglas de negocio | 15 (R1 a R15) |
 | Tipos de evento | 47 |
-| Tests automáticos | 441 unitarios (en 52 clases) + 44 de integración contra PostgreSQL real (en 10 clases) |
-| Prueba e2e | 99 verificaciones. La variante con anclaje real (`--sepolia`) dio 94 el 05/10, antes de la sección 9 |
+| Tests automáticos | 443 unitarios (en 52 clases) + 47 de integración contra PostgreSQL real (en 11 clases) |
+| Contrato OpenAPI | `docs/openapi.json` (91 operaciones), publicado solo con `SWAGGER_HABILITADO=true` |
+| Prueba e2e | 106 verificaciones. La variante con anclaje real (`--sepolia`) dio 94 el 05/10, antes de la sección 9 |
 
 ## Metodología y uso de IA
 
@@ -462,6 +501,7 @@
 
 ## Pendiente
 
+- **Paso B11 (resto):** B11b (filtros por estado, telemetría por viaje, indicador de bloqueo R10 y códigos de error en todo 409), B11c (pendientes sin inspector para la Sede) y B11d (fechas del negocio a UTC).
 - **Paso 11:** Actuator, Docker (imagen + docker-compose) y README.
 - **Pendientes ya anotados en `CLAUDE.md`, sin paso asignado:**
   - pasar a `Instant`/UTC las 25 fechas del negocio que siguen sin zona horaria, con su propio diseño (dos entran a eventos nuevos y una la escribe el usuario sin zona);
