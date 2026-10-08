@@ -52,6 +52,7 @@ import com.medichain.modules.inspectoranmat.InspectorAnmatMapper;
 import com.medichain.modules.inspectoranmat.InspectorAnmatService;
 import com.medichain.modules.usuario.RegistroPacienteRequestDTO;
 import com.medichain.modules.usuario.Usuario;
+import com.medichain.modules.usuario.UsuarioRepository;
 import com.medichain.modules.usuario.UsuarioService;
 import com.medichain.utils.enums.Provincia;
 import org.springframework.mock.web.MockMultipartFile;
@@ -105,6 +106,10 @@ class SeguridadEndpointsTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    // Lo pide SecurityConfig para el filtro JWT; acá la autenticación se inyecta con authentication(...).
+    @MockitoBean
+    private UsuarioRepository usuarioRepository;
 
     @MockitoBean
     private EmpresaService empresaService;

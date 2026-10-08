@@ -11,7 +11,9 @@ import com.medichain.modules.empresa.EmpresaService;
 import com.medichain.modules.empresa.TipoEmpresa;
 import com.medichain.modules.usuario.RolUsuario;
 import com.medichain.modules.usuario.Usuario;
+import com.medichain.modules.usuario.UsuarioRepository;
 import com.medichain.testutil.DatosDePrueba;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * A diferencia de SeguridadEndpointsTest, acá el JwtService es REAL: se
  * generan tokens firmados de verdad y cada request pasa por el
  * JwtAuthenticationFilter real. Cubre usuarios sin empresa ni provincia
- * (PACIENTE) y con provincia pero sin empresa (INSPECTOR).
+ * (PACIENTE) y con provincia pero sin empresa (INSPECTOR), y el token
+ * vigente de una cuenta que ya no está activa (→ 401).
  */
 @WebMvcTest(controllers = {EmpresaController.class, DispensacionController.class})
 @Import({SecurityConfig.class, RestAuthenticationEntryPoint.class, RestAccessDeniedHandler.class, JwtService.class})
@@ -61,6 +64,15 @@ class FiltroJwtRealTest {
 
     @MockitoBean
     private DispensacionMapper dispensacionMapper;
+
+    @MockitoBean
+    private UsuarioRepository usuarioRepository;
+
+    /** Por defecto toda cuenta está activa; el test de cuenta inactiva lo cambia. */
+    @BeforeEach
+    void cuentasActivas() {
+        when(usuarioRepository.existsByIdAndActivoTrue(any(UUID.class))).thenReturn(true);
+    }
 
     /** Genera un token real para un usuario del rol dado, con la empresa y provincia indicadas. */
     private String tokenDe(RolUsuario rol, Empresa empresa, String provincia) {
@@ -97,6 +109,17 @@ class FiltroJwtRealTest {
 
         mockMvc.perform(get("/api/dispensaciones").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Token real y vigente de una cuenta desactivada (p. ej. inspector dado de baja) → 401")
+    void cuentaInactivaConTokenVigenteRecibe401() throws Exception {
+        when(empresaService.getAll(any(Pageable.class))).thenReturn(Page.empty());
+        String token = tokenDe(RolUsuario.INSPECTOR, null, "MENDOZA");
+        when(usuarioRepository.existsByIdAndActivoTrue(any(UUID.class))).thenReturn(false);
+
+        mockMvc.perform(get("/api/empresas").header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

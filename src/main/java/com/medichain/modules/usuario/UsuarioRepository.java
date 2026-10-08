@@ -11,7 +11,8 @@ import java.util.UUID;
  * Repositorio UsuarioRepository en MediChain.
  * Acceso a datos JPA para Usuario (CRUD y paginación heredados de
  * JpaRepository por UUID), más las búsquedas que necesita la
- * autenticación: por email (login) y por rol (usuario inicial).
+ * autenticación: por email (login), por rol (usuario inicial) y la cuenta
+ * activa por id (JwtAuthenticationFilter, en cada request con token).
  */
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
@@ -30,4 +31,11 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
 
     /** Indica si ya existe un usuario con el email dado. */
     boolean existsByEmail(String email);
+
+    /**
+     * Indica si el usuario existe y su cuenta está activa. Lo consulta el
+     * filtro JWT en cada request: un token todavía vigente de una cuenta
+     * desactivada (por ejemplo un inspector dado de baja) deja de servir.
+     */
+    boolean existsByIdAndActivoTrue(UUID id);
 }

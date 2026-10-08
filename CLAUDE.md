@@ -15,15 +15,25 @@ Fuente de verdad del negocio: documento "MediChain: requerimientos del backend" 
 ## Cómo trabajar
 
 - Pensá como desarrollador senior: código explícito, legible y consistente.
-- Trabajá por etapas. Al terminar cada una: `./mvnw clean compile`, resumen de archivos creados, modificados y borrados, y esperá confirmación.
+- Trabajá por etapas. Al terminar cada una: `./mvnw clean compile`, `./mvnw verify` (unitarios + integración, necesita Docker), resumen de archivos creados, modificados y borrados, y esperá confirmación.
 - Al terminar cada paso, extender `scripts/prueba-e2e.py` con sus verificaciones (una función `seccion_<paso>` en `SECCIONES`) y correrlo contra una base recién reseteada (o contra una instancia descartable) hasta que dé todo ✔.
 - Si algo es ambiguo, preguntá. No inventes reglas, campos ni estados.
-- No hagas `git push`. No agregues `application.properties` ni `target/` a Git.
+- No hagas `git push`. `.env` nunca a Git (plantilla: `.env.example`, con valores falsos); `target/` tampoco.
+- `application.properties` SÍ va a Git, solo con `${VARIABLE}` y sin defaults para secretos: obligatorios `${VAR}` (DB_PASSWORD, JWT_SECRET); opcionales `${VAR:}` vacío (ADMIN_PASSWORD, DEMO_PASSWORD, SEPOLIA_RPC_URL, WALLET_PRIVATE_KEY). Nunca `${VAR:algo}` en un secreto. Revisá su diff antes de cada commit.
 - Secretos (base de datos, JWT, clave de la wallet) solo en variables de entorno.
 
 ## Stack
 
-Java 21 · Spring Boot 4.1.1 · PostgreSQL · Spring Data JPA · Spring Security · springdoc (Swagger en `/swagger-ui.html`) · web3j 6.0.0 (Jackson 3, Java 21; sin el módulo KMS de AWS) · Solidity 0.8.37 (`contracts/`) · paquete base `com.medichain`.
+Java 21 · Spring Boot 4.1.1 · PostgreSQL · Spring Data JPA · Spring Security · springdoc (Swagger en `/swagger-ui.html`) · web3j 6.0.0 (Jackson 3, Java 21; sin el módulo KMS de AWS) · Solidity 0.8.37 (`contracts/`) · Tests: JUnit 5 + Mockito, Testcontainers 2 (PostgreSQL 16 en Docker) · paquete base `com.medichain`.
+
+## Tests
+
+- `./mvnw test` → Surefire: unitarios (`*Test`), sin Docker, sin base y sin variables de entorno.
+- `./mvnw verify` → además Failsafe: integración (`*IT`) contra PostgreSQL real (`postgres:16.15-alpine`, Testcontainers). Sin Docker falla con un mensaje claro; para omitirlos: `./mvnw verify -DskipITs`. Corre igual en un clon limpio sin `.env`.
+- Los IT van en `src/test/java/com/medichain/integracion/` y extienden `IntegracionBase`: UN contenedor y UN contexto de Spring para toda la suite (no agregar `@MockitoBean` ni propiedades propias en un IT: crearía otro contexto); perfil `test` (`src/test/resources/application-test.properties`, valores falsos) y anclaje apagado; `@ServiceConnection` le gana a `DB_URL`, así un IT nunca toca otra base.
+- Antes de cada IT, `LimpiadorBase` vacía la base (TRUNCATE de todas las tablas, cadena en GENESIS, secuencias en 1) y se recrea la Sede. NUNCA `@Transactional` en un IT: el rollback ocultaría REQUIRES_NEW, la concurrencia y el bloqueo de la cadena.
+- Datos con `EscenarioIntegracion` (services reales como cada usuario, igual que DatosDemo; contraseña `EscenarioIntegracion.CLAVE`). Carreras con `EnParalelo`; las de índices únicos, deterministas (la primera transacción queda abierta hasta que la segunda se bloquea en PostgreSQL).
+- Al tocar persistencia, transacciones, concurrencia o seguridad, agregar su IT además del unitario.
 
 ## Arquitectura (conservar siempre)
 
@@ -185,7 +195,8 @@ ALTA_INSPECTOR, BAJA_INSPECTOR, REACTIVACION_INSPECTOR, SOLICITUD_HABILITACION, 
 - Simulador de sensor: `scripts/simular-sensor.py` (usa los endpoints reales). Simplificación pendiente: el sensor usa la cuenta de un usuario de la empresa origen; en la realidad tiene credencial propia de dispositivo.
 - Verificación pública: una caja en recall (lote RECALL o bulto en medida CONVERTIDA_EN_RECALL) se muestra BLOQUEADA con el mensaje de retiro del mercado. SERIE_INEXISTENTE solo si el GTIN es de un medicamento registrado; como mucho un evento SERIE_INEXISTENTE / SERIE_ROBADA por (tipo, GTIN, serie) por día UTC (tabla `intento_verificacion`) y tope diario global de 500 SERIE_INEXISTENTE. Pendiente: rate limiting por IP (la IP no se guarda).
 - Intentos que deben quedar aunque la operación falle (BULTO_INEXISTENTE, BULTO_DUPLICADO, INTENTO_DUPLICADO, SERIE_ROBADA): `RegistradorEventosAparte` (REQUIRES_NEW), llamado antes de cualquier evento propio de la transacción.
-- SQL nativo de arranque (secuencias `circuito_codigo_seq`, `bulto_codigo_seq`, `viaje_codigo_seq`, `reporte_codigo_seq`, índice único parcial del par vigente, índice único parcial `ux_anclaje_en_curso`, fila inicial de `cadena_estado`): solo en `config/InicializadorBaseDatos`. En el paso 10 se reemplaza por la migración inicial de Flyway.
-- Contraseñas con BCrypt. JWT de 8 h con `sub`, `rol`, `empresaId`, `provincia`.
+- SQL nativo de arranque (secuencias `circuito_codigo_seq`, `bulto_codigo_seq`, `viaje_codigo_seq`, `reporte_codigo_seq`, índice único parcial del par vigente, índice único parcial `ux_anclaje_en_curso`, fila inicial de `cadena_estado`, conversión única de `inspectores_anmat.provincia` de smallint (posición, faltaba `@Enumerated`) a texto si una base anterior al paso 9 todavía la tiene así): solo en `config/InicializadorBaseDatos`. En el paso 10 se reemplaza por la migración inicial de Flyway.
+- Carreras contra índices únicos: el Service valida antes, pero dos altas simultáneas pueden pasar las dos; la base deja entrar a una. Se guarda con `saveAndFlush` / `saveAllAndFlush` y la `DataIntegrityViolationException` se traduce por el nombre de la restricción (`utils/RestriccionUnica`): `ux_circuito_par_vigente` → 409 R5; `ux_lote_laboratorio_codigo` → 409 LOTE_DUPLICADO; `ux_unidad_gtin_serie` → 409 R3 + INTENTO_SERIE_INVALIDA (`RegistroIntentos.registrarChoqueDeSeries`, REQUIRES_NEW, antes de cualquier evento propio). Otra restricción se propaga (409 genérico). Las ediciones concurrentes de una misma fila las frena `@Version` (409).
+- Contraseñas con BCrypt. JWT de 8 h con `sub`, `rol`, `empresaId`, `provincia`. En cada request con token, `JwtAuthenticationFilter` confirma en la base que la cuenta siga activa (`UsuarioRepository.existsByIdAndActivoTrue`): el token todavía vigente de una cuenta desactivada (inspector dado de baja, empleado desactivado) → 401.
 - Los Services filtran por empresa (empleados) y por provincia (inspectores).
 - Errores sin detalles internos. Fechas guardadas en UTC.

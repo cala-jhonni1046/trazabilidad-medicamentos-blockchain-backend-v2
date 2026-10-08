@@ -2,6 +2,7 @@ package com.medichain.config;
 
 import com.medichain.modules.auth.JwtService;
 import com.medichain.modules.auth.UsuarioAutenticado;
+import com.medichain.modules.usuario.UsuarioRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
@@ -23,11 +24,16 @@ import java.util.List;
 /**
  * Filtro JwtAuthenticationFilter en MediChain.
  * Se ejecuta una vez por request, antes del filtro de usuario/contraseña
- * de Spring Security. Si viene "Authorization: Bearer &lt;token&gt;" y el
- * token es válido, deja un UsuarioAutenticado con la autoridad
- * ROLE_&lt;rol&gt; en el SecurityContext. Si falta o es inválido/vencido, no
- * hace nada: la request sigue sin autenticación y, si la ruta no es
- * pública, termina en 401.
+ * de Spring Security. Si viene "Authorization: Bearer &lt;token&gt;", el
+ * token es válido Y la cuenta sigue activa en la base, deja un
+ * UsuarioAutenticado con la autoridad ROLE_&lt;rol&gt; en el SecurityContext.
+ * Si falta, es inválido/vencido o la cuenta ya no está activa, no hace
+ * nada: la request sigue sin autenticación y, si la ruta no es pública,
+ * termina en 401.
+ * La cuenta se verifica en la base en cada request (una consulta por clave
+ * primaria): sin eso, un inspector dado de baja o un empleado desactivado
+ * seguiría usando su token hasta que venza (8 h) en las rutas que solo
+ * miran el rol.
  * No es @Component a propósito: si lo fuera, Spring Boot además lo
  * registraría como filtro de servlet global y correría dos veces. Lo
  * instancia SecurityConfig y lo agrega solo a la cadena de seguridad.
@@ -43,10 +49,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String PREFIJO_BEARER = "Bearer ";
 
     private final JwtService jwtService;
+    private final UsuarioRepository usuarioRepository;
 
-    /** Crea el filtro con el servicio que valida los tokens. */
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    /** Crea el filtro con el servicio que valida los tokens y el repositorio que confirma la cuenta activa. */
+    public JwtAuthenticationFilter(JwtService jwtService, UsuarioRepository usuarioRepository) {
         this.jwtService = jwtService;
+        this.usuarioRepository = usuarioRepository;
     }
 
     /** Valida el token del header y carga la autenticación, si corresponde. */
@@ -62,9 +70,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 Claims claims = jwtService.extraerClaims(token);
                 UsuarioAutenticado usuario = jwtService.aUsuarioAutenticado(claims);
-                UsernamePasswordAuthenticationToken autenticacion = new UsernamePasswordAuthenticationToken(
-                        usuario, null, List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name())));
-                SecurityContextHolder.getContext().setAuthentication(autenticacion);
+                if (usuarioRepository.existsByIdAndActivoTrue(usuario.getUsuarioId())) {
+                    UsernamePasswordAuthenticationToken autenticacion = new UsernamePasswordAuthenticationToken(
+                            usuario, null, List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name())));
+                    SecurityContextHolder.getContext().setAuthentication(autenticacion);
+                } else {
+                    // Token bien firmado y vigente, pero la cuenta se desactivó (o se borró) después de emitirlo.
+                    logger.warn("Token JWT rechazado en {} {}: la cuenta está inactiva o ya no existe",
+                            request.getMethod(), request.getRequestURI());
+                    SecurityContextHolder.clearContext();
+                }
             } catch (RuntimeException e) {
                 // Token alterado, vencido, mal formado o con claims inválidos: se sigue
                 // sin autenticación (→ 401 si la ruta es privada) y se registra el motivo.

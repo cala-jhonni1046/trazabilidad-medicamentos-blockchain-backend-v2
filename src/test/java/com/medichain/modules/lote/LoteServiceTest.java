@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -53,6 +54,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -62,7 +64,8 @@ import static org.mockito.Mockito.when;
  * Test unitario LoteServiceTest en MediChain.
  * Con Mockito: visibilidad, registro del lote con sus series (R3: formato,
  * repetidas, existentes por GTIN; INTENTO_SERIE_INVALIDA aunque el lote no
- * se cree; código único por laboratorio) y liberación (R4, R10).
+ * se cree; código único por laboratorio; carreras de código y de series
+ * contra los índices únicos) y liberación (R4, R10).
  */
 @ExtendWith(MockitoExtension.class)
 class LoteServiceTest {
@@ -116,7 +119,7 @@ class LoteServiceTest {
         when(usuarioActual.obtener()).thenReturn(actual);
         lenient().when(verificadorEmpresa.exigirHabilitada(laboratorio.getId())).thenReturn(laboratorio);
         lenient().when(medicamentoRepository.findById(medicamento.getId())).thenReturn(Optional.of(medicamento));
-        lenient().when(repository.save(any(Lote.class))).thenAnswer(inv -> {
+        lenient().when(repository.saveAndFlush(any(Lote.class))).thenAnswer(inv -> {
             Lote lote = inv.getArgument(0);
             if (lote.getId() == null) {
                 lote.setId(UUID.randomUUID());
@@ -205,7 +208,7 @@ class LoteServiceTest {
         assertEquals(3, lote.getCantidad());
         assertSame(laboratorio, lote.getLaboratorio());
         ArgumentCaptor<List<UnidadTrazable>> cajas = ArgumentCaptor.forClass(List.class);
-        verify(unidadTrazableRepository).saveAll(cajas.capture());
+        verify(unidadTrazableRepository).saveAllAndFlush(cajas.capture());
         List<String> series = cajas.getValue().stream().map(UnidadTrazable::getSerie).toList();
         assertEquals(List.of("L20260002S000001", "L20260002S000002", "L20260002S000003"), series);
         UnidadTrazable primera = cajas.getValue().get(0);
@@ -252,8 +255,8 @@ class LoteServiceTest {
 
         verify(registroIntentos).registrarIntentoSerieInvalida(eq("L2026-0003"), eq(medicamento), eq(4), eq(3),
                 eq(0), eq(0), anyList(), anyString(), eq(actual));
-        verify(repository, never()).save(any());
-        verify(unidadTrazableRepository, never()).saveAll(any());
+        verify(repository, never()).saveAndFlush(any());
+        verify(unidadTrazableRepository, never()).saveAllAndFlush(any());
         verify(registradorEventos, never()).registrar(any(), any(), any(), anyMap(), any(UsuarioAutenticado.class));
     }
 
@@ -299,7 +302,7 @@ class LoteServiceTest {
 
         service().registrar(dto);
 
-        verify(unidadTrazableRepository).saveAll(anyList());
+        verify(unidadTrazableRepository).saveAllAndFlush(anyList());
     }
 
     @Test
@@ -318,7 +321,56 @@ class LoteServiceTest {
         LoteRequestDTO otro = dto("L2026-0001");
         otro.setCantidad(1);
         service().registrar(otro);
-        verify(unidadTrazableRepository).saveAll(anyList());
+        verify(unidadTrazableRepository).saveAllAndFlush(anyList());
+    }
+
+    @Test
+    @DisplayName("Carrera de código: otro alta del mismo código entró al mismo tiempo (ux_lote_laboratorio_codigo) → 409 LOTE_DUPLICADO")
+    void carreraDeCodigoDeLote() {
+        comoLaboratorio();
+        doThrow(new DataIntegrityViolationException(
+                "duplicate key value violates unique constraint \"ux_lote_laboratorio_codigo\""))
+                .when(repository).saveAndFlush(any(Lote.class));
+        LoteRequestDTO dto = dto("L2026-0010");
+        dto.setCantidad(2);
+
+        fallaCon("LOTE_DUPLICADO", () -> service().registrar(dto));
+        verify(unidadTrazableRepository, never()).saveAllAndFlush(any());
+        verify(registroIntentos, never()).registrarChoqueDeSeries(any(), any(), anyList(), any(), any());
+        verify(registradorEventos, never()).registrar(any(), any(), any(), anyMap(), any(UsuarioAutenticado.class));
+    }
+
+    @Test
+    @DisplayName("Carrera de series: otro lote del mismo GTIN las registró al mismo tiempo (ux_unidad_gtin_serie) → 409 R3 + intento")
+    void carreraDeSeries() {
+        UsuarioAutenticado actual = comoLaboratorio();
+        doThrow(new DataIntegrityViolationException(
+                "duplicate key value violates unique constraint \"ux_unidad_gtin_serie\""))
+                .when(unidadTrazableRepository).saveAllAndFlush(anyList());
+        List<String> series = List.of("A1", "B2", "C3");
+        when(registroIntentos.registrarChoqueDeSeries("L2026-0011", medicamento, series,
+                HashUtil.seriesHash(series), actual)).thenReturn(List.of("B2"));
+        LoteRequestDTO dto = dto("L2026-0011");
+        dto.setSeries(series);
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class, () -> service().registrar(dto));
+        assertEquals("R3", ex.getCodigoRegla());
+        assertTrue(ex.getMessage().contains("[B2]"), ex.getMessage());
+        verify(registradorEventos, never()).registrar(eq(TipoEvento.LOTE_REGISTRADO), any(), any(), anyMap(),
+                any(UsuarioAutenticado.class));
+    }
+
+    @Test
+    @DisplayName("Otra violación de integridad al guardar las cajas se propaga sin traducir ni registrar intento")
+    void otraViolacionEnCajasSePropaga() {
+        comoLaboratorio();
+        DataIntegrityViolationException otra = new DataIntegrityViolationException("otra restricción");
+        doThrow(otra).when(unidadTrazableRepository).saveAllAndFlush(anyList());
+        LoteRequestDTO dto = dto("L2026-0012");
+        dto.setCantidad(1);
+
+        assertSame(otra, assertThrows(DataIntegrityViolationException.class, () -> service().registrar(dto)));
+        verify(registroIntentos, never()).registrarChoqueDeSeries(any(), any(), anyList(), any(), any());
     }
 
     @Test
@@ -492,7 +544,7 @@ class LoteServiceTest {
         service().registrar(dto);
 
         ArgumentCaptor<List<UnidadTrazable>> cajas = ArgumentCaptor.forClass(List.class);
-        verify(unidadTrazableRepository).saveAll(cajas.capture());
+        verify(unidadTrazableRepository).saveAllAndFlush(cajas.capture());
         List<String> series = new ArrayList<>(cajas.getValue().stream().map(UnidadTrazable::getSerie).toList());
         assertEquals(10_000, series.stream().distinct().count());
         assertEquals("L20269999S010000", series.get(series.size() - 1));

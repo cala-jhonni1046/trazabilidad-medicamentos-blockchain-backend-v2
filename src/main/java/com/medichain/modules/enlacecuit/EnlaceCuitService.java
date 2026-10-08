@@ -14,11 +14,13 @@ import com.medichain.modules.trazabilidad.RegistradorEventos;
 import com.medichain.modules.trazabilidad.TipoEvento;
 import com.medichain.modules.usuario.RolUsuario;
 import com.medichain.modules.usuario.Usuario;
+import com.medichain.utils.RestriccionUnica;
 import com.medichain.utils.seguridad.UsuarioActual;
 import com.medichain.utils.seguridad.VerificadorEmpresa;
 import com.medichain.utils.seguridad.VerificadorUsuario;
 import com.medichain.utils.validacion.CuitUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -105,7 +107,9 @@ public class EnlaceCuitService {
      * El DT del laboratorio propone un circuito con los CUIT de la
      * distribuidora y de la farmacia (R5): las tres HABILITADA, tipos
      * correctos y sin otro circuito vigente para el par laboratorio–farmacia.
-     * El código CIR-0001 sale de la secuencia de PostgreSQL.
+     * El código CIR-0001 sale de la secuencia de PostgreSQL. Dos propuestas
+     * simultáneas del mismo par: entra una y la otra recibe R5 (índice único
+     * parcial ux_circuito_par_vigente); su número de secuencia queda sin usar.
      */
     @Transactional
     public EnlaceCuit proponer(String cuitDistribuidor, String cuitFarmacia) {
@@ -120,7 +124,18 @@ public class EnlaceCuitService {
                     "Ya existe un circuito vigente entre este laboratorio y la farmacia " + farmacia.getCuit());
         }
         String codigo = String.format("CIR-%04d", repository.siguienteNumeroCodigo());
-        EnlaceCuit guardado = repository.save(new EnlaceCuit(codigo, laboratorio, distribuidor, farmacia, proponente));
+        EnlaceCuit guardado;
+        try {
+            // saveAndFlush: si otra propuesta del mismo par entró al mismo tiempo (las dos pasaron el
+            // control de arriba), el índice único parcial la rechaza ACÁ y se responde R5, no un 409 genérico.
+            guardado = repository.saveAndFlush(new EnlaceCuit(codigo, laboratorio, distribuidor, farmacia, proponente));
+        } catch (DataIntegrityViolationException e) {
+            if (RestriccionUnica.es(e, "ux_circuito_par_vigente")) {
+                throw new ReglaNegocioException("R5",
+                        "Ya existe un circuito vigente entre este laboratorio y la farmacia " + farmacia.getCuit());
+            }
+            throw e;
+        }
         registradorEventos.registrar(TipoEvento.CIRCUITO_PROPUESTO, "EnlaceCuit", guardado.getId(),
                 DatosEventos.circuitoPropuesto(guardado), actual);
         return guardado;

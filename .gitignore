@@ -5,9 +5,11 @@ target/
 !**/src/test/**/target/
 
 ### Secretos y logs (MediChain) ###
-application.properties
+# .env tiene los valores reales: NUNCA a Git. application.properties SÍ se versiona:
+# solo lee variables de entorno (${VARIABLE}, sin defaults para los secretos).
 .env
 .env.*
+!.env.example
 *.log
 # Claves y almacenes de certificados (nunca en el repo)
 *.pem

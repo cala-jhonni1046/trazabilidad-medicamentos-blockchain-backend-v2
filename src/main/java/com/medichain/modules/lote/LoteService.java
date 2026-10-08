@@ -15,11 +15,13 @@ import com.medichain.modules.unidadtrazable.UnidadTrazable;
 import com.medichain.modules.unidadtrazable.UnidadTrazableRepository;
 import com.medichain.modules.usuario.RolUsuario;
 import com.medichain.modules.usuario.Usuario;
+import com.medichain.utils.RestriccionUnica;
 import com.medichain.utils.seguridad.UsuarioActual;
 import com.medichain.utils.seguridad.VerificadorEmpresa;
 import com.medichain.utils.seguridad.VerificadorUsuario;
 import com.medichain.utils.validacion.SerieUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -128,6 +130,9 @@ public class LoteService {
      * repetidas dentro de la lista y ya existentes para el mismo GTIN.
      * Ante cualquier problema de series se registra INTENTO_SERIE_INVALIDA
      * en una transacción separada y se responde 409 R3 sin crear nada.
+     * Carreras con otra alta simultánea: los índices únicos de la base
+     * deciden y se traducen a LOTE_DUPLICADO (mismo código) o R3 + intento
+     * (mismas series del mismo GTIN), nunca a un 409 genérico.
      */
     @Transactional
     public Lote registrar(LoteRequestDTO dto) {
@@ -148,14 +153,38 @@ public class LoteService {
         // (condición para que RegistroIntentos, con REQUIRES_NEW, no espere el bloqueo de la cadena).
         validarSeries(dto.getCodigo(), medicamento, series, actual);
 
-        Lote lote = repository.save(new Lote(dto.getCodigo(), dto.getFechaFabricacion(), dto.getFechaVencimiento(),
-                series.size(), medicamento));
+        Lote lote;
+        try {
+            // saveAndFlush: si otro alta del mismo código entró al mismo tiempo (las dos pasaron el control
+            // de arriba), el índice ux_lote_laboratorio_codigo la rechaza ACÁ → LOTE_DUPLICADO, no un 409 genérico.
+            lote = repository.saveAndFlush(new Lote(dto.getCodigo(), dto.getFechaFabricacion(),
+                    dto.getFechaVencimiento(), series.size(), medicamento));
+        } catch (DataIntegrityViolationException e) {
+            if (RestriccionUnica.es(e, "ux_lote_laboratorio_codigo")) {
+                throw new ReglaNegocioException("LOTE_DUPLICADO",
+                        "Tu laboratorio ya tiene un lote con el código " + dto.getCodigo());
+            }
+            throw e;
+        }
         List<UnidadTrazable> cajas = new ArrayList<>(series.size());
         for (String serie : series) {
             cajas.add(new UnidadTrazable(serie, lote));
         }
-        // Inserción en tandas (hibernate.jdbc.batch_size): los ids UUID los genera Hibernate, sin IDENTITY.
-        unidadTrazableRepository.saveAll(cajas);
+        try {
+            // Inserción en tandas (hibernate.jdbc.batch_size): los ids UUID los genera Hibernate, sin IDENTITY.
+            // saveAllAndFlush: una carrera de series del mismo GTIN la rechaza ux_unidad_gtin_serie ACÁ, antes de
+            // registrar el evento propio (si no, el intento con REQUIRES_NEW esperaría el bloqueo de la cadena).
+            unidadTrazableRepository.saveAllAndFlush(cajas);
+        } catch (DataIntegrityViolationException e) {
+            if (RestriccionUnica.es(e, "ux_unidad_gtin_serie")) {
+                List<String> existentes = registroIntentos.registrarChoqueDeSeries(dto.getCodigo(), medicamento,
+                        series, HashUtil.seriesHash(series), actual);
+                throw new ReglaNegocioException("R3", "El lote no se registró: " + existentes.size()
+                        + " series ya existen para el GTIN " + medicamento.getGtin() + " (otro lote las registró al "
+                        + "mismo tiempo). Ejemplos: " + existentes.subList(0, Math.min(MUESTRA_MAXIMA, existentes.size())));
+            }
+            throw e;
+        }
 
         registradorEventos.registrar(TipoEvento.LOTE_REGISTRADO, "Lote", lote.getId(),
                 DatosEventos.loteRegistrado(lote, HashUtil.seriesHash(series), generadas ? "GENERADAS" : "LISTA"),

@@ -33,6 +33,7 @@ public class InspectorAnmat extends BaseEntity {
     @Column(name = "dni", nullable = false, length = 8, unique = true)
     private String dni;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "provincia", nullable = false, length = 30, unique = false)
     private Provincia provincia;
 

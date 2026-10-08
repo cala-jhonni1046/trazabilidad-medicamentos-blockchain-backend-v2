@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import java.util.Map;
 import java.util.Optional;
@@ -38,6 +39,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -45,7 +47,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Test unitario EnlaceCuitServiceTest en MediChain.
- * Circuitos con Mockito: visibilidad, proponer (R5 completa), aceptar y
+ * Circuitos con Mockito: visibilidad, proponer (R5 completa, también la
+ * carrera de dos propuestas simultáneas del mismo par), aceptar y
  * rechazar por empresa, tomar/asignar/aprobar/rechazar por inspector (D1)
  * y suspender/rehabilitar manual. Cada acción: caso feliz con su evento,
  * marca o rol incorrecto, empresa no habilitada, provincia incorrecta y
@@ -82,6 +85,7 @@ class EnlaceCuitServiceTest {
     /** Construye el Service bajo prueba con los mocks; save devuelve lo mismo. */
     private EnlaceCuitService service() {
         lenient().when(repository.save(any(EnlaceCuit.class))).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(repository.saveAndFlush(any(EnlaceCuit.class))).thenAnswer(inv -> inv.getArgument(0));
         return new EnlaceCuitService(repository, empresaRepository, inspectorAnmatRepository, usuarioActual,
                 verificadorEmpresa, verificadorUsuario, registradorEventos);
     }
@@ -165,6 +169,32 @@ class EnlaceCuitServiceTest {
     }
 
     @Test
+    @DisplayName("Carrera R5: otra propuesta del mismo par entró al mismo tiempo (ux_circuito_par_vigente) → 409 R5, sin evento")
+    void proponerCarreraDelParVigente() {
+        prepararPropuesta("30-71000002-2", distribuidora, "30-71000003-0", farmacia);
+        EnlaceCuitService service = service();
+        doThrow(new DataIntegrityViolationException(
+                "duplicate key value violates unique constraint \"ux_circuito_par_vigente\""))
+                .when(repository).saveAndFlush(any(EnlaceCuit.class));
+
+        fallaCon("R5", () -> service.proponer("30-71000002-2", "30-71000003-0"));
+        verify(registradorEventos, never()).registrar(any(), any(), any(), anyMap(), any(UsuarioAutenticado.class));
+    }
+
+    @Test
+    @DisplayName("Otra violación de integridad al proponer (no es la del par vigente) se propaga sin traducir")
+    void proponerOtraViolacionSePropaga() {
+        prepararPropuesta("30-71000002-2", distribuidora, "30-71000003-0", farmacia);
+        EnlaceCuitService service = service();
+        DataIntegrityViolationException otra = new DataIntegrityViolationException(
+                "duplicate key value violates unique constraint \"enlaces_cuit_codigo_key\"");
+        doThrow(otra).when(repository).saveAndFlush(any(EnlaceCuit.class));
+
+        assertSame(otra, assertThrows(DataIntegrityViolationException.class,
+                () -> service.proponer("30-71000002-2", "30-71000003-0")));
+    }
+
+    @Test
     @DisplayName("Proponer sin ser DT → 403")
     void proponerSinSerDt() {
         UsuarioAutenticado actual = prepararPropuesta("30-71000002-2", distribuidora, "30-71000003-0", farmacia);
@@ -172,7 +202,7 @@ class EnlaceCuitServiceTest {
                 .thenThrow(new AccessDeniedException("no es DT"));
 
         assertThrows(AccessDeniedException.class, () -> service().proponer("30-71000002-2", "30-71000003-0"));
-        verify(repository, never()).save(any());
+        verify(repository, never()).saveAndFlush(any());
     }
 
     @Test

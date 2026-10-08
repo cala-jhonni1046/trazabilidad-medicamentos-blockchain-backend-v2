@@ -68,6 +68,9 @@ CUIT_FARMACIA_NUEVA = "30-71000006-5"
 GLN_FARMACIA_NUEVA = "7799000000068"
 EMAIL_FARMACIA_NUEVA = "admin@farmacia-e2e.demo"
 
+# Inspector que la prueba da de alta, de baja y reactiva (paso 9: token de una cuenta desactivada).
+EMAIL_INSPECTOR_BAJA = "inspector.baja.e2e@medichain.demo"
+
 
 class SeccionInterrumpida(Exception):
     """Falta un dato imprescindible para seguir con la sección (por ejemplo un id)."""
@@ -712,6 +715,32 @@ def seccion_8_anclaje_sepolia(ctx, demo, admin):
                   r.campo("regla") == "SIN_EVENTOS_NUEVOS")
 
 
+def seccion_9_cuentas(ctx, demo, admin):
+    """9: el token todavía vigente de una cuenta desactivada deja de servir (el filtro JWT mira la base)."""
+    sede = ctx.token(admin[0], admin[1])
+    alta = {"legajo": "E2E-0009", "dni": "39000909", "provincia": "SAN_JUAN", "email": EMAIL_INSPECTOR_BAJA,
+            "password": demo, "nombre": "Inspector", "apellido": "Baja"}
+    r = pedir("POST", ctx.url("/api/inspectores-anmat"), alta, token=sede)
+    ctx.verificar("9.1", "la Sede da de alta un inspector de San Juan → 201", 201, r)
+    inspector_id = exigir(r.campo("id"), "el alta del inspector no devolvió id")
+    token_previo = iniciar_sesion(ctx.base, EMAIL_INSPECTOR_BAJA, demo)
+    r = pedir("GET", ctx.url("/api/eventos-trazabilidad/verificacion"), token=token_previo)
+    ctx.verificar("9.2", "con su token verifica la cadena → 200", 200, r)
+
+    r = pedir("POST", ctx.url("/api/inspectores-anmat/%s/baja" % inspector_id), token=sede)
+    ctx.verificar("9.3", "la Sede lo da de baja → 200 BAJA", 200, r, r.campo("estado") == "BAJA")
+    r = pedir("GET", ctx.url("/api/eventos-trazabilidad/verificacion"), token=token_previo)
+    ctx.verificar("9.4", "el MISMO token, todavía vigente, después de la baja → 401", 401, r)
+    r = pedir("POST", ctx.url("/api/auth/login"), {"email": EMAIL_INSPECTOR_BAJA, "password": demo})
+    ctx.verificar("9.5", "login del inspector dado de baja → 401", 401, r)
+
+    r = pedir("POST", ctx.url("/api/inspectores-anmat/%s/reactivar" % inspector_id), token=sede)
+    ctx.verificar("9.6", "la Sede lo reactiva → 200 ACTIVO", 200, r, r.campo("estado") == "ACTIVO")
+    r = pedir("GET", ctx.url("/api/eventos-trazabilidad/verificacion"),
+              token=iniciar_sesion(ctx.base, EMAIL_INSPECTOR_BAJA, demo))
+    ctx.verificar("9.7", "reactivado, con un login nuevo vuelve a operar → 200", 200, r)
+
+
 def seccion_final_cadena(ctx, demo, admin):
     """Final: la cadena sigue íntegra después de todo el recorrido."""
     sede = ctx.token(admin[0], admin[1])
@@ -731,6 +760,7 @@ SECCIONES = [
     ("7e · Recepción, dispensación y verificación pública", seccion_7e_recepcion_dispensacion),
     ("7f · Dictamen de cuarentenas y reportes ciudadanos", seccion_7f_dictamen_reportes),
     ("8  · Anclaje (deshabilitado)", seccion_8_anclaje_deshabilitado),
+    ("9  · Cuentas desactivadas con token vigente", seccion_9_cuentas),
     ("Final · Cadena íntegra", seccion_final_cadena),
 ]
 
