@@ -12,7 +12,7 @@ import java.util.UUID;
 /**
  * Repositorio RegistroBlockchainRepository en MediChain.
  * Acceso a datos de los anclajes. Un índice único parcial
- * (InicializadorBaseDatos) garantiza a lo sumo UN anclaje PENDIENTE o
+ * (ux_anclaje_en_curso, migración V1__esquema_inicial) garantiza a lo sumo UN anclaje PENDIENTE o
  * ENVIADO por red.
  */
 @Repository

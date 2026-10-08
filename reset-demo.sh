@@ -1,6 +1,8 @@
 #!/bin/bash
-# reset-demo.sh: BORRA TODA la base local de MediChain (schema public) para
-# que Hibernate la recree al próximo arranque. Uso solo en desarrollo.
+# reset-demo.sh: BORRA TODA la base local de MediChain (schema public, incluido
+# el historial de migraciones flyway_schema_history) para que Flyway la recree
+# al próximo arranque con las migraciones de src/main/resources/db/migration.
+# Uso solo en desarrollo.
 # Protecciones: se niega si DB_URL no apunta a localhost y pide escribir BORRAR.
 set -euo pipefail
 
@@ -44,7 +46,8 @@ if [[ -n "${DOCUMENTOS_DIR:-}" && -d "${DOCUMENTOS_DIR}" && "${DOCUMENTOS_DIR}" 
     echo "PDF borrados de '${DOCUMENTOS_DIR}': ${BORRADOS}"
 fi
 
-echo "Base '${BASE}' vaciada. Arrancá con ./levantar.sh: se crean las tablas, la cadena (GENESIS) y la demo."
+echo "Base '${BASE}' vaciada. Arrancá con ./levantar.sh: Flyway aplica las migraciones (tablas y cadena en GENESIS)"
+echo "y se crean la Sede (ADMIN_EMAIL) y, con SPRING_PROFILES_ACTIVE=demo, los datos de demo."
 
 # Anclaje (paso 8): el contrato viejo ya ancló eventos de la base anterior; para él, una cadena
 # que vuelve a empezar en #1 es igual a eventos borrados. Con el contrato viejo la app no arranca.

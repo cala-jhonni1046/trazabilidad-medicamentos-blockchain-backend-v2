@@ -8,7 +8,8 @@ import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Version;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 /**
@@ -25,11 +26,13 @@ public abstract class BaseEntity {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
+    // Instant en UTC (timestamptz en la base, V2__fechas_auditoria_utc), truncado a microsegundos:
+    // la precisión de PostgreSQL, así el valor en memoria es el mismo que se relee de la base.
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
-    private LocalDateTime fechaCreacion;
+    private Instant fechaCreacion;
 
     @Column(name = "fecha_actualizacion", nullable = true)
-    private LocalDateTime fechaActualizacion;
+    private Instant fechaActualizacion;
 
     // @Version: habilita locking optimista; Hibernate rechaza un update/delete
     // si la fila fue modificada por otra transacción desde la última lectura.
@@ -51,23 +54,23 @@ public abstract class BaseEntity {
         this.id = id;
     }
 
-    /** Devuelve la fecha y hora en que se creó el registro. */
-    public LocalDateTime getFechaCreacion() {
+    /** Devuelve el instante (UTC) en que se creó el registro. */
+    public Instant getFechaCreacion() {
         return fechaCreacion;
     }
 
-    /** Establece la fecha y hora de creación del registro. */
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+    /** Establece el instante (UTC) de creación del registro. */
+    public void setFechaCreacion(Instant fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
 
-    /** Devuelve la fecha y hora de la última actualización del registro. */
-    public LocalDateTime getFechaActualizacion() {
+    /** Devuelve el instante (UTC) de la última actualización del registro. */
+    public Instant getFechaActualizacion() {
         return fechaActualizacion;
     }
 
-    /** Establece la fecha y hora de la última actualización del registro. */
-    public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
+    /** Establece el instante (UTC) de la última actualización del registro. */
+    public void setFechaActualizacion(Instant fechaActualizacion) {
         this.fechaActualizacion = fechaActualizacion;
     }
 
@@ -84,7 +87,7 @@ public abstract class BaseEntity {
     /** Completa las fechas de auditoría antes del primer INSERT. */
     @PrePersist
     protected void prePersist() {
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
         if (this.fechaCreacion == null) {
             this.fechaCreacion = now;
         }
@@ -94,6 +97,6 @@ public abstract class BaseEntity {
     /** Actualiza la fecha de auditoría antes de cada UPDATE. */
     @PreUpdate
     protected void preUpdate() {
-        this.fechaActualizacion = LocalDateTime.now();
+        this.fechaActualizacion = Instant.now().truncatedTo(ChronoUnit.MICROS);
     }
 }

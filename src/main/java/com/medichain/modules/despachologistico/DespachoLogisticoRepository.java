@@ -36,7 +36,7 @@ public interface DespachoLogisticoRepository extends JpaRepository<DespachoLogis
             + "where d2.id = d.id and b.destino.farmacia.id = :empresaId)")
     Page<DespachoLogistico> findVisiblesParaFarmacia(@Param("empresaId") UUID empresaId, Pageable pageable);
 
-    /** Próximo número para el código VJ-0001 (secuencia creada por InicializadorBaseDatos). */
+    /** Próximo número para el código VJ-0001 (secuencia creada por la migración V1__esquema_inicial). */
     @Query(value = "select nextval('viaje_codigo_seq')", nativeQuery = true)
     Long siguienteNumeroCodigo();
 

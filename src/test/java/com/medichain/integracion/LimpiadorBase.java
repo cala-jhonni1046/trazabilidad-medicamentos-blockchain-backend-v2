@@ -14,9 +14,10 @@ import java.util.stream.Stream;
  * integración, en ~20-50 ms:
  * <ul>
  *   <li>TRUNCATE … CASCADE de TODAS las tablas del esquema public, leídas de
- *       pg_tables (una tabla nueva nunca se olvida), salvo cadena_estado;</li>
- *   <li>cadena_estado vuelve a (0, GENESIS): es una fila única que el sistema
- *       crea al arrancar, no se borra;</li>
+ *       pg_tables (una tabla nueva nunca se olvida), salvo cadena_estado y
+ *       flyway_schema_history (el historial de migraciones: el esquema no se toca);</li>
+ *   <li>cadena_estado vuelve a (0, GENESIS): es una fila única que crea la
+ *       migración V1__esquema_inicial, no se borra;</li>
  *   <li>las secuencias de los códigos vuelven a 1 (CIR-0001, BUL-0001, VJ-0001,
  *       REP-0001 en cada test);</li>
  *   <li>se borran los PDF de la carpeta de documentos de los tests.</li>
@@ -34,7 +35,7 @@ public final class LimpiadorBase {
     /** Vacía la base, reinicia la cadena y las secuencias, y borra los documentos. */
     public static void limpiar(JdbcTemplate jdbc) {
         List<String> tablas = jdbc.queryForList("SELECT tablename FROM pg_tables WHERE schemaname = 'public' "
-                + "AND tablename <> 'cadena_estado' ORDER BY tablename", String.class);
+                + "AND tablename NOT IN ('cadena_estado', 'flyway_schema_history') ORDER BY tablename", String.class);
         if (!tablas.isEmpty()) {
             jdbc.execute("TRUNCATE TABLE " + String.join(", ", tablas) + " CASCADE");
         }

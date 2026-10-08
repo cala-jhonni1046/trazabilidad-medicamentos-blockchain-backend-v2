@@ -1,5 +1,6 @@
 package com.medichain.modules.lote;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -12,8 +13,8 @@ import java.util.UUID;
 public class LoteResponseDTO {
 
     private UUID id;
-    private LocalDateTime fechaCreacion;
-    private LocalDateTime fechaActualizacion;
+    private Instant fechaCreacion;
+    private Instant fechaActualizacion;
     private Long version;
     private String codigo;
     private LocalDate fechaFabricacion;
@@ -41,22 +42,22 @@ public class LoteResponseDTO {
     }
 
     /** Devuelve la fecha de creación del registro. */
-    public LocalDateTime getFechaCreacion() {
+    public Instant getFechaCreacion() {
         return fechaCreacion;
     }
 
     /** Establece la fecha de creación del registro. */
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+    public void setFechaCreacion(Instant fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
 
     /** Devuelve la fecha de última actualización del registro. */
-    public LocalDateTime getFechaActualizacion() {
+    public Instant getFechaActualizacion() {
         return fechaActualizacion;
     }
 
     /** Establece la fecha de última actualización del registro. */
-    public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
+    public void setFechaActualizacion(Instant fechaActualizacion) {
         this.fechaActualizacion = fechaActualizacion;
     }
 

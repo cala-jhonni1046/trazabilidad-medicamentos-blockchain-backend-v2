@@ -1,5 +1,6 @@
 package com.medichain.modules.registroblockchain;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -12,8 +13,8 @@ import java.util.UUID;
 public class RegistroBlockchainResponseDTO {
 
     private UUID id;
-    private LocalDateTime fechaCreacion;
-    private LocalDateTime fechaActualizacion;
+    private Instant fechaCreacion;
+    private Instant fechaActualizacion;
     private Long version;
     private Long desdeNumero;
     private Long hastaNumero;
@@ -49,22 +50,22 @@ public class RegistroBlockchainResponseDTO {
     }
 
     /** Devuelve la fecha de creación. */
-    public LocalDateTime getFechaCreacion() {
+    public Instant getFechaCreacion() {
         return fechaCreacion;
     }
 
     /** Establece la fecha de creación. */
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+    public void setFechaCreacion(Instant fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
 
     /** Devuelve la fecha de la última actualización. */
-    public LocalDateTime getFechaActualizacion() {
+    public Instant getFechaActualizacion() {
         return fechaActualizacion;
     }
 
     /** Establece la fecha de la última actualización. */
-    public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
+    public void setFechaActualizacion(Instant fechaActualizacion) {
         this.fechaActualizacion = fechaActualizacion;
     }
 

@@ -20,7 +20,4 @@ public interface CadenaEstadoRepository extends JpaRepository<CadenaEstado, UUID
 
     /** Lee el estado sin bloquear (para la verificación de la cadena). */
     Optional<CadenaEstado> findFirstByNombre(String nombre);
-
-    /** Indica si ya existe la fila de estado. */
-    boolean existsByNombre(String nombre);
 }

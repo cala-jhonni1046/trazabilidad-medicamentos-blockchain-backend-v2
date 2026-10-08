@@ -24,16 +24,29 @@ Fuente de verdad del negocio: documento "MediChain: requerimientos del backend" 
 
 ## Stack
 
-Java 21 · Spring Boot 4.1.1 · PostgreSQL · Spring Data JPA · Spring Security · springdoc (Swagger en `/swagger-ui.html`) · web3j 6.0.0 (Jackson 3, Java 21; sin el módulo KMS de AWS) · Solidity 0.8.37 (`contracts/`) · Tests: JUnit 5 + Mockito, Testcontainers 2 (PostgreSQL 16 en Docker) · paquete base `com.medichain`.
+Java 21 · Spring Boot 4.1.1 · PostgreSQL · Spring Data JPA · Spring Security · springdoc (Swagger en `/swagger-ui.html`) · web3j 6.0.0 (Jackson 3, Java 21; sin el módulo KMS de AWS) · Solidity 0.8.37 (`contracts/`) · Flyway 12 (migraciones del esquema) · Tests: JUnit 5 + Mockito, Testcontainers 2 (PostgreSQL 16 en Docker) · paquete base `com.medichain`.
 
 ## Tests
 
 - `./mvnw test` → Surefire: unitarios (`*Test`), sin Docker, sin base y sin variables de entorno.
 - `./mvnw verify` → además Failsafe: integración (`*IT`) contra PostgreSQL real (`postgres:16.15-alpine`, Testcontainers). Sin Docker falla con un mensaje claro; para omitirlos: `./mvnw verify -DskipITs`. Corre igual en un clon limpio sin `.env`.
 - Los IT van en `src/test/java/com/medichain/integracion/` y extienden `IntegracionBase`: UN contenedor y UN contexto de Spring para toda la suite (no agregar `@MockitoBean` ni propiedades propias en un IT: crearía otro contexto); perfil `test` (`src/test/resources/application-test.properties`, valores falsos) y anclaje apagado; `@ServiceConnection` le gana a `DB_URL`, así un IT nunca toca otra base.
-- Antes de cada IT, `LimpiadorBase` vacía la base (TRUNCATE de todas las tablas, cadena en GENESIS, secuencias en 1) y se recrea la Sede. NUNCA `@Transactional` en un IT: el rollback ocultaría REQUIRES_NEW, la concurrencia y el bloqueo de la cadena.
+- El esquema de los IT lo crean las mismas migraciones de Flyway que en producción (al levantar el contexto). Antes de cada IT, `LimpiadorBase` vacía la base (TRUNCATE de todas las tablas salvo `cadena_estado` y `flyway_schema_history`, cadena en GENESIS, secuencias en 1) y se recrea la Sede. NUNCA `@Transactional` en un IT: el rollback ocultaría REQUIRES_NEW, la concurrencia y el bloqueo de la cadena.
 - Datos con `EscenarioIntegracion` (services reales como cada usuario, igual que DatosDemo; contraseña `EscenarioIntegracion.CLAVE`). Carreras con `EnParalelo`; las de índices únicos, deterministas (la primera transacción queda abierta hasta que la segunda se bloquea en PostgreSQL).
 - Al tocar persistencia, transacciones, concurrencia o seguridad, agregar su IT además del unitario.
+- `MigracionesIT` cubre las migraciones: nombres y versiones, historial, aplicar limpio en una base nueva, que una base con tablas y sin historial no se adopte, validación de Hibernate y la DERIVA entre entidades y migraciones (compara el esquema de Flyway con el que deduce Hibernate de las entidades: columnas con tipo, largo y NOT NULL, PK, UNIQUE, FK y valores de cada CHECK, ignorando nombres). Si falla, falta una migración o una anotación.
+
+## Migraciones (Flyway)
+
+- El esquema lo crean y lo cambian SOLO las migraciones de `src/main/resources/db/migration/`. Hibernate solo valida al arrancar (`spring.jpa.hibernate.ddl-auto=validate`); nunca crea ni modifica tablas. No hay SQL de esquema en código Java.
+- Nombre: `V<n>__<descripcion_en_snake_case>.sql` (doble guion bajo), `n` correlativo desde 1 sin huecos, descripción en español y minúsculas. Existentes: `V1__esquema_inicial`, `V2__fechas_auditoria_utc`, `V3__indices_claves_foraneas`.
+- NUNCA editar, renombrar ni borrar una migración que ya está en Git: Flyway compara checksums y la app no arranca. Una corrección es una V nueva.
+- Cada cambio de esquema es una V nueva, en el mismo commit que el cambio de la entidad: tabla o columna nueva, tipo, largo, nullable, unique, FK, índice. `MigracionesIT` lo exige.
+- Valor nuevo en un enum guardado (`@Enumerated(EnumType.STRING)`) = migración que reemplaza su CHECK (`DROP CONSTRAINT ck_…` + `ADD CONSTRAINT ck_…` con la lista COMPLETA). Sin ella, insertar ese valor falla en la base.
+- Formato: encabezado con qué cambia y por qué; nombres explícitos para toda restricción e índice: `pk_<tabla>`, `uk_<tabla>_<columna>`, `ck_<tabla>_<columna>`, `fk_<tabla>_<columna>`, `ix_<tabla>_<columna>`; los `ux_` (únicos compuestos o parciales) conservan su nombre porque los usa `RestriccionUnica`. Un índice nuevo sobre una FK dice en un comentario qué consulta lo usa.
+- Prohibido: `baseline-on-migrate` (una base con tablas y sin historial NO se adopta: la app no arranca), `flyway clean`, migraciones repetibles (`R__`) y migraciones en Java.
+- Datos en migraciones: solo los que el esquema necesita para funcionar (la fila inicial de `cadena_estado`). La Sede (`DatosIniciales`) y la demo (`DatosDemo`) siguen en Java.
+- Base local: `./reset-demo.sh` la vacía (DROP SCHEMA, incluido el historial) y el próximo arranque aplica todas las migraciones.
 
 ## Arquitectura (conservar siempre)
 
@@ -57,7 +70,7 @@ Java 21 · Spring Boot 4.1.1 · PostgreSQL · Spring Data JPA · Spring Security
 ## Identificadores
 
 - `id` técnico: UUID (en BaseEntity, con `@Version`).
-- `codigo` legible para personas: `L2026-0415` (lote), `BUL-0001` (bulto), `CIR-0001` (circuito), `VJ-0001` (viaje), `REP-0001` (reporte). CIR, BUL, VJ y REP salen de secuencias de PostgreSQL (`InicializadorBaseDatos`).
+- `codigo` legible para personas: `L2026-0415` (lote), `BUL-0001` (bulto), `CIR-0001` (circuito), `VJ-0001` (viaje), `REP-0001` (reporte). CIR, BUL, VJ y REP salen de secuencias de PostgreSQL (migración `V1__esquema_inicial`).
 - Caja: se identifica por **GTIN + serie** (lo que codifica el DataMatrix: `(01) GTIN (21) serie`). La serie es única POR GTIN, no en todo el sistema (restricción `(gtin, serie)` en `unidades_trazables`, con el GTIN desnormalizado en la caja).
 - Código de lote: lo escribe el laboratorio, hasta 12 caracteres (letras, dígitos, guion), único POR LABORATORIO.
 - Serie generada por el servidor: código del lote sin guiones + `S` + 6 dígitos, por ejemplo `L2026-0002` → `L20260002S000001`. El laboratorio también puede enviar su propia lista de series.
@@ -195,8 +208,9 @@ ALTA_INSPECTOR, BAJA_INSPECTOR, REACTIVACION_INSPECTOR, SOLICITUD_HABILITACION, 
 - Simulador de sensor: `scripts/simular-sensor.py` (usa los endpoints reales). Simplificación pendiente: el sensor usa la cuenta de un usuario de la empresa origen; en la realidad tiene credencial propia de dispositivo.
 - Verificación pública: una caja en recall (lote RECALL o bulto en medida CONVERTIDA_EN_RECALL) se muestra BLOQUEADA con el mensaje de retiro del mercado. SERIE_INEXISTENTE solo si el GTIN es de un medicamento registrado; como mucho un evento SERIE_INEXISTENTE / SERIE_ROBADA por (tipo, GTIN, serie) por día UTC (tabla `intento_verificacion`) y tope diario global de 500 SERIE_INEXISTENTE. Pendiente: rate limiting por IP (la IP no se guarda).
 - Intentos que deben quedar aunque la operación falle (BULTO_INEXISTENTE, BULTO_DUPLICADO, INTENTO_DUPLICADO, SERIE_ROBADA): `RegistradorEventosAparte` (REQUIRES_NEW), llamado antes de cualquier evento propio de la transacción.
-- SQL nativo de arranque (secuencias `circuito_codigo_seq`, `bulto_codigo_seq`, `viaje_codigo_seq`, `reporte_codigo_seq`, índice único parcial del par vigente, índice único parcial `ux_anclaje_en_curso`, fila inicial de `cadena_estado`, conversión única de `inspectores_anmat.provincia` de smallint (posición, faltaba `@Enumerated`) a texto si una base anterior al paso 9 todavía la tiene así): solo en `config/InicializadorBaseDatos`. En el paso 10 se reemplaza por la migración inicial de Flyway.
+- Secuencias `circuito_codigo_seq`, `bulto_codigo_seq`, `viaje_codigo_seq`, `reporte_codigo_seq`, índices únicos parciales `ux_circuito_par_vigente` y `ux_anclaje_en_curso`, y la fila inicial de `cadena_estado`: en `V1__esquema_inicial` (ver "Migraciones (Flyway)").
 - Carreras contra índices únicos: el Service valida antes, pero dos altas simultáneas pueden pasar las dos; la base deja entrar a una. Se guarda con `saveAndFlush` / `saveAllAndFlush` y la `DataIntegrityViolationException` se traduce por el nombre de la restricción (`utils/RestriccionUnica`): `ux_circuito_par_vigente` → 409 R5; `ux_lote_laboratorio_codigo` → 409 LOTE_DUPLICADO; `ux_unidad_gtin_serie` → 409 R3 + INTENTO_SERIE_INVALIDA (`RegistroIntentos.registrarChoqueDeSeries`, REQUIRES_NEW, antes de cualquier evento propio). Otra restricción se propaga (409 genérico). Las ediciones concurrentes de una misma fila las frena `@Version` (409).
 - Contraseñas con BCrypt. JWT de 8 h con `sub`, `rol`, `empresaId`, `provincia`. En cada request con token, `JwtAuthenticationFilter` confirma en la base que la cuenta siga activa (`UsuarioRepository.existsByIdAndActivoTrue`): el token todavía vigente de una cuenta desactivada (inspector dado de baja, empleado desactivado) → 401.
 - Los Services filtran por empresa (empleados) y por provincia (inspectores).
-- Errores sin detalles internos. Fechas guardadas en UTC.
+- Errores sin detalles internos.
+- Fechas: las de auditoría de `BaseEntity` (`fechaCreacion`, `fechaActualizacion`) son `Instant` en UTC truncado a microsegundos (`timestamptz` en la base, V2) y la API las devuelve en UTC con `Z` (ej. `2026-10-08T14:49:09.734512Z`). `EventoTrazabilidad.fechaHora` también es `Instant`/`timestamptz`. PENDIENTE (con su propio diseño): las otras 25 fechas del negocio siguen como `LocalDateTime`/`timestamp` sin zona, escritas con `LocalDateTime.now()` (zona de la JVM, hoy UTC); dos entran a eventos nuevos (`fechaEstimadaEntrega` en VIAJE_CREADO y `fechaHoraLectura` en RUPTURA_FRIO), y `fechaEstimadaEntrega` la escribe el usuario sin zona.

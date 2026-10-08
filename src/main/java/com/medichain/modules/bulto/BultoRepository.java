@@ -34,7 +34,7 @@ public interface BultoRepository extends JpaRepository<Bulto, UUID> {
     /** Bultos con los códigos dados (lo que se escanea al armar un viaje). */
     List<Bulto> findByCodigoIn(Collection<String> codigos);
 
-    /** Próximo número para el código BUL-0001 (secuencia creada por InicializadorBaseDatos). */
+    /** Próximo número para el código BUL-0001 (secuencia creada por la migración V1__esquema_inicial). */
     @Query(value = "select nextval('bulto_codigo_seq')", nativeQuery = true)
     Long siguienteNumeroCodigo();
 

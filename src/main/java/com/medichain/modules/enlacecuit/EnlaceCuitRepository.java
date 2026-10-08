@@ -66,7 +66,7 @@ public interface EnlaceCuitRepository extends JpaRepository<EnlaceCuit, UUID> {
     Page<EnlaceCuit> findBandeja(@Param("provincia") Provincia provincia, @Param("inspectorId") UUID inspectorId,
                                  Pageable pageable);
 
-    /** Próximo número para el código CIR-0001 (secuencia creada por InicializadorBaseDatos). */
+    /** Próximo número para el código CIR-0001 (secuencia creada por la migración V1__esquema_inicial). */
     @Query(value = "select nextval('circuito_codigo_seq')", nativeQuery = true)
     Long siguienteNumeroCodigo();
 }

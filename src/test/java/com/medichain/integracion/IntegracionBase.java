@@ -30,6 +30,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li><b>UN contexto de Spring</b> para todas las clases: todas heredan esta
  *       configuración sin @MockitoBean ni propiedades propias, así Spring lo
  *       reutiliza (arrancarlo cuesta ~8 s).</li>
+ *   <li><b>Esquema creado por Flyway</b> al levantar el contexto, con las mismas
+ *       migraciones que en producción; Hibernate solo lo valida (MigracionesIT
+ *       prueba las migraciones).</li>
  *   <li><b>Perfil test</b> (application-test.properties, valores falsos) y anclaje
  *       apagado, puestos acá: estas propiedades le ganan a cualquier variable de
  *       entorno (por ejemplo un SPRING_PROFILES_ACTIVE=demo del .env).</li>
