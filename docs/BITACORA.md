@@ -2,9 +2,9 @@
 
 **MediChain** es el backend de un sistema de trazabilidad de medicamentos para Argentina, pensado para la ANMAT con un piloto en Mendoza. Registra cada movimiento de un medicamento, del laboratorio al paciente, en una cadena de eventos encadenados por hash (SHA-256). Cada 5 minutos ancla el último hash en la blockchain pública **Ethereum Sepolia**. Así ni siquiera quien administra la base de datos puede alterar la historia sin que se note.
 
-- **Stack:** Java 21 · Spring Boot 4.1.1 · Spring Security (JWT, BCrypt) · Spring Data JPA · PostgreSQL · springdoc (Swagger) · web3j 6.0.0 · Solidity 0.8.37 (contrato `MediChainAnchor`) · Ethereum Sepolia.
+- **Stack:** Java 21 · Spring Boot 4.1.1 · Spring Security (JWT, BCrypt) · Spring Data JPA · PostgreSQL · springdoc (Swagger) · web3j 6.0.0 · Solidity 0.8.37 (contrato `MediChainAnchor`) · Ethereum Sepolia · Tests: JUnit 5, Mockito y Testcontainers.
 - **Objetivo:** que cada caja (identificada por GTIN + número de serie, lo que codifica el DataMatrix) tenga un recorrido verificable. Que un paciente pueda comprobar con su caja si es auténtica, si fue retirada del mercado o si ya se dispensó, sin exponer datos personales (Ley 25.326). Que la integridad del registro sea demostrable frente a terceros.
-- **Alcance de esta bitácora:** del 27/09/2026 al 06/10/2026. Las fechas son de Argentina. Lo marcado **(aprox.)** o **(reconstruido del código)** no tiene un registro exacto de fecha o contenido.
+- **Alcance de esta bitácora:** del 27/09/2026 al 08/10/2026. Las fechas son de Argentina. Lo marcado **(aprox.)** o **(reconstruido del código)** no tiene un registro exacto de fecha o contenido.
 
 ## Resumen
 
@@ -27,8 +27,9 @@
 | 05/10 | Paso 8 | Anclaje en Ethereum Sepolia y verificación contra la blockchain | 399 · e2e 92/92 y 94/94 (`--sepolia`) |
 | 06/10 | Paso 8 (corrección) | Gas después de la actualización Glamsterdam de Sepolia, frenos y verificación del bytecode | 432 · e2e 92/92 |
 | 06/10 | Repositorio | Primer commit y publicación en GitHub (ramas `main` y `develop`) | — |
+| 08/10 | Paso 9 | Tests de integración con PostgreSQL real (Testcontainers); 3 problemas encontrados y corregidos | 441 + 37 de integración · e2e 99/99 |
 
-"Tests" es la cantidad de tests automáticos (JUnit) al cerrar cada paso. "e2e" es la prueba de punta a punta por la API real (`scripts/prueba-e2e.py`): verificaciones correctas / total.
+"Tests" es la cantidad de tests automáticos (JUnit) al cerrar cada paso; desde el paso 9 se suman los de integración, que corren contra PostgreSQL real. "e2e" es la prueba de punta a punta por la API real (`scripts/prueba-e2e.py`): verificaciones correctas / total.
 
 ---
 
@@ -330,9 +331,59 @@
   - **Revisión de lo staged antes del commit:** se buscaron en lo preparado los valores reales de los secretos, sin imprimirlos, y aparecieron **0 veces**.
 - **Publicación en GitHub,** con las ramas `main` y `develop`.
 
+## 08/10 · Paso 9: tests de integración con PostgreSQL real (Testcontainers)
+
+- **Objetivo:** probar contra una base PostgreSQL real lo que los tests con simulaciones (mocks) no pueden ver: concurrencia, transacciones, bloqueos, restricciones de la base y la cadena de seguridad completa. Además, que el proyecto se pruebe recién clonado, sin `.env` ni variables de entorno.
+- **Qué se hizo:**
+  - **Dos niveles de prueba:**
+    - `./mvnw test`: los tests unitarios, sin Docker, sin base y sin variables de entorno;
+    - `./mvnw verify`: además, los tests de integración (`*IT`) contra PostgreSQL 16 en Docker, con Testcontainers. Sin Docker fallan con un mensaje claro que indica cómo omitirlos (`-DskipITs`).
+  - **`application.properties` pasó a versionarse:** solo lee variables de entorno, sin valores por defecto para los secretos. La plantilla `.env.example` (con valores falsos) reemplazó a `application-example.properties`. `.env` sigue sin ir a Git.
+  - **9 clases de tests de integración (37 tests):**
+    - `MedichainApplicationIT`: la aplicación completa arranca contra el contenedor y crea sus secuencias e índices; la base nunca es la del usuario; prueba también la conversión de la provincia del inspector (problema 2);
+    - `CadenaConcurrenteIT`: 16 hilos registran 400 eventos a la vez y quedan numerados del 1 al 400, sin huecos y con la cadena íntegra; un rollback se lleva su evento sin dejar hueco;
+    - `VerificacionCadenaIT`: la verificación detecta alteraciones hechas con SQL directo (contenido cambiado, fecha corrida un microsegundo, evento borrado);
+    - `TransaccionesIT`: los intentos que deben quedar aunque la operación falle (series inválidas, bulto inexistente o ya recibido, caja ya dispensada) quedan registrados, sin bloqueo mutuo (deadlock);
+    - `RestriccionesBaseIT`: índices únicos, secuencias y altas simultáneas;
+    - `ConcurrenciaNegocioIT`: cuatro personas hacen a la vez la misma acción. Liberar un lote o dispensar una caja ocurre una sola vez; al armar bultos del mismo lote, ninguna caja queda en dos bultos;
+    - `SeguridadIT`: login real, tokens ausentes o alterados, roles, recurso de otra empresa (404), empresa de otra provincia (D1) e inspector dado de baja;
+    - `DatosSensiblesIT`: los enums se guardan como texto; el DNI completo del paciente no queda en ninguna tabla, ni en la respuesta, ni en el log;
+    - `FlujoCompletoIT`: del registro de una farmacia por la API hasta la verificación pública de una caja dispensada.
+  - **Prueba e2e:** sección 9 nueva (cuentas desactivadas con token vigente).
+- **Decisiones y por qué:**
+  - **Un solo contenedor y un solo contexto de Spring para toda la suite,** con la base vaciada antes de cada test. Así la suite completa (`./mvnw clean verify`) tarda alrededor de 1 min 30 s.
+  - **Nunca `@Transactional` en un test de integración:** el rollback automático ocultaría justo lo que se prueba (transacciones aparte, concurrencia, bloqueo de la cadena).
+  - **Las carreras se provocan de forma determinista:** la primera operación deja su transacción abierta hasta que la segunda queda bloqueada en PostgreSQL, esperando el índice único; recién entonces se confirma la primera. El test reproduce la carrera siempre, no "a veces".
+  - **Los datos de prueba se arman con los services reales,** actuando como cada usuario (igual que los datos de demo): se respetan las reglas y cada paso deja su evento.
+  - **Imagen fijada: `postgres:16.15-alpine`,** la misma versión mayor que usa el proyecto.
+- **Problemas encontrados y solución:**
+  1. **Inspector dado de baja con su token todavía vigente.**
+     - El filtro JWT solo leía el token y no consultaba la base. Un inspector dado de baja podía seguir usando su token hasta que venciera (8 h) en las rutas que solo miran el rol, por ejemplo listados o la verificación de la cadena. Sus acciones sí se rechazaban, porque D1 lo valida contra la base.
+     - Era un pendiente conocido: el test lo confirmó (200 en lugar de 401).
+     - **Solución:** en cada request, el filtro confirma en la base que la cuenta siga activa; si no, 401. Vale también para empleados desactivados.
+  2. **Provincia del inspector guardada como número.**
+     - `InspectorAnmat.provincia` no tenía `@Enumerated(EnumType.STRING)` y se guardaba por su posición en el enum. Era la única columna así en todo el esquema: se había escapado de la corrección del paso 7a.
+     - Funcionaba, pero reordenar el enum habría cambiado el significado de los datos guardados sin ningún aviso.
+     - **Solución:** la anotación, más una conversión única al arrancar: en una base creada antes, la columna pasa a texto sin perder datos y con la misma restricción (CHECK) que crea Hibernate en una base nueva. En el paso 10 pasa a Flyway.
+  3. **Altas simultáneas con un error genérico.**
+     - Dos propuestas del mismo circuito, o dos lotes con el mismo código o con series repetidas, hechas al mismo tiempo, pasaban las dos el control del Service. La base dejaba entrar a una y la otra recibía "El dato ya existe o viola una restricción", sin el código de su regla.
+     - Se detectó al diseñar los tests, y los tests de integración lo reproducen.
+     - **Solución:** la violación se traduce por el nombre de la restricción: R5, LOTE_DUPLICADO y R3, con su INTENTO_SERIE_INVALIDA registrado aparte. Con la traducción desactivada, los 3 tests de carrera fallan: prueba de que la detectan.
+- **Verificaciones finales:**
+  - **Clon limpio:** con el contenido exacto del commit en una carpeta temporal, sin `.env` y con el entorno vacío, `./mvnw verify` pasó completo.
+  - **Sin Docker** (dentro de un contenedor sin acceso a Docker): mensaje claro y build fallido; con `-DskipITs` pasan los tests unitarios.
+  - **Revisión del commit:** se revisó el contenido de `application.properties` en el diff y se buscaron los valores reales de los secretos en lo preparado, sin imprimirlos: ninguno quedó en el commit.
+- **Resultado:**
+
+  | | Antes | Después |
+  |---|---|---|
+  | Tests unitarios (`./mvnw test`) | 432: 431 más uno de arranque que necesitaba base y variables de entorno | 441, sin Docker ni variables |
+  | Tests de integración (`./mvnw verify`) | 0 | 37, en 9 clases |
+  | Prueba e2e | 92/92 | 99/99 |
+
 ---
 
-## Estado al 06/10 (reconstruido del código)
+## Estado al 08/10 (reconstruido del código)
 
 | Métrica | Valor |
 |---|---|
@@ -341,8 +392,8 @@
 | Roles | 6 |
 | Reglas de negocio | 15 (R1 a R15) |
 | Tipos de evento | 47 |
-| Tests automáticos | 432 (en 50 clases de test) |
-| Prueba e2e | 92 verificaciones; 94 con anclaje real |
+| Tests automáticos | 441 unitarios (en 52 clases) + 37 de integración contra PostgreSQL real (en 9 clases) |
+| Prueba e2e | 99 verificaciones. La variante con anclaje real (`--sepolia`) dio 94 el 05/10, antes de la sección 9 |
 
 ## Metodología y uso de IA
 
@@ -354,7 +405,7 @@
   2. **Revisión:** el autor responde las dudas y aprueba o corrige el diseño.
   3. **Implementación (fase 2):** código, tests automáticos y actualización de `CLAUDE.md`, el archivo de reglas del proyecto. Ese archivo fija el estilo (código explícito, sin Lombok, Javadoc en todo), la arquitectura por módulos, los códigos de error y las reglas de seguridad.
   4. **Pruebas:**
-     - la suite completa (`./mvnw test`);
+     - la suite completa: `./mvnw test` y, desde el paso 9, `./mvnw verify` (unitarios + integración con PostgreSQL real en Docker);
      - la prueba e2e completa (`scripts/prueba-e2e.py`) contra una instancia descartable (base y app aparte), extendida con la sección del paso;
      - pruebas manuales del autor en Swagger.
 - **Reglas de trabajo con el asistente:**
@@ -365,7 +416,6 @@
 
 ## Pendiente
 
-- **Paso 9:** tests de integración con Testcontainers (PostgreSQL real en Docker).
 - **Paso 10:** migración inicial con Flyway, que reemplaza el SQL de arranque (`InicializadorBaseDatos`) y `ddl-auto=update` (problema 4 del relevamiento del 28/09).
 - **Paso 11:** Actuator, Docker (imagen + docker-compose) y README.
 - **Pendientes ya anotados en `CLAUDE.md`, sin paso asignado:**
