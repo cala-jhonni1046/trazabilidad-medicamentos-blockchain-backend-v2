@@ -767,6 +767,89 @@
         "tags" : [ "Circuitos" ]
       }
     },
+    "/api/circuitos/sin-inspector" : {
+      "get" : {
+        "description" : "Circuitos PENDIENTE_INSPECTOR, sin revisor, cuya farmacia es de una provincia sin inspectores ACTIVO: la Sede tiene que asignarlos (POST /api/circuitos/{id}/asignar). Los más viejos primero. Roles: SEDE_CENTRAL. Reglas: R5.",
+        "operationId" : "listarCircuitosSinInspector",
+        "parameters" : [ {
+          "description" : "Zero-based page index (0..N)",
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "description" : "The size of the page to be returned",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 20,
+            "minimum" : 1
+          }
+        }, {
+          "description" : "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+          "in" : "query",
+          "name" : "sort",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "default" : [ "fechaCreacion,ASC" ],
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagedModelEnlaceCuitResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "Datos inválidos: campo obligatorio, formato o parámetro mal formado. En la validación, 'errors' trae un elemento por campo."
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "No autenticado: falta el token, no es válido, venció o la cuenta está desactivada (en el login: credenciales incorrectas)."
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "Tu rol (o tu marca de administrador o director técnico) no permite esta acción."
+          }
+        },
+        "summary" : "Pendientes sin inspector (Sede)",
+        "tags" : [ "Circuitos" ]
+      }
+    },
     "/api/circuitos/{id}" : {
       "get" : {
         "description" : "404 si tu empresa no participa. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
@@ -2651,6 +2734,89 @@
           }
         },
         "summary" : "Buscar empresa por CUIT",
+        "tags" : [ "Empresas" ]
+      }
+    },
+    "/api/empresas/sin-inspector" : {
+      "get" : {
+        "description" : "Solicitudes PENDIENTE, sin revisor, de provincias que no tienen inspectores ACTIVO: la Sede tiene que asignarlas a un inspector (POST /api/empresas/{id}/asignar). Las más viejas primero. Roles: SEDE_CENTRAL. Reglas: R2.",
+        "operationId" : "listarEmpresasSinInspector",
+        "parameters" : [ {
+          "description" : "Zero-based page index (0..N)",
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "description" : "The size of the page to be returned",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 20,
+            "minimum" : 1
+          }
+        }, {
+          "description" : "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+          "in" : "query",
+          "name" : "sort",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "default" : [ "fechaCreacion,ASC" ],
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagedModelEmpresaResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "Datos inválidos: campo obligatorio, formato o parámetro mal formado. En la validación, 'errors' trae un elemento por campo."
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "No autenticado: falta el token, no es válido, venció o la cuenta está desactivada (en el login: credenciales incorrectas)."
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "Tu rol (o tu marca de administrador o director técnico) no permite esta acción."
+          }
+        },
+        "summary" : "Pendientes sin inspector (Sede)",
         "tags" : [ "Empresas" ]
       }
     },

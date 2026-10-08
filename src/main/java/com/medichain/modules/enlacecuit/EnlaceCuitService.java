@@ -96,6 +96,15 @@ public class EnlaceCuitService {
         return repository.findPendientesDeAceptacion(actual.getEmpresaId(), pageable);
     }
 
+    /**
+     * Tablero de la Sede (R5): circuitos PENDIENTE_INSPECTOR sin revisor cuya
+     * farmacia es de una provincia sin inspectores ACTIVO, que la Sede tiene que asignar.
+     */
+    @Transactional(readOnly = true)
+    public Page<EnlaceCuit> sinInspector(Pageable pageable) {
+        return repository.findSinInspector(pageable);
+    }
+
     /** Bandeja del inspector: PENDIENTE_INSPECTOR de farmacias de su provincia sin tomar, más los suyos. */
     @Transactional(readOnly = true)
     public Page<EnlaceCuit> bandeja(Pageable pageable) {

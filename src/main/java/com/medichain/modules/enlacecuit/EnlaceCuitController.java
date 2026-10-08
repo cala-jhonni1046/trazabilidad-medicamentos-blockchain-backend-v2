@@ -67,6 +67,17 @@ public class EnlaceCuitController {
         return ResponseEntity.status(HttpStatus.OK).body(service.pendientesDeAceptacion(pageable).map(mapper::toResponseDTO));
     }
 
+    /** Tablero de la Sede: pendientes de provincias sin inspector activo. */
+    @GetMapping("/sin-inspector")
+    @Operation(operationId = "listarCircuitosSinInspector", summary = "Pendientes sin inspector (Sede)", description = "Circuitos PENDIENTE_INSPECTOR, sin revisor, cuya farmacia es de una provincia sin inspectores ACTIVO: la Sede tiene que asignarlos (POST /api/circuitos/{id}/asignar). Los más viejos primero. Roles: SEDE_CENTRAL. Reglas: R5.")
+    @RespuestasError({400, 401, 403})
+    @PreAuthorize("hasRole('SEDE_CENTRAL')")
+    public ResponseEntity<Page<EnlaceCuitResponseDTO>> sinInspector(
+            @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.ASC) Pageable pageable) {
+        Page<EnlaceCuitResponseDTO> page = service.sinInspector(pageable).map(mapper::toResponseDTO);
+        return ResponseEntity.status(HttpStatus.OK).body(page);
+    }
+
     /** Bandeja del inspector. */
     @GetMapping("/bandeja")
     @Operation(operationId = "bandejaCircuitos", summary = "Bandeja del inspector", description = "Solo PENDIENTE_INSPECTOR: de farmacias de tu provincia sin tomar, más los que tomaste o te asignaron. Roles: INSPECTOR. Reglas: R5.")

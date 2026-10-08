@@ -23,6 +23,21 @@ public interface EnlaceCuitRepository extends JpaRepository<EnlaceCuit, UUID> {
     List<EstadoEnlaceCuit> ESTADOS_VIGENTES = List.of(EstadoEnlaceCuit.PENDIENTE_EMPRESAS,
             EstadoEnlaceCuit.PENDIENTE_INSPECTOR, EstadoEnlaceCuit.APROBADO, EstadoEnlaceCuit.SUSPENDIDO);
 
+    /**
+     * Circuitos que la Sede tiene que asignar (R5): PENDIENTE_INSPECTOR, sin
+     * revisor y con la farmacia en una provincia SIN inspectores ACTIVO. Es
+     * exactamente lo que acepta EnlaceCuitService.asignar.
+     */
+    @Query(value = "select e from EnlaceCuit e join e.farmacia f "
+            + "where e.estado = com.medichain.modules.enlacecuit.EstadoEnlaceCuit.PENDIENTE_INSPECTOR "
+            + "and e.inspectorRevisor is null and not exists (select i.id from InspectorAnmat i "
+            + "where i.provincia = f.provincia and i.estado = com.medichain.modules.inspectoranmat.EstadoInspector.ACTIVO)",
+            countQuery = "select count(e) from EnlaceCuit e join e.farmacia f "
+            + "where e.estado = com.medichain.modules.enlacecuit.EstadoEnlaceCuit.PENDIENTE_INSPECTOR "
+            + "and e.inspectorRevisor is null and not exists (select i.id from InspectorAnmat i "
+            + "where i.provincia = f.provincia and i.estado = com.medichain.modules.inspectoranmat.EstadoInspector.ACTIVO)")
+    Page<EnlaceCuit> findSinInspector(Pageable pageable);
+
     /** Circuitos: todos, opcionalmente de un estado (Sede e inspectores). */
     @Query("select e from EnlaceCuit e where (:estado is null or e.estado = :estado)")
     Page<EnlaceCuit> findPorEstado(@Param("estado") EstadoEnlaceCuit estado, Pageable pageable);

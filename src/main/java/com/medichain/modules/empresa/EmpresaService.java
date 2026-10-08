@@ -117,6 +117,15 @@ public class EmpresaService {
                         "No hay una empresa " + tipo + " HABILITADA con CUIT " + normalizado));
     }
 
+    /**
+     * Tablero de la Sede (R2): solicitudes PENDIENTE sin revisor de provincias
+     * sin inspectores ACTIVO, que la Sede tiene que asignar.
+     */
+    @Transactional(readOnly = true)
+    public Page<Empresa> sinInspector(Pageable pageable) {
+        return repository.findSinInspector(pageable);
+    }
+
     /** Bandeja del inspector: PENDIENTE de su provincia sin tomar, más las que tiene tomadas o asignadas. */
     @Transactional(readOnly = true)
     public Page<Empresa> bandeja(Pageable pageable) {

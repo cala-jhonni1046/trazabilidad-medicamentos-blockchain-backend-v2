@@ -56,6 +56,17 @@ public class EmpresaController {
         return ResponseEntity.status(HttpStatus.OK).body(page);
     }
 
+    /** Tablero de la Sede: pendientes de provincias sin inspector activo. */
+    @GetMapping("/sin-inspector")
+    @Operation(operationId = "listarEmpresasSinInspector", summary = "Pendientes sin inspector (Sede)", description = "Solicitudes PENDIENTE, sin revisor, de provincias que no tienen inspectores ACTIVO: la Sede tiene que asignarlas a un inspector (POST /api/empresas/{id}/asignar). Las más viejas primero. Roles: SEDE_CENTRAL. Reglas: R2.")
+    @RespuestasError({400, 401, 403})
+    @PreAuthorize("hasRole('SEDE_CENTRAL')")
+    public ResponseEntity<Page<EmpresaResponseDTO>> sinInspector(
+            @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.ASC) Pageable pageable) {
+        Page<EmpresaResponseDTO> page = service.sinInspector(pageable).map(mapper::toResponseDTO);
+        return ResponseEntity.status(HttpStatus.OK).body(page);
+    }
+
     /** Bandeja del inspector: solicitudes PENDIENTE de su provincia y las que tiene tomadas o asignadas. */
     @GetMapping("/bandeja")
     @Operation(operationId = "bandejaEmpresas", summary = "Bandeja del inspector", description = "Solicitudes PENDIENTE de la provincia del inspector sin tomar, más las que tomó o le asignaron. Roles: INSPECTOR. Reglas: R2.")

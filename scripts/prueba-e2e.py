@@ -68,6 +68,11 @@ CUIT_FARMACIA_NUEVA = "30-71000006-5"
 GLN_FARMACIA_NUEVA = "7799000000068"
 EMAIL_FARMACIA_NUEVA = "admin@farmacia-e2e.demo"
 
+# Farmacia de Salta (provincia sin inspectores) para el tablero de la Sede (B11c).
+CUIT_FARMACIA_SALTA = "30-71000007-3"
+GLN_FARMACIA_SALTA = "7799000000099"
+EMAIL_FARMACIA_SALTA = "admin@farmacia-salta.demo"
+
 # Inspector que la prueba da de alta, de baja y reactiva (paso 9: token de una cuenta desactivada).
 EMAIL_INSPECTOR_BAJA = "inspector.baja.e2e@medichain.demo"
 
@@ -823,6 +828,52 @@ def seccion_b11b_filtros_bloqueo_errores(ctx, demo, admin):
                   r.campo("regla") == "INSPECTOR_DUPLICADO" and "39000909" not in (r.campo("message") or ""))
 
 
+def seccion_b11c_sin_inspector(ctx, demo, admin):
+    """B11c: tablero de la Sede: empresas y circuitos de provincias sin inspector, hasta que los asigna."""
+    sede = ctx.token(admin[0], admin[1])
+    campos = {
+        "tipo": "FARMACIA", "cuit": CUIT_FARMACIA_SALTA, "razonSocial": "Farmacia Salta E2E", "gln": GLN_FARMACIA_SALTA,
+        "provincia": "SALTA", "localidad": "Salta", "domicilio": "Calle de Prueba 9",
+        "adminEmail": EMAIL_FARMACIA_SALTA, "adminPassword": demo, "adminNombre": "Prueba",
+        "adminApellido": "Salta", "adminDni": "30111097",
+    }
+    pdf = b"%PDF-1.4\n% habilitacion e2e salta\n%%EOF\n"
+    r = pedir_multipart(ctx.url("/api/registro/empresas"), campos, {"documento": ("habilitacion.pdf", pdf, "application/pdf")})
+    exigir(r.codigo == 201, "no se registró la farmacia de Salta (HTTP %s)" % r.codigo)
+    r = pedir("GET", ctx.url("/api/empresas/sin-inspector?size=100"), token=sede)
+    empresa = buscar(contenido(r), "cuit", CUIT_FARMACIA_SALTA)
+    ctx.verificar("b11c.1", "la farmacia de Salta (sin inspectores) aparece en el tablero de la Sede", 200, r,
+                  empresa is not None)
+    r = pedir("GET", ctx.url("/api/empresas/sin-inspector"), token=ctx.token(EMAIL_INSPECTOR, demo))
+    ctx.verificar("b11c.2", "el tablero es solo de la Sede: un inspector → 403", 403, r)
+
+    inspectores = contenido(pedir("GET", ctx.url("/api/inspectores-anmat?estado=ACTIVO&size=100"), token=sede))
+    mendoza = exigir(buscar(inspectores, "provincia", "MENDOZA"), "no encontré el inspector de Mendoza")["id"]
+    empresa_id = exigir(empresa, "la farmacia de Salta no está en el tablero")["id"]
+    r = pedir("POST", ctx.url("/api/empresas/%s/asignar" % empresa_id), {"inspectorId": mendoza}, token=sede)
+    r2 = pedir("GET", ctx.url("/api/empresas/sin-inspector?size=100"), token=sede)
+    ctx.verificar("b11c.3", "asignada al inspector de Mendoza → sale del tablero", 200, r,
+                  buscar(contenido(r2), "cuit", CUIT_FARMACIA_SALTA) is None)
+
+    inspector = ctx.token(EMAIL_INSPECTOR, demo)
+    exigir(pedir("POST", ctx.url("/api/empresas/%s/habilitar" % empresa_id), token=inspector).codigo == 200,
+           "el inspector asignado no pudo habilitar la farmacia de Salta")
+    r = pedir("POST", ctx.url("/api/circuitos"), {"cuitDistribuidor": CUIT_DISTRIBUIDORA,
+                                                  "cuitFarmacia": CUIT_FARMACIA_SALTA},
+              token=ctx.token(EMAIL_LABORATORIO, demo))
+    circuito_id = exigir(r.campo("id"), "no se propuso el circuito hacia Salta")
+    codigo = r.campo("codigo")
+    pedir("POST", ctx.url("/api/circuitos/%s/aceptar" % circuito_id), token=ctx.token(EMAIL_DISTRIBUIDORA, demo))
+    r = pedir("POST", ctx.url("/api/circuitos/%s/aceptar" % circuito_id), token=ctx.token(EMAIL_FARMACIA_SALTA, demo))
+    exigir(r.campo("estado") == "PENDIENTE_INSPECTOR", "el circuito hacia Salta no quedó PENDIENTE_INSPECTOR")
+    r = pedir("GET", ctx.url("/api/circuitos/sin-inspector?size=100"), token=sede)
+    ctx.verificar("b11c.4", "el circuito %s (farmacia de Salta) aparece en el tablero" % codigo, 200, r,
+                  buscar(contenido(r), "codigo", codigo) is not None)
+    r = pedir("POST", ctx.url("/api/circuitos/%s/asignar" % circuito_id), {"inspectorId": mendoza}, token=sede)
+    r2 = pedir("GET", ctx.url("/api/circuitos/sin-inspector?size=100"), token=sede)
+    ctx.verificar("b11c.5", "asignado → sale del tablero", 200, r, buscar(contenido(r2), "codigo", codigo) is None)
+
+
 def seccion_final_cadena(ctx, demo, admin):
     """Final: la cadena sigue íntegra después de todo el recorrido."""
     sede = ctx.token(admin[0], admin[1])
@@ -845,6 +896,7 @@ SECCIONES = [
     ("9  · Cuentas desactivadas con token vigente", seccion_9_cuentas),
     ("B11a · Contrato para el frontend", seccion_b11a_contrato),
     ("B11b · Filtros, temperatura del viaje, bloqueo R10 y códigos de error", seccion_b11b_filtros_bloqueo_errores),
+    ("B11c · Tablero de la Sede: pendientes sin inspector", seccion_b11c_sin_inspector),
     ("Final · Cadena íntegra", seccion_final_cadena),
 ]
 

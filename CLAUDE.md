@@ -85,6 +85,7 @@ Java 21 · Spring Boot 4.1.1 · PostgreSQL · Spring Data JPA · Spring Security
 - Recurso de otra empresa → 404, no 403.
 - Filtros de listados: `?estado=` opcional (UN estado por consulta) en bultos, empresas, circuitos, inspectores, lotes, cuarentenas y reportes. Va DENTRO de la consulta de alcance de cada rol (`(:estado IS NULL OR x.estado = :estado)`): solo achica lo que el rol ya ve; un estado inválido → 400. Las empresas que no son Sede ni inspector solo ven HABILITADA (otro estado → página vacía).
 - Temperatura de un viaje: `GET /api/viajes/{id}/telemetria-temperatura` (páginas de 100, por hora de lectura, para el gráfico).
+- Tablero de la Sede (R2, R5): `GET /api/empresas/sin-inspector` (PENDIENTE sin revisor de provincias sin inspectores ACTIVO) y `GET /api/circuitos/sin-inspector` (PENDIENTE_INSPECTOR sin revisor con la farmacia en una provincia sin inspectores ACTIVO). Listan EXACTAMENTE lo que `asignar` acepta; lo asignado sale, y la baja del único inspector de una provincia hace volver sus solicitudes tomadas. Solo empresas y circuitos (lotes biológicos, cuarentenas y reportes sin inspector siguen pendientes).
 
 ## Contrato OpenAPI (el frontend genera su cliente de acá)
 
@@ -103,7 +104,7 @@ Java 21 · Spring Boot 4.1.1 · PostgreSQL · Spring Data JPA · Spring Security
 
 | Rol | Hace |
 |---|---|
-| SEDE_CENTRAL | Alta y baja de inspectores; asigna solicitudes de provincias sin inspector; suspende empresas; "anclar ya" (demo) y estado del anclaje |
+| SEDE_CENTRAL | Alta y baja de inspectores; asigna solicitudes de provincias sin inspector (tablero: `GET /api/empresas/sin-inspector` y `GET /api/circuitos/sin-inspector`); suspende empresas; "anclar ya" (demo) y estado del anclaje |
 | INSPECTOR | Habilita empresas y aprueba circuitos de su provincia; libera biológicos; dictamina cuarentenas y recalls; investiga reportes; consulta el estado del anclaje y verifica la cadena |
 | LABORATORIO | Medicamentos, lotes, bultos; propone circuitos (DT); viajes del tramo 1 |
 | DISTRIBUIDOR | Acepta circuitos (admin); recibe bultos en su depósito; viajes del tramo 2 |

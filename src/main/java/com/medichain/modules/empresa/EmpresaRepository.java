@@ -28,6 +28,19 @@ public interface EmpresaRepository extends JpaRepository<Empresa, UUID> {
     /** Indica si ya existe una empresa con el GLN dado. */
     boolean existsByGln(String gln);
 
+    /**
+     * Solicitudes que la Sede tiene que asignar (R2): PENDIENTE, sin revisor y
+     * de una provincia SIN inspectores ACTIVO. Es exactamente lo que acepta
+     * EmpresaService.asignar.
+     */
+    @Query(value = "select e from Empresa e where e.estado = com.medichain.modules.empresa.EstadoHabilitacion.PENDIENTE "
+            + "and e.inspectorRevisor is null and not exists (select i.id from InspectorAnmat i "
+            + "where i.provincia = e.provincia and i.estado = com.medichain.modules.inspectoranmat.EstadoInspector.ACTIVO)",
+            countQuery = "select count(e) from Empresa e where e.estado = com.medichain.modules.empresa.EstadoHabilitacion.PENDIENTE "
+            + "and e.inspectorRevisor is null and not exists (select i.id from InspectorAnmat i "
+            + "where i.provincia = e.provincia and i.estado = com.medichain.modules.inspectoranmat.EstadoInspector.ACTIVO)")
+    Page<Empresa> findSinInspector(Pageable pageable);
+
     /** Empresas, opcionalmente de un estado (Sede e inspectores ven todas). */
     @Query("select e from Empresa e where (:estado is null or e.estado = :estado)")
     Page<Empresa> findPorEstado(@Param("estado") EstadoHabilitacion estado, Pageable pageable);
