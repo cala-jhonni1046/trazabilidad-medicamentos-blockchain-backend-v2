@@ -5,6 +5,7 @@ import com.medichain.modules.empresa.Empresa;
 import com.medichain.modules.unidadtrazable.UnidadTrazable;
 import com.medichain.modules.usuario.Usuario;
 import com.medichain.utils.BaseEntity;
+import com.medichain.utils.Tiempo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -12,7 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Entidad Dispensacion en MediChain (R11, R13).
@@ -32,7 +33,7 @@ public class Dispensacion extends BaseEntity {
     public static final Duration PLAZO_ANULACION = Duration.ofHours(2);
 
     @Column(name = "fecha_hora", nullable = false, unique = false)
-    private LocalDateTime fechaHora;
+    private Instant fechaHora;
 
     @Column(name = "particular", nullable = false, unique = false)
     private Boolean particular;
@@ -57,7 +58,7 @@ public class Dispensacion extends BaseEntity {
 
     // nullable = true: solo cuando se anula.
     @Column(name = "fecha_anulacion", nullable = true, unique = false)
-    private LocalDateTime fechaAnulacion;
+    private Instant fechaAnulacion;
 
     // nullable = true: motivo de la anulación (al evento va solo su hash).
     @Column(name = "motivo_anulacion", nullable = true, columnDefinition = "TEXT")
@@ -95,14 +96,14 @@ public class Dispensacion extends BaseEntity {
         this.numeroReceta = numeroReceta;
         this.dniEnmascarado = dniEnmascarado;
         this.anulada = false;
-        this.fechaHora = LocalDateTime.now();
+        this.fechaHora = Tiempo.ahora();
     }
 
     /**
      * Anula la dispensación (R11): solo si no estaba anulada (si no,
      * TRANSICION_INVALIDA) y dentro de las 2 h (si no, R11).
      */
-    public void anular(String motivo, LocalDateTime ahora) {
+    public void anular(String motivo, Instant ahora) {
         if (Boolean.TRUE.equals(anulada)) {
             throw new ReglaNegocioException("TRANSICION_INVALIDA", "La dispensación ya estaba anulada");
         }
@@ -115,7 +116,7 @@ public class Dispensacion extends BaseEntity {
     }
 
     /** Devuelve la fecha y hora de la dispensación. */
-    public LocalDateTime getFechaHora() {
+    public Instant getFechaHora() {
         return fechaHora;
     }
 
@@ -150,7 +151,7 @@ public class Dispensacion extends BaseEntity {
     }
 
     /** Devuelve la fecha de anulación. */
-    public LocalDateTime getFechaAnulacion() {
+    public Instant getFechaAnulacion() {
         return fechaAnulacion;
     }
 

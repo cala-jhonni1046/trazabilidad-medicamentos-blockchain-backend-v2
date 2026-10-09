@@ -7,6 +7,7 @@ import com.medichain.modules.empresa.Empresa;
 import com.medichain.modules.enlacecuit.EnlaceCuit;
 import com.medichain.modules.lote.Lote;
 import com.medichain.utils.BaseEntity;
+import com.medichain.utils.Tiempo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,7 +16,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Entidad Bulto en MediChain.
@@ -48,7 +49,7 @@ public class Bulto extends BaseEntity {
     private EstadoBulto estado;
 
     @Column(name = "fecha_armado", nullable = false, unique = false)
-    private LocalDateTime fechaArmado;
+    private Instant fechaArmado;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "lote_id", nullable = false)
@@ -84,7 +85,7 @@ public class Bulto extends BaseEntity {
         this.destino = destino;
         this.ubicacion = lote.getLaboratorio();
         this.estado = EstadoBulto.ARMADO;
-        this.fechaArmado = LocalDateTime.now();
+        this.fechaArmado = Tiempo.ahora();
     }
 
     // ---------- Métodos de dominio ----------
@@ -227,7 +228,7 @@ public class Bulto extends BaseEntity {
     }
 
     /** Devuelve la fecha de armado. */
-    public LocalDateTime getFechaArmado() {
+    public Instant getFechaArmado() {
         return fechaArmado;
     }
 

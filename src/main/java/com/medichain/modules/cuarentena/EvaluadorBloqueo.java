@@ -4,6 +4,7 @@ import com.medichain.modules.bulto.Bulto;
 import com.medichain.modules.lote.EstadoLote;
 import com.medichain.modules.lote.Lote;
 import com.medichain.modules.unidadtrazable.UnidadTrazable;
+import com.medichain.utils.Calendario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,10 +33,12 @@ import java.util.UUID;
 public class EvaluadorBloqueo {
 
     private final CuarentenaRepository cuarentenaRepository;
+    private final Calendario calendario;
 
     @Autowired
-    public EvaluadorBloqueo(CuarentenaRepository cuarentenaRepository) {
+    public EvaluadorBloqueo(CuarentenaRepository cuarentenaRepository, Calendario calendario) {
         this.cuarentenaRepository = cuarentenaRepository;
+        this.calendario = calendario;
     }
 
     /** Bloqueo del lote (vencido, CUARENTENA, RECALL o medida vigente de alcance LOTE), o vacío si no lo está. */
@@ -163,7 +166,7 @@ public class EvaluadorBloqueo {
      * después la medida vigente de alcance LOTE.
      */
     private Optional<Bloqueo> bloqueoDeLote(Lote lote, Set<UUID> lotesConMedida) {
-        if (lote.estaVencido()) {
+        if (lote.estaVencido(calendario.hoy())) {
             return Optional.of(new Bloqueo(CausaBloqueo.LOTE_VENCIDO, "el lote " + lote.getCodigo() + " está vencido"));
         }
         if (lote.getEstado() == EstadoLote.CUARENTENA) {

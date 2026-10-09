@@ -78,6 +78,6 @@ public class TelemetriaGpsService {
                     "Solo se registra GPS de un viaje EN_TRANSITO (estado " + despacho.getEstado() + ")");
         }
         return repository.save(new TelemetriaGps(dto.getSensorId(), dto.getLatitud(), dto.getLongitud(),
-                dto.getLugar(), dto.getFechaHora(), despacho));
+                dto.getLugar(), dto.getFechaHora().toInstant(), despacho));
     }
 }

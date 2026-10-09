@@ -7671,8 +7671,8 @@
           "fechaEstimadaEntrega" : {
             "type" : "string",
             "format" : "date-time",
-            "description" : "Fecha y hora estimada de entrega (futura)",
-            "example" : "2026-12-01T18:00:00"
+            "description" : "Fecha y hora estimada de entrega (futura). Con offset obligatorio (ISO-8601, ej. -03:00); sin offset → 400",
+            "example" : "2026-12-01T18:00:00-03:00"
           },
           "patente" : {
             "type" : "string",
@@ -9597,7 +9597,9 @@
           },
           "fechaHora" : {
             "type" : "string",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "Momento de la lectura. Con offset obligatorio (ISO-8601, ej. -03:00); sin offset → 400",
+            "example" : "2026-12-01T18:00:00-03:00"
           },
           "latitud" : {
             "type" : "number",
@@ -9678,7 +9680,9 @@
           },
           "fechaHora" : {
             "type" : "string",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "Momento de la lectura. Con offset obligatorio (ISO-8601, ej. -03:00); sin offset → 400",
+            "example" : "2026-12-01T18:00:00-03:00"
           },
           "sensorId" : {
             "type" : "string",

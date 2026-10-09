@@ -30,7 +30,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -137,7 +138,7 @@ class TelemetriaTemperaturaServiceTest {
         TelemetriaTemperaturaRequestDTO dto = new TelemetriaTemperaturaRequestDTO();
         dto.setSensorId("S-1");
         dto.setTemperatura(new BigDecimal(temperatura));
-        dto.setFechaHora(LocalDateTime.now());
+        dto.setFechaHora(OffsetDateTime.now());
         dto.setDespachoId(despacho.getId());
         return dto;
     }
@@ -238,7 +239,7 @@ class TelemetriaTemperaturaServiceTest {
     @DisplayName("Ve lo suyo: el laboratorio ve una lectura de su viaje")
     void veLecturaDeSuViaje() {
         TelemetriaTemperatura lectura = new TelemetriaTemperatura("S-1", new BigDecimal("20"), false,
-                LocalDateTime.now(), viaje);
+                Instant.now(), viaje);
         lectura.setId(UUID.randomUUID());
         when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.LABORATORIO, laboratorio));
         when(repository.findById(lectura.getId())).thenReturn(Optional.of(lectura));

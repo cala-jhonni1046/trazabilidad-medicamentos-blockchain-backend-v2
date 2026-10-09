@@ -19,6 +19,7 @@ import com.medichain.modules.unidadtrazable.UnidadTrazableRepository;
 import com.medichain.modules.usuario.RolUsuario;
 import com.medichain.modules.usuario.Usuario;
 import com.medichain.testutil.DatosDePrueba;
+import com.medichain.utils.Calendario;
 import com.medichain.utils.enums.Provincia;
 import com.medichain.utils.seguridad.UsuarioActual;
 import com.medichain.utils.seguridad.VerificadorEmpresa;
@@ -35,7 +36,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -110,7 +113,7 @@ class LoteServiceTest {
     /** Construye el Service bajo prueba con los mocks. */
     private LoteService service() {
         return new LoteService(repository, medicamentoRepository, unidadTrazableRepository, inspectorAnmatRepository,
-                usuarioActual, verificadorEmpresa, verificadorUsuario, registroIntentos, registradorEventos);
+                usuarioActual, verificadorEmpresa, verificadorUsuario, registroIntentos, registradorEventos, new Calendario(Clock.systemUTC(), ZoneId.of("America/Argentina/Buenos_Aires")));
     }
 
     /** Autentica como usuario del laboratorio y prepara medicamento propio, guardado y sin series existentes. */

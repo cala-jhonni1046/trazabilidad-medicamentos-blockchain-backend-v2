@@ -3,6 +3,7 @@ package com.medichain.modules.inspectoranmat;
 import com.medichain.exceptions.ReglaNegocioException;
 import com.medichain.modules.usuario.Usuario;
 import com.medichain.utils.BaseEntity;
+import com.medichain.utils.Tiempo;
 import com.medichain.utils.enums.Provincia;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,7 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Entidad InspectorAnmat en MediChain.
@@ -42,11 +43,11 @@ public class InspectorAnmat extends BaseEntity {
     private EstadoInspector estado;
 
     @Column(name = "fecha_alta", nullable = false, unique = false)
-    private LocalDateTime fechaAlta;
+    private Instant fechaAlta;
 
     // nullable = true: solo tiene valor una vez que el inspector es dado de baja.
     @Column(name = "fecha_baja", nullable = true, unique = false)
-    private LocalDateTime fechaBaja;
+    private Instant fechaBaja;
 
     // cardinalidad "1"-"1": la cuenta propia del inspector; obligatoria y única.
     @OneToOne(fetch = FetchType.LAZY, optional = false)
@@ -76,7 +77,7 @@ public class InspectorAnmat extends BaseEntity {
         this.dni = dni;
         this.provincia = provincia;
         this.estado = EstadoInspector.ACTIVO;
-        this.fechaAlta = LocalDateTime.now();
+        this.fechaAlta = Tiempo.ahora();
     }
 
     /** Devuelve el legajo del inspector. */
@@ -120,22 +121,22 @@ public class InspectorAnmat extends BaseEntity {
     }
 
     /** Devuelve la fecha de alta del inspector. */
-    public LocalDateTime getFechaAlta() {
+    public Instant getFechaAlta() {
         return fechaAlta;
     }
 
     /** Establece la fecha de alta del inspector. */
-    public void setFechaAlta(LocalDateTime fechaAlta) {
+    public void setFechaAlta(Instant fechaAlta) {
         this.fechaAlta = fechaAlta;
     }
 
     /** Devuelve la fecha de baja del inspector, si aplica. */
-    public LocalDateTime getFechaBaja() {
+    public Instant getFechaBaja() {
         return fechaBaja;
     }
 
     /** Establece la fecha de baja del inspector. */
-    public void setFechaBaja(LocalDateTime fechaBaja) {
+    public void setFechaBaja(Instant fechaBaja) {
         this.fechaBaja = fechaBaja;
     }
 
@@ -171,7 +172,7 @@ public class InspectorAnmat extends BaseEntity {
                     "Un inspector en estado " + this.estado + " no admite la acción baja");
         }
         this.estado = EstadoInspector.BAJA;
-        this.fechaBaja = LocalDateTime.now();
+        this.fechaBaja = Tiempo.ahora();
     }
 
     /** Reactiva al inspector: BAJA → ACTIVO, borra la fecha de baja. */

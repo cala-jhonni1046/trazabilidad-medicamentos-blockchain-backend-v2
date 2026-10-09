@@ -3,7 +3,6 @@ package com.medichain.modules.telemetriatemperatura;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -28,7 +27,7 @@ public class TelemetriaTemperaturaResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean fueraDeRango;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private LocalDateTime fechaHora;
+    private Instant fechaHora;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID despachoId;
 
@@ -107,12 +106,12 @@ public class TelemetriaTemperaturaResponseDTO {
     }
 
     /** Devuelve la fecha y hora de la lectura. */
-    public LocalDateTime getFechaHora() {
+    public Instant getFechaHora() {
         return fechaHora;
     }
 
     /** Establece la fecha y hora de la lectura. */
-    public void setFechaHora(LocalDateTime fechaHora) {
+    public void setFechaHora(Instant fechaHora) {
         this.fechaHora = fechaHora;
     }
 

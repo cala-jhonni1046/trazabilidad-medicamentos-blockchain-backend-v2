@@ -33,7 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -296,7 +296,7 @@ class DispensacionServiceTest {
     @DisplayName("R11: anular pasadas las 2 h → 409 R11")
     void anularFueraDePlazo() {
         Dispensacion dispensacion = dispensada();
-        ReflectionTestUtils.setField(dispensacion, "fechaHora", LocalDateTime.now().minusHours(3));
+        ReflectionTestUtils.setField(dispensacion, "fechaHora", Instant.now().minus(java.time.Duration.ofHours(3)));
 
         fallaCon("R11", () -> service().anular(dispensacion.getId(), "tarde"));
         assertEquals(EstadoUnidad.DISPENSADA, caja.getEstado());

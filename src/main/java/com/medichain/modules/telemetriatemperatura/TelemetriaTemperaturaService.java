@@ -130,7 +130,7 @@ public class TelemetriaTemperaturaService {
         List<Bulto> afectados = bultosFueraDeRango(despacho, dto.getTemperatura());
         // fueraDeRango lo calcula el servidor (cada bulto contra el rango de su medicamento), no el cliente.
         TelemetriaTemperatura guardada = repository.save(new TelemetriaTemperatura(dto.getSensorId(),
-                dto.getTemperatura(), !afectados.isEmpty(), dto.getFechaHora(), despacho));
+                dto.getTemperatura(), !afectados.isEmpty(), dto.getFechaHora().toInstant(), despacho));
         if (afectados.isEmpty()) {
             return guardada;
         }

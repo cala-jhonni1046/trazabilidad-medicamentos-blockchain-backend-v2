@@ -39,7 +39,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -361,8 +361,8 @@ class RecepcionServiceTest {
     void resumenDeTemperatura() {
         como(RolUsuario.DISTRIBUIDOR, distribuidora);
         when(telemetriaTemperaturaRepository.findByDespachoId(viaje.getId())).thenReturn(List.of(
-                new TelemetriaTemperatura("S", new BigDecimal("20.5"), false, LocalDateTime.now(), viaje),
-                new TelemetriaTemperatura("S", new BigDecimal("35"), true, LocalDateTime.now(), viaje)));
+                new TelemetriaTemperatura("S", new BigDecimal("20.5"), false, Instant.now(), viaje),
+                new TelemetriaTemperatura("S", new BigDecimal("35"), true, Instant.now(), viaje)));
 
         service().recibir(dto(true, 10, "20"));
 

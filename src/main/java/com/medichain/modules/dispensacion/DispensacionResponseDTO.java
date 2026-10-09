@@ -2,7 +2,6 @@ package com.medichain.modules.dispensacion;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -22,7 +21,7 @@ public class DispensacionResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private LocalDateTime fechaHora;
+    private Instant fechaHora;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean particular;
     @Schema(nullable = true)
@@ -36,7 +35,7 @@ public class DispensacionResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean anulada;
     @Schema(nullable = true)
-    private LocalDateTime fechaAnulacion;
+    private Instant fechaAnulacion;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID unidadTrazableId;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
@@ -93,12 +92,12 @@ public class DispensacionResponseDTO {
     }
 
     /** Devuelve la fecha y hora de la dispensación. */
-    public LocalDateTime getFechaHora() {
+    public Instant getFechaHora() {
         return fechaHora;
     }
 
     /** Establece la fecha y hora de la dispensación. */
-    public void setFechaHora(LocalDateTime fechaHora) {
+    public void setFechaHora(Instant fechaHora) {
         this.fechaHora = fechaHora;
     }
 
@@ -153,12 +152,12 @@ public class DispensacionResponseDTO {
     }
 
     /** Devuelve la fecha de anulación. */
-    public LocalDateTime getFechaAnulacion() {
+    public Instant getFechaAnulacion() {
         return fechaAnulacion;
     }
 
     /** Establece la fecha de anulación. */
-    public void setFechaAnulacion(LocalDateTime fechaAnulacion) {
+    public void setFechaAnulacion(Instant fechaAnulacion) {
         this.fechaAnulacion = fechaAnulacion;
     }
 

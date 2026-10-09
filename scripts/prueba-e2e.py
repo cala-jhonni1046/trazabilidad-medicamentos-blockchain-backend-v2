@@ -35,7 +35,7 @@ import os
 import re
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from medichain_api import buscar_viaje, iniciar_sesion, pedir, pedir_multipart
 
@@ -316,7 +316,7 @@ def seccion_7d_viajes(ctx, demo, admin):
     def lectura(temperatura):
         return pedir("POST", ctx.url("/api/telemetria-temperatura"), {
             "sensorId": "SENSOR-E2E", "temperatura": temperatura,
-            "fechaHora": datetime.now().replace(microsecond=0).isoformat(), "despachoId": viaje_id}, token=lab)
+            "fechaHora": datetime.now(timezone.utc).replace(microsecond=0).isoformat(), "despachoId": viaje_id}, token=lab)
 
     def cuarentenas_ruptura():
         """Devuelve (respuesta del listado, cuarentenas con motivo RUPTURA_FRIO)."""
@@ -338,7 +338,7 @@ def seccion_7d_viajes(ctx, demo, admin):
                   r.campo("fueraDeRango") is True and len(rupturas) == 1, detalle=rupturas)
 
     r = pedir("POST", ctx.url("/api/viajes"), {"patente": "AB123CD", "chofer": "Chofer E2E",
-                                                "fechaEstimadaEntrega": "2026-12-01T18:00:00",
+                                                "fechaEstimadaEntrega": "2026-12-01T18:00:00-03:00",
                                                 "bultos": ["BUL-0002"]}, token=lab)
     ctx.verificar("7d.6", "viaje para BUL-0002 → 201 PROGRAMADO (sin salida)", 201, r,
                   r.campo("estado") == "PROGRAMADO" and r.campo("bultoCodigos") == ["BUL-0002"])
@@ -406,7 +406,7 @@ def seccion_7e_recepcion_dispensacion(ctx, demo, admin):
 
     # --- Tramo 2: Piedemonte → Los Álamos ---
     r = pedir("POST", ctx.url("/api/viajes"), {"patente": "CD456EF", "chofer": "Chofer E2E Tramo 2",
-                                                "fechaEstimadaEntrega": "2026-12-02T18:00:00",
+                                                "fechaEstimadaEntrega": "2026-12-02T18:00:00-03:00",
                                                 "bultos": ["BUL-0002"]}, token=distribuidora)
     ctx.verificar("7e.9", "Piedemonte crea el viaje de tramo 2 con BUL-0002 → 201", 201, r,
                   r.campo("tramo") == "DISTRIBUIDOR_A_FARMACIA")
@@ -553,7 +553,7 @@ def seccion_7f_dictamen_reportes(ctx, demo, admin):
         codigos.append(r.campo("codigo"))
     ctx.verificar("7f.10", "armar dos bultos de 5 cajas de L2026-0003 → %s" % codigos, 200, None, all(codigos))
     r = pedir("POST", ctx.url("/api/viajes"), {"patente": "EF789GH", "chofer": "Chofer E2E 7f",
-                                                "fechaEstimadaEntrega": "2026-12-03T18:00:00", "bultos": codigos}, token=lab)
+                                                "fechaEstimadaEntrega": "2026-12-03T18:00:00-03:00", "bultos": codigos}, token=lab)
     viaje = exigir(r.campo("id"), "no se creó el viaje de los bultos de 7f")
     r = pedir("POST", ctx.url("/api/viajes/%s/salida" % viaje), token=lab)
     ctx.verificar("7f.11", "viaje de tramo 1 con esos dos bultos → salida EN_TRANSITO", 200, r,
@@ -874,6 +874,39 @@ def seccion_b11c_sin_inspector(ctx, demo, admin):
     ctx.verificar("b11c.5", "asignado → sale del tablero", 200, r, buscar(contenido(r2), "codigo", codigo) is None)
 
 
+def seccion_b11d_fechas(ctx, demo, admin):
+    """B11d: la API devuelve fechas y horas en UTC con Z; la entrada exige offset (sin offset → 400)."""
+    sede = ctx.token(admin[0], admin[1])
+    lab = ctx.token(EMAIL_LABORATORIO, demo)
+
+    def es_utc_z(valor):
+        return isinstance(valor, str) and "T" in valor and valor.endswith("Z") and "+" not in valor
+
+    # Salida: fecha de negocio (alta del inspector) en UTC con Z.
+    r = pedir("GET", ctx.url("/api/inspectores-anmat?size=1"), token=sede)
+    inspector = (contenido(r) or [{}])[0]
+    ctx.verificar("b11d.1", "la fecha de alta del inspector viene en UTC con Z (%s)" % inspector.get("fechaAlta"),
+                  200, r, es_utc_z(inspector.get("fechaAlta")))
+
+    # Salida: la fecha estimada de entrega de un viaje (fecha de negocio que además entra a la cadena) en UTC con Z.
+    r = pedir("GET", ctx.url("/api/viajes?size=100"), token=lab)
+    viaje = (contenido(r) or [{}])[0]
+    ctx.verificar("b11d.2", "la fecha estimada de entrega del viaje viene en UTC con Z (%s)"
+                  % viaje.get("fechaEstimadaEntrega"), 200, r, es_utc_z(viaje.get("fechaEstimadaEntrega")))
+
+    # Entrada: una lectura con fechaHora SIN offset no se parsea como OffsetDateTime → 400 antes de la lógica.
+    cuerpo_sin = {"sensorId": "S-B11D", "temperatura": "5", "despachoId": viaje.get("id"),
+                  "fechaHora": "2026-12-01T18:00:00"}
+    r = pedir("POST", ctx.url("/api/telemetria-temperatura"), cuerpo_sin, token=lab)
+    ctx.verificar("b11d.3", "una lectura con fechaHora sin offset → 400", 400, r)
+
+    # Entrada: con offset se parsea bien (ya no es un 400 de formato; el resto es lógica de negocio).
+    cuerpo_con = dict(cuerpo_sin, fechaHora="2026-12-01T18:00:00-03:00")
+    r = pedir("POST", ctx.url("/api/telemetria-temperatura"), cuerpo_con, token=lab)
+    ctx.verificar("b11d.4", "la misma lectura con offset se parsea (no es 400 de formato)", None, None,
+                  r.codigo != 400, detalle="HTTP %s" % r.codigo)
+
+
 def seccion_final_cadena(ctx, demo, admin):
     """Final: la cadena sigue íntegra después de todo el recorrido."""
     sede = ctx.token(admin[0], admin[1])
@@ -897,6 +930,7 @@ SECCIONES = [
     ("B11a · Contrato para el frontend", seccion_b11a_contrato),
     ("B11b · Filtros, temperatura del viaje, bloqueo R10 y códigos de error", seccion_b11b_filtros_bloqueo_errores),
     ("B11c · Tablero de la Sede: pendientes sin inspector", seccion_b11c_sin_inspector),
+    ("B11d · Fechas en UTC con Z y entrada con offset", seccion_b11d_fechas),
     ("Final · Cadena íntegra", seccion_final_cadena),
 ]
 

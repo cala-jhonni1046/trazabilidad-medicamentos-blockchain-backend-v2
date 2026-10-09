@@ -7,6 +7,7 @@ import com.medichain.modules.inspectoranmat.InspectorAnmat;
 import com.medichain.modules.lote.Lote;
 import com.medichain.modules.reporteciudadano.ReporteCiudadano;
 import com.medichain.utils.BaseEntity;
+import com.medichain.utils.Tiempo;
 import com.medichain.utils.enums.Provincia;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,7 +19,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -67,11 +68,11 @@ public class Cuarentena extends BaseEntity {
     private Provincia provincia;
 
     @Column(name = "fecha_inicio", nullable = false, unique = false)
-    private LocalDateTime fechaInicio;
+    private Instant fechaInicio;
 
     // nullable = true: solo tiene valor una vez que la medida se levanta o se convierte en recall.
     @Column(name = "fecha_fin", nullable = true, unique = false)
-    private LocalDateTime fechaFin;
+    private Instant fechaFin;
 
     // nullable = true: cardinalidad "0..1"; solo tiene valor cuando alcance = LOTE.
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
@@ -124,7 +125,7 @@ public class Cuarentena extends BaseEntity {
         this.tipo = TipoMedida.CUARENTENA;
         this.estado = EstadoCuarentena.ACTIVA;
         this.automatica = false;
-        this.fechaInicio = LocalDateTime.now();
+        this.fechaInicio = Tiempo.ahora();
     }
 
     /** Devuelve el alcance de la medida. */
@@ -168,12 +169,12 @@ public class Cuarentena extends BaseEntity {
     }
 
     /** Devuelve la fecha de inicio de la medida. */
-    public LocalDateTime getFechaInicio() {
+    public Instant getFechaInicio() {
         return fechaInicio;
     }
 
     /** Devuelve la fecha de fin de la medida, si aplica. */
-    public LocalDateTime getFechaFin() {
+    public Instant getFechaFin() {
         return fechaFin;
     }
 
@@ -274,7 +275,7 @@ public class Cuarentena extends BaseEntity {
         this.estado = EstadoCuarentena.LEVANTADA;
         this.inspector = inspector;
         this.dictamen = dictamen;
-        this.fechaFin = LocalDateTime.now();
+        this.fechaFin = Tiempo.ahora();
     }
 
     /**
@@ -289,7 +290,7 @@ public class Cuarentena extends BaseEntity {
         this.estado = EstadoCuarentena.CONVERTIDA_EN_RECALL;
         this.inspector = inspector;
         this.dictamen = dictamen;
-        this.fechaFin = LocalDateTime.now();
+        this.fechaFin = Tiempo.ahora();
     }
 
     /** Exige que quien dictamina sea el revisor (que haya tomado la medida). */

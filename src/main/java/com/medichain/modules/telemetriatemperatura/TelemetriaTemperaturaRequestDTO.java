@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
@@ -28,8 +28,9 @@ public class TelemetriaTemperaturaRequestDTO {
     @Schema(description = "Temperatura medida (°C)", example = "5.5")
     private BigDecimal temperatura;
 
+    @Schema(description = "Momento de la lectura. Con offset obligatorio (ISO-8601, ej. -03:00); sin offset → 400", example = "2026-12-01T18:00:00-03:00", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "El campo fechaHora es obligatorio")
-    private LocalDateTime fechaHora;
+    private OffsetDateTime fechaHora;
 
     // Campo 'despachoId': UUID del despacho al que pertenece la lectura (obligatorio).
     @NotNull(message = "El campo despachoId es obligatorio")
@@ -42,7 +43,7 @@ public class TelemetriaTemperaturaRequestDTO {
 
     /** Constructor con todos los campos obligatorios de alta. */
     public TelemetriaTemperaturaRequestDTO(String sensorId, BigDecimal temperatura,
-                                            LocalDateTime fechaHora, UUID despachoId) {
+                                            OffsetDateTime fechaHora, UUID despachoId) {
         this.sensorId = sensorId;
         this.temperatura = temperatura;
         this.fechaHora = fechaHora;
@@ -70,12 +71,12 @@ public class TelemetriaTemperaturaRequestDTO {
     }
 
     /** Devuelve la fecha y hora informada. */
-    public LocalDateTime getFechaHora() {
+    public OffsetDateTime getFechaHora() {
         return fechaHora;
     }
 
     /** Establece la fecha y hora informada. */
-    public void setFechaHora(LocalDateTime fechaHora) {
+    public void setFechaHora(OffsetDateTime fechaHora) {
         this.fechaHora = fechaHora;
     }
 

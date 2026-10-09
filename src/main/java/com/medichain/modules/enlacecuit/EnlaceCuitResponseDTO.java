@@ -2,7 +2,6 @@ package com.medichain.modules.enlacecuit;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -26,13 +25,13 @@ public class EnlaceCuitResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoEnlaceCuit estado;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private LocalDateTime fechaPropuesta;
+    private Instant fechaPropuesta;
     @Schema(nullable = true)
-    private LocalDateTime fechaAceptacionDistribuidor;
+    private Instant fechaAceptacionDistribuidor;
     @Schema(nullable = true)
-    private LocalDateTime fechaAceptacionFarmacia;
+    private Instant fechaAceptacionFarmacia;
     @Schema(nullable = true)
-    private LocalDateTime fechaAprobacion;
+    private Instant fechaAprobacion;
     @Schema(nullable = true)
     private String motivoRechazo;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
@@ -119,42 +118,42 @@ public class EnlaceCuitResponseDTO {
     }
 
     /** Devuelve la fecha de propuesta del circuito. */
-    public LocalDateTime getFechaPropuesta() {
+    public Instant getFechaPropuesta() {
         return fechaPropuesta;
     }
 
     /** Establece la fecha de propuesta del circuito. */
-    public void setFechaPropuesta(LocalDateTime fechaPropuesta) {
+    public void setFechaPropuesta(Instant fechaPropuesta) {
         this.fechaPropuesta = fechaPropuesta;
     }
 
     /** Devuelve la fecha de aceptación del distribuidor. */
-    public LocalDateTime getFechaAceptacionDistribuidor() {
+    public Instant getFechaAceptacionDistribuidor() {
         return fechaAceptacionDistribuidor;
     }
 
     /** Establece la fecha de aceptación del distribuidor. */
-    public void setFechaAceptacionDistribuidor(LocalDateTime fechaAceptacionDistribuidor) {
+    public void setFechaAceptacionDistribuidor(Instant fechaAceptacionDistribuidor) {
         this.fechaAceptacionDistribuidor = fechaAceptacionDistribuidor;
     }
 
     /** Devuelve la fecha de aceptación de la farmacia. */
-    public LocalDateTime getFechaAceptacionFarmacia() {
+    public Instant getFechaAceptacionFarmacia() {
         return fechaAceptacionFarmacia;
     }
 
     /** Establece la fecha de aceptación de la farmacia. */
-    public void setFechaAceptacionFarmacia(LocalDateTime fechaAceptacionFarmacia) {
+    public void setFechaAceptacionFarmacia(Instant fechaAceptacionFarmacia) {
         this.fechaAceptacionFarmacia = fechaAceptacionFarmacia;
     }
 
     /** Devuelve la fecha de aprobación del circuito. */
-    public LocalDateTime getFechaAprobacion() {
+    public Instant getFechaAprobacion() {
         return fechaAprobacion;
     }
 
     /** Establece la fecha de aprobación del circuito. */
-    public void setFechaAprobacion(LocalDateTime fechaAprobacion) {
+    public void setFechaAprobacion(Instant fechaAprobacion) {
         this.fechaAprobacion = fechaAprobacion;
     }
 

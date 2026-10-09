@@ -3,7 +3,6 @@ package com.medichain.modules.empresa;
 import com.medichain.utils.enums.Provincia;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -47,9 +46,9 @@ public class EmpresaResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoHabilitacion estado;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private LocalDateTime fechaSolicitud;
+    private Instant fechaSolicitud;
     @Schema(nullable = true)
-    private LocalDateTime fechaHabilitacion;
+    private Instant fechaHabilitacion;
     @Schema(nullable = true)
     private String motivoRechazo;
     @Schema(nullable = true)
@@ -224,22 +223,22 @@ public class EmpresaResponseDTO {
     }
 
     /** Devuelve la fecha de solicitud de habilitación. */
-    public LocalDateTime getFechaSolicitud() {
+    public Instant getFechaSolicitud() {
         return fechaSolicitud;
     }
 
     /** Establece la fecha de solicitud de habilitación. */
-    public void setFechaSolicitud(LocalDateTime fechaSolicitud) {
+    public void setFechaSolicitud(Instant fechaSolicitud) {
         this.fechaSolicitud = fechaSolicitud;
     }
 
     /** Devuelve la fecha de habilitación. */
-    public LocalDateTime getFechaHabilitacion() {
+    public Instant getFechaHabilitacion() {
         return fechaHabilitacion;
     }
 
     /** Establece la fecha de habilitación. */
-    public void setFechaHabilitacion(LocalDateTime fechaHabilitacion) {
+    public void setFechaHabilitacion(Instant fechaHabilitacion) {
         this.fechaHabilitacion = fechaHabilitacion;
     }
 

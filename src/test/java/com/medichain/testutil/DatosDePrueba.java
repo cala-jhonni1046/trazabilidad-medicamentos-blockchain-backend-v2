@@ -19,7 +19,7 @@ import com.medichain.modules.usuario.Usuario;
 import com.medichain.utils.enums.Provincia;
 import java.math.BigInteger;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -124,7 +124,7 @@ public final class DatosDePrueba {
     /** Viaje PROGRAMADO con id, del tramo y la empresa origen dados (sin bultos). */
     public static DespachoLogistico viaje(TramoDespacho tramo, Empresa origen) {
         DespachoLogistico viaje = new DespachoLogistico("VJ-0001", tramo, "AB123CD", "Juan Pérez",
-                LocalDateTime.now().plusDays(1), origen, null);
+                Instant.now().plus(java.time.Duration.ofDays(1)), origen, null);
         viaje.setId(UUID.randomUUID());
         return viaje;
     }
@@ -149,9 +149,9 @@ public final class DatosDePrueba {
         anclaje.setId(UUID.randomUUID());
         anclaje.iniciarIntento();
         anclaje.registrarTransaccion(transaccion("0x" + "ab".repeat(32)));
-        anclaje.marcarEnviado(LocalDateTime.of(2026, 10, 5, 12, 0));
+        anclaje.marcarEnviado(Instant.parse("2026-10-05T12:00:00Z"));
         anclaje.registrarInclusion(new ReciboTransaccion(9_000_000L, true, 61_000L, 1_100_000_000L), 3, 3,
-                LocalDateTime.of(2026, 10, 5, 12, 1));
+                Instant.parse("2026-10-05T12:01:00Z"));
         return anclaje;
     }
 }

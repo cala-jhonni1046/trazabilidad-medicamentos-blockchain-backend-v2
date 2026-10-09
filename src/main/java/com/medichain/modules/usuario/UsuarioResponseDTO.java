@@ -2,7 +2,6 @@ package com.medichain.modules.usuario;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -37,7 +36,7 @@ public class UsuarioResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean esDirectorTecnico;
     @Schema(nullable = true)
-    private LocalDateTime ultimoLogin;
+    private Instant ultimoLogin;
     @Schema(nullable = true)
     private UUID empresaId;
 
@@ -166,12 +165,12 @@ public class UsuarioResponseDTO {
     }
 
     /** Devuelve la fecha del último inicio de sesión. */
-    public LocalDateTime getUltimoLogin() {
+    public Instant getUltimoLogin() {
         return ultimoLogin;
     }
 
     /** Establece la fecha del último inicio de sesión. */
-    public void setUltimoLogin(LocalDateTime ultimoLogin) {
+    public void setUltimoLogin(Instant ultimoLogin) {
         this.ultimoLogin = ultimoLogin;
     }
 

@@ -2,7 +2,7 @@ package com.medichain.modules.reporteciudadano;
 
 import com.medichain.utils.enums.Provincia;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -39,10 +39,10 @@ public class ReporteCiudadanoResponseDTO {
     private Provincia provincia;
 
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private LocalDateTime fechaReporte;
+    private Instant fechaReporte;
 
     @Schema(nullable = true)
-    private LocalDateTime fechaCierre;
+    private Instant fechaCierre;
 
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean cajaExiste;
@@ -141,22 +141,22 @@ public class ReporteCiudadanoResponseDTO {
     }
 
     /** Devuelve la fecha del reporte. */
-    public LocalDateTime getFechaReporte() {
+    public Instant getFechaReporte() {
         return fechaReporte;
     }
 
     /** Establece la fecha del reporte. */
-    public void setFechaReporte(LocalDateTime fechaReporte) {
+    public void setFechaReporte(Instant fechaReporte) {
         this.fechaReporte = fechaReporte;
     }
 
     /** Devuelve la fecha de cierre. */
-    public LocalDateTime getFechaCierre() {
+    public Instant getFechaCierre() {
         return fechaCierre;
     }
 
     /** Establece la fecha de cierre. */
-    public void setFechaCierre(LocalDateTime fechaCierre) {
+    public void setFechaCierre(Instant fechaCierre) {
         this.fechaCierre = fechaCierre;
     }
 

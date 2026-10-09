@@ -2,7 +2,6 @@ package com.medichain.modules.despachologistico;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,9 +31,9 @@ public class DespachoLogisticoResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String chofer;
     @Schema(nullable = true)
-    private LocalDateTime fechaSalida;
+    private Instant fechaSalida;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private LocalDateTime fechaEstimadaEntrega;
+    private Instant fechaEstimadaEntrega;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoDespacho estado;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
@@ -133,22 +132,22 @@ public class DespachoLogisticoResponseDTO {
     }
 
     /** Devuelve la fecha de salida del despacho. */
-    public LocalDateTime getFechaSalida() {
+    public Instant getFechaSalida() {
         return fechaSalida;
     }
 
     /** Establece la fecha de salida del despacho. */
-    public void setFechaSalida(LocalDateTime fechaSalida) {
+    public void setFechaSalida(Instant fechaSalida) {
         this.fechaSalida = fechaSalida;
     }
 
     /** Devuelve la fecha estimada de entrega. */
-    public LocalDateTime getFechaEstimadaEntrega() {
+    public Instant getFechaEstimadaEntrega() {
         return fechaEstimadaEntrega;
     }
 
     /** Establece la fecha estimada de entrega. */
-    public void setFechaEstimadaEntrega(LocalDateTime fechaEstimadaEntrega) {
+    public void setFechaEstimadaEntrega(Instant fechaEstimadaEntrega) {
         this.fechaEstimadaEntrega = fechaEstimadaEntrega;
     }
 

@@ -5,6 +5,7 @@ import com.medichain.modules.despachologistico.DespachoLogistico;
 import com.medichain.modules.empresa.Empresa;
 import com.medichain.modules.usuario.Usuario;
 import com.medichain.utils.BaseEntity;
+import com.medichain.utils.Tiempo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -12,7 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 public class Recepcion extends BaseEntity {
 
     @Column(name = "fecha_hora", nullable = false, unique = false)
-    private LocalDateTime fechaHora;
+    private Instant fechaHora;
 
     @Column(name = "temperatura", nullable = false, precision = 5, scale = 2, unique = false)
     private BigDecimal temperatura;
@@ -91,7 +92,7 @@ public class Recepcion extends BaseEntity {
         this.motivoRechazo = motivos.isEmpty() ? null
                 : motivos.stream().map(Enum::name).collect(Collectors.joining(","));
         this.observacion = observacion;
-        this.fechaHora = LocalDateTime.now();
+        this.fechaHora = Tiempo.ahora();
     }
 
     /** Devuelve los motivos de rechazo como lista (vacía si fue conforme). */
@@ -104,7 +105,7 @@ public class Recepcion extends BaseEntity {
     }
 
     /** Devuelve la fecha y hora de la recepción. */
-    public LocalDateTime getFechaHora() {
+    public Instant getFechaHora() {
         return fechaHora;
     }
 

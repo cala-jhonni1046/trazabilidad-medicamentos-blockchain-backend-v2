@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -31,11 +31,11 @@ public class DespachoLogisticoRequestDTO {
     @Size(max = 200, message = "El campo chofer no puede superar 200 caracteres")
     private String chofer;
 
-    @Schema(description = "Fecha y hora estimada de entrega (futura)", example = "2026-12-01T18:00:00",
+    @Schema(description = "Fecha y hora estimada de entrega (futura). Con offset obligatorio (ISO-8601, ej. -03:00); sin offset → 400", example = "2026-12-01T18:00:00-03:00",
             requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "El campo fechaEstimadaEntrega es obligatorio")
     @Future(message = "La fecha estimada de entrega debe ser futura")
-    private LocalDateTime fechaEstimadaEntrega;
+    private OffsetDateTime fechaEstimadaEntrega;
 
     @Schema(description = "Códigos de los bultos del viaje (tramo 1: ARMADO, de una misma distribuidora; tramo 2: EN_DEPOSITO en tu depósito)",
             example = "[\"BUL-0002\"]", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -68,12 +68,12 @@ public class DespachoLogisticoRequestDTO {
     }
 
     /** Devuelve la fecha estimada de entrega. */
-    public LocalDateTime getFechaEstimadaEntrega() {
+    public OffsetDateTime getFechaEstimadaEntrega() {
         return fechaEstimadaEntrega;
     }
 
     /** Establece la fecha estimada de entrega. */
-    public void setFechaEstimadaEntrega(LocalDateTime fechaEstimadaEntrega) {
+    public void setFechaEstimadaEntrega(OffsetDateTime fechaEstimadaEntrega) {
         this.fechaEstimadaEntrega = fechaEstimadaEntrega;
     }
 

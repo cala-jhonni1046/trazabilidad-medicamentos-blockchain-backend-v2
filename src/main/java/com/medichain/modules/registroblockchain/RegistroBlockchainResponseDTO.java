@@ -2,7 +2,6 @@ package com.medichain.modules.registroblockchain;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -50,11 +49,11 @@ public class RegistroBlockchainResponseDTO {
     @Schema(nullable = true)
     private String ultimoError;
     @Schema(nullable = true)
-    private LocalDateTime proximoIntento;
+    private Instant proximoIntento;
     @Schema(nullable = true)
-    private LocalDateTime fechaEnvio;
+    private Instant fechaEnvio;
     @Schema(nullable = true)
-    private LocalDateTime fechaConfirmacion;
+    private Instant fechaConfirmacion;
     @Schema(nullable = true)
     private String enlaceEtherscan;
 
@@ -243,32 +242,32 @@ public class RegistroBlockchainResponseDTO {
     }
 
     /** Devuelve cuándo se reintenta. */
-    public LocalDateTime getProximoIntento() {
+    public Instant getProximoIntento() {
         return proximoIntento;
     }
 
     /** Establece cuándo se reintenta. */
-    public void setProximoIntento(LocalDateTime proximoIntento) {
+    public void setProximoIntento(Instant proximoIntento) {
         this.proximoIntento = proximoIntento;
     }
 
     /** Devuelve cuándo se transmitió la transacción vigente. */
-    public LocalDateTime getFechaEnvio() {
+    public Instant getFechaEnvio() {
         return fechaEnvio;
     }
 
     /** Establece cuándo se transmitió la transacción vigente. */
-    public void setFechaEnvio(LocalDateTime fechaEnvio) {
+    public void setFechaEnvio(Instant fechaEnvio) {
         this.fechaEnvio = fechaEnvio;
     }
 
     /** Devuelve cuándo se confirmó. */
-    public LocalDateTime getFechaConfirmacion() {
+    public Instant getFechaConfirmacion() {
         return fechaConfirmacion;
     }
 
     /** Establece cuándo se confirmó. */
-    public void setFechaConfirmacion(LocalDateTime fechaConfirmacion) {
+    public void setFechaConfirmacion(Instant fechaConfirmacion) {
         this.fechaConfirmacion = fechaConfirmacion;
     }
 

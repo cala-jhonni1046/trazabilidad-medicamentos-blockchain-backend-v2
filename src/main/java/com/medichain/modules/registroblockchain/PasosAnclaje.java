@@ -10,7 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,9 +58,9 @@ public class PasosAnclaje {
         this.reloj = reloj;
     }
 
-    /** Fecha y hora actual en UTC (del reloj inyectado, para poder fijarla en los tests). */
-    public LocalDateTime ahora() {
-        return LocalDateTime.now(reloj);
+    /** Instante actual en UTC (del reloj inyectado, para poder fijarlo en los tests), en microsegundos. */
+    public Instant ahora() {
+        return Instant.now(reloj).truncatedTo(ChronoUnit.MICROS);
     }
 
     /** El anclaje en curso (PENDIENTE o ENVIADO), si hay. */

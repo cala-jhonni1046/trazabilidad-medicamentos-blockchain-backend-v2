@@ -44,7 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -296,7 +296,7 @@ public class DatosDemo implements CommandLineRunner {
             DespachoLogisticoRequestDTO viaje = new DespachoLogisticoRequestDTO();
             viaje.setPatente("AA000AA");
             viaje.setChofer("Chofer Demo");
-            viaje.setFechaEstimadaEntrega(LocalDateTime.now().plusDays(2));
+            viaje.setFechaEstimadaEntrega(OffsetDateTime.now().plusDays(2));
             viaje.setBultos(List.of(bultoUno.getCodigo()));
             despachoLogisticoService.crear(viaje);
         });

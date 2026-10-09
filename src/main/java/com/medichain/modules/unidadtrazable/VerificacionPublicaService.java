@@ -18,6 +18,7 @@ import com.medichain.modules.registroblockchain.RegistroBlockchainRepository;
 import com.medichain.modules.trazabilidad.DatosEventos;
 import com.medichain.modules.trazabilidad.EventoTrazabilidadRepository;
 import com.medichain.modules.trazabilidad.TipoEvento;
+import com.medichain.utils.Calendario;
 import com.medichain.utils.validacion.Gs1Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +71,7 @@ public class VerificacionPublicaService {
     private final EventoTrazabilidadRepository eventoRepository;
     private final RegistroBlockchainRepository registroBlockchainRepository;
     private final AnclajeProperties propiedadesAnclaje;
+    private final Calendario calendario;
 
     @Autowired
     public VerificacionPublicaService(UnidadTrazableRepository unidadTrazableRepository,
@@ -79,7 +81,7 @@ public class VerificacionPublicaService {
                                       RegistroIntentosVerificacion registroIntentos,
                                       EventoTrazabilidadRepository eventoRepository,
                                       RegistroBlockchainRepository registroBlockchainRepository,
-                                      AnclajeProperties propiedadesAnclaje) {
+                                      AnclajeProperties propiedadesAnclaje, Calendario calendario) {
         this.unidadTrazableRepository = unidadTrazableRepository;
         this.medicamentoRepository = medicamentoRepository;
         this.despachoLogisticoRepository = despachoLogisticoRepository;
@@ -89,6 +91,7 @@ public class VerificacionPublicaService {
         this.eventoRepository = eventoRepository;
         this.registroBlockchainRepository = registroBlockchainRepository;
         this.propiedadesAnclaje = propiedadesAnclaje;
+        this.calendario = calendario;
     }
 
     /** Verifica la caja. GTIN y serie ya validados en formato por el Controller. */
@@ -189,7 +192,7 @@ public class VerificacionPublicaService {
         List<EtapaRecorridoDTO> etapas = new ArrayList<>();
         etapas.add(new EtapaRecorridoDTO("FABRICADO", laboratorio, lote.getFechaFabricacion()));
         if (lote.getFechaLiberacion() != null) {
-            etapas.add(new EtapaRecorridoDTO("LIBERADO", laboratorio, lote.getFechaLiberacion().toLocalDate()));
+            etapas.add(new EtapaRecorridoDTO("LIBERADO", laboratorio, calendario.fecha(lote.getFechaLiberacion())));
         }
         Bulto bulto = caja.getBulto();
         if (bulto == null) {
@@ -198,11 +201,11 @@ public class VerificacionPublicaService {
         List<EtapaRecorridoDTO> movimientos = new ArrayList<>();
         for (DespachoLogistico viaje : salidas) {
             movimientos.add(new EtapaRecorridoDTO("DESPACHADO", viaje.getOrigen().getRazonSocial(),
-                    viaje.getFechaSalida().toLocalDate()));
+                    calendario.fecha(viaje.getFechaSalida())));
         }
         for (Recepcion recepcion : recepcionRepository.findByBultoIdOrderByFechaHoraAsc(bulto.getId())) {
             movimientos.add(new EtapaRecorridoDTO(recepcion.getConforme() ? "RECIBIDO" : "RECHAZADO",
-                    recepcion.getReceptora().getRazonSocial(), recepcion.getFechaHora().toLocalDate()));
+                    recepcion.getReceptora().getRazonSocial(), calendario.fecha(recepcion.getFechaHora())));
         }
         movimientos.sort((a, b) -> a.getFecha().compareTo(b.getFecha()));
         etapas.addAll(movimientos);

@@ -5,6 +5,7 @@ import com.medichain.modules.inspectoranmat.InspectorAnmat;
 import com.medichain.modules.unidadtrazable.UnidadTrazable;
 import com.medichain.modules.usuario.Usuario;
 import com.medichain.utils.BaseEntity;
+import com.medichain.utils.Tiempo;
 import com.medichain.utils.enums.Provincia;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,7 +15,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Entidad ReporteCiudadano en MediChain (código REP-0001).
@@ -63,11 +64,11 @@ public class ReporteCiudadano extends BaseEntity {
     private Provincia provincia;
 
     @Column(name = "fecha_reporte", nullable = false, unique = false)
-    private LocalDateTime fechaReporte;
+    private Instant fechaReporte;
 
     // nullable = true: solo cuando se cierra.
     @Column(name = "fecha_cierre", nullable = true, unique = false)
-    private LocalDateTime fechaCierre;
+    private Instant fechaCierre;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "paciente_id", nullable = false)
@@ -100,7 +101,7 @@ public class ReporteCiudadano extends BaseEntity {
         this.descripcion = descripcion;
         this.unidadTrazable = unidadTrazable;
         this.estado = EstadoAuditoria.ABIERTO;
-        this.fechaReporte = LocalDateTime.now();
+        this.fechaReporte = Tiempo.ahora();
     }
 
     /** Un inspector toma el reporte: ABIERTO → EN_INVESTIGACION. */
@@ -117,7 +118,7 @@ public class ReporteCiudadano extends BaseEntity {
         exigirEnInvestigacionPor(inspector, "cerrar");
         this.estado = EstadoAuditoria.CERRADO;
         this.conclusion = conclusion;
-        this.fechaCierre = LocalDateTime.now();
+        this.fechaCierre = Tiempo.ahora();
     }
 
     /** Exige EN_INVESTIGACION y que el inspector sea quien lo tomó (para cerrar o abrir una cuarentena). */
@@ -178,12 +179,12 @@ public class ReporteCiudadano extends BaseEntity {
     }
 
     /** Devuelve la fecha del reporte. */
-    public LocalDateTime getFechaReporte() {
+    public Instant getFechaReporte() {
         return fechaReporte;
     }
 
     /** Devuelve la fecha de cierre. */
-    public LocalDateTime getFechaCierre() {
+    public Instant getFechaCierre() {
         return fechaCierre;
     }
 

@@ -37,7 +37,7 @@ import org.springframework.boot.test.context.TestComponent;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -270,7 +270,7 @@ public class EscenarioIntegracion {
             DespachoLogisticoRequestDTO dto = new DespachoLogisticoRequestDTO();
             dto.setPatente("AA" + String.format("%03d", CONTADOR.incrementAndGet() % 1000) + "BB");
             dto.setChofer("Chofer de prueba");
-            dto.setFechaEstimadaEntrega(LocalDateTime.now().plusDays(2));
+            dto.setFechaEstimadaEntrega(OffsetDateTime.now().plusDays(2));
             dto.setBultos(List.of(bulto.getCodigo()));
             DespachoLogistico creado = despachoService.crear(dto);
             return despachoService.salida(creado.getId());

@@ -17,7 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -55,7 +55,7 @@ class TelemetriaGpsServiceTest {
     /** Lectura GPS de un despacho con origen en la empresa dada. */
     private TelemetriaGps lecturaDe(Empresa origen) {
         DespachoLogistico despacho = DatosDePrueba.viaje(TramoDespacho.DISTRIBUIDOR_A_FARMACIA, origen);
-        TelemetriaGps lectura = new TelemetriaGps("G-1", -31.4, -64.2, null, LocalDateTime.now(), despacho);
+        TelemetriaGps lectura = new TelemetriaGps("G-1", -31.4, -64.2, null, Instant.now(), despacho);
         lectura.setId(UUID.randomUUID());
         return lectura;
     }

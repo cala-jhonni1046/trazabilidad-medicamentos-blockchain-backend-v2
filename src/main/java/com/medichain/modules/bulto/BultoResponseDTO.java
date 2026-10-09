@@ -3,7 +3,6 @@ package com.medichain.modules.bulto;
 import com.medichain.modules.cuarentena.CausaBloqueo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -30,7 +29,7 @@ public class BultoResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoBulto estado;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private LocalDateTime fechaArmado;
+    private Instant fechaArmado;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID loteId;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
@@ -133,12 +132,12 @@ public class BultoResponseDTO {
     }
 
     /** Devuelve la fecha de armado del bulto. */
-    public LocalDateTime getFechaArmado() {
+    public Instant getFechaArmado() {
         return fechaArmado;
     }
 
     /** Establece la fecha de armado del bulto. */
-    public void setFechaArmado(LocalDateTime fechaArmado) {
+    public void setFechaArmado(Instant fechaArmado) {
         this.fechaArmado = fechaArmado;
     }
 

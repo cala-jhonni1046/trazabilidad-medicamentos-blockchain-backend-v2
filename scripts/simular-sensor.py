@@ -30,7 +30,7 @@ import os
 import random
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from medichain_api import buscar_viaje, iniciar_sesion, pedir
 
@@ -73,7 +73,7 @@ def main():
             lectura = {
                 "sensorId": args.sensor,
                 "temperatura": temperatura,
-                "fechaHora": datetime.now().replace(microsecond=0).isoformat(),
+                "fechaHora": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
                 "despachoId": viaje_id,
             }
             respuesta = pedir("POST", base + "/api/telemetria-temperatura", lectura, token)

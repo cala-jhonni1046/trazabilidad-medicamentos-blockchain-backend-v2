@@ -4,7 +4,7 @@ import com.medichain.exceptions.ReglaNegocioException;
 import com.medichain.testutil.DatosDePrueba;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class RegistroBlockchainTransicionesTest {
 
-    private static final LocalDateTime AHORA = LocalDateTime.of(2026, 10, 5, 12, 0);
+    private static final Instant AHORA = Instant.parse("2026-10-05T12:00:00Z");
     private static final String CONTRATO = "0x" + "1".repeat(40);
 
     /** Anclaje PENDIENTE de los eventos 1..28. */
@@ -62,7 +62,7 @@ class RegistroBlockchainTransicionesTest {
         anclaje.marcarEnviado(AHORA);
         anclaje.iniciarIntento();
 
-        anclaje.registrarReemplazo(DatosDePrueba.transaccion("0x" + "cd".repeat(32)), AHORA.plusMinutes(3));
+        anclaje.registrarReemplazo(DatosDePrueba.transaccion("0x" + "cd".repeat(32)), AHORA.plusSeconds(180));
 
         assertEquals(EstadoAnclaje.ENVIADO, anclaje.getEstado());
         assertEquals("0x" + "cd".repeat(32), anclaje.getTransactionHash());

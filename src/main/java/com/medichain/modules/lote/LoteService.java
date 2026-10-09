@@ -15,6 +15,7 @@ import com.medichain.modules.unidadtrazable.UnidadTrazable;
 import com.medichain.modules.unidadtrazable.UnidadTrazableRepository;
 import com.medichain.modules.usuario.RolUsuario;
 import com.medichain.modules.usuario.Usuario;
+import com.medichain.utils.Calendario;
 import com.medichain.utils.RestriccionUnica;
 import com.medichain.utils.seguridad.UsuarioActual;
 import com.medichain.utils.seguridad.VerificadorEmpresa;
@@ -67,13 +68,15 @@ public class LoteService {
     private final VerificadorUsuario verificadorUsuario;
     private final RegistroIntentos registroIntentos;
     private final RegistradorEventos registradorEventos;
+    private final Calendario calendario;
 
     @Autowired
     public LoteService(LoteRepository repository, MedicamentoRepository medicamentoRepository,
                        UnidadTrazableRepository unidadTrazableRepository,
                        InspectorAnmatRepository inspectorAnmatRepository, UsuarioActual usuarioActual,
                        VerificadorEmpresa verificadorEmpresa, VerificadorUsuario verificadorUsuario,
-                       RegistroIntentos registroIntentos, RegistradorEventos registradorEventos) {
+                       RegistroIntentos registroIntentos, RegistradorEventos registradorEventos,
+                       Calendario calendario) {
         this.repository = repository;
         this.medicamentoRepository = medicamentoRepository;
         this.unidadTrazableRepository = unidadTrazableRepository;
@@ -83,6 +86,7 @@ public class LoteService {
         this.verificadorUsuario = verificadorUsuario;
         this.registroIntentos = registroIntentos;
         this.registradorEventos = registradorEventos;
+        this.calendario = calendario;
     }
 
     /** Devuelve una página de lotes según el rol del usuario. */
@@ -229,7 +233,7 @@ public class LoteService {
             verificadorEmpresa.exigirHabilitada(actual.getEmpresaId());
             liberadoComo = "DIRECTOR_TECNICO";
         }
-        if (lote.estaVencido()) {
+        if (lote.estaVencido(calendario.hoy())) {
             throw new ReglaNegocioException("R10", "El lote está vencido: no se puede liberar");
         }
         lote.liberar(quien);

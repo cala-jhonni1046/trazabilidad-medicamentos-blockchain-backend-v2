@@ -14,6 +14,7 @@ import com.medichain.modules.unidadtrazable.EstadoUnidad;
 import com.medichain.modules.unidadtrazable.UnidadTrazable;
 import com.medichain.modules.unidadtrazable.UnidadTrazableRepository;
 import com.medichain.modules.usuario.RolUsuario;
+import com.medichain.utils.Tiempo;
 import com.medichain.utils.seguridad.UsuarioActual;
 import com.medichain.utils.seguridad.VerificadorEmpresa;
 import com.medichain.utils.seguridad.VerificadorUsuario;
@@ -24,7 +25,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -144,7 +144,7 @@ public class DispensacionService {
             throw new ResourceNotFoundException("Dispensación no encontrada con id: " + id);
         }
         verificadorEmpresa.exigirHabilitada(actual.getEmpresaId());
-        dispensacion.anular(motivo, LocalDateTime.now());
+        dispensacion.anular(motivo, Tiempo.ahora());
         UnidadTrazable caja = dispensacion.getUnidadTrazable();
         caja.anularDispensa();
         unidadTrazableRepository.save(caja);

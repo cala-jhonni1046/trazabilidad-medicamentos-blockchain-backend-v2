@@ -3,7 +3,6 @@ package com.medichain.modules.inspectoranmat;
 import com.medichain.utils.enums.Provincia;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -30,9 +29,9 @@ public class InspectorAnmatResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private EstadoInspector estado;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private LocalDateTime fechaAlta;
+    private Instant fechaAlta;
     @Schema(nullable = true)
-    private LocalDateTime fechaBaja;
+    private Instant fechaBaja;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID usuarioId;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
@@ -123,22 +122,22 @@ public class InspectorAnmatResponseDTO {
     }
 
     /** Devuelve la fecha de alta del inspector. */
-    public LocalDateTime getFechaAlta() {
+    public Instant getFechaAlta() {
         return fechaAlta;
     }
 
     /** Establece la fecha de alta del inspector. */
-    public void setFechaAlta(LocalDateTime fechaAlta) {
+    public void setFechaAlta(Instant fechaAlta) {
         this.fechaAlta = fechaAlta;
     }
 
     /** Devuelve la fecha de baja del inspector, si aplica. */
-    public LocalDateTime getFechaBaja() {
+    public Instant getFechaBaja() {
         return fechaBaja;
     }
 
     /** Establece la fecha de baja del inspector. */
-    public void setFechaBaja(LocalDateTime fechaBaja) {
+    public void setFechaBaja(Instant fechaBaja) {
         this.fechaBaja = fechaBaja;
     }
 

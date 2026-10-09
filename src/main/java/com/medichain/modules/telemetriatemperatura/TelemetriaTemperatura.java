@@ -9,7 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Entidad TelemetriaTemperatura en MediChain.
@@ -32,7 +32,7 @@ public class TelemetriaTemperatura extends BaseEntity {
     private Boolean fueraDeRango;
 
     @Column(name = "fecha_hora", nullable = false, unique = false)
-    private LocalDateTime fechaHora;
+    private Instant fechaHora;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "despacho_id", nullable = false)
@@ -47,7 +47,7 @@ public class TelemetriaTemperatura extends BaseEntity {
      * viaje contra la base y calcula fueraDeRango (no lo decide el cliente).
      */
     public TelemetriaTemperatura(String sensorId, BigDecimal temperatura, Boolean fueraDeRango,
-                                 LocalDateTime fechaHora, DespachoLogistico despacho) {
+                                 Instant fechaHora, DespachoLogistico despacho) {
         this.despacho = despacho;
         this.sensorId = sensorId;
         this.temperatura = temperatura;
@@ -71,7 +71,7 @@ public class TelemetriaTemperatura extends BaseEntity {
     }
 
     /** Devuelve la fecha y hora de la lectura. */
-    public LocalDateTime getFechaHora() {
+    public Instant getFechaHora() {
         return fechaHora;
     }
 

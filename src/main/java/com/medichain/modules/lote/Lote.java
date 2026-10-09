@@ -5,6 +5,7 @@ import com.medichain.modules.empresa.Empresa;
 import com.medichain.modules.medicamento.Medicamento;
 import com.medichain.modules.usuario.Usuario;
 import com.medichain.utils.BaseEntity;
+import com.medichain.utils.Tiempo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,8 +15,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 /**
  * Entidad Lote en MediChain.
@@ -59,7 +60,7 @@ public class Lote extends BaseEntity {
 
     // nullable = true: solo tiene valor una vez que el lote es liberado.
     @Column(name = "fecha_liberacion", nullable = true, unique = false)
-    private LocalDateTime fechaLiberacion;
+    private Instant fechaLiberacion;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "medicamento_id", nullable = false)
@@ -125,7 +126,7 @@ public class Lote extends BaseEntity {
     }
 
     /** Devuelve la fecha de liberación del lote. */
-    public LocalDateTime getFechaLiberacion() {
+    public Instant getFechaLiberacion() {
         return fechaLiberacion;
     }
 
@@ -155,7 +156,7 @@ public class Lote extends BaseEntity {
         }
         this.estado = EstadoLote.LIBERADO;
         this.liberadoPor = quien;
-        this.fechaLiberacion = LocalDateTime.now();
+        this.fechaLiberacion = Tiempo.ahora();
     }
 
     /**
@@ -191,8 +192,12 @@ public class Lote extends BaseEntity {
         }
     }
 
-    /** Indica si el lote está vencido a la fecha actual. */
-    public boolean estaVencido() {
-        return this.fechaVencimiento != null && this.fechaVencimiento.isBefore(LocalDate.now());
+    /**
+     * Indica si el lote está vencido al día dado (hoy en el calendario de
+     * Argentina, que lo calcula el componente Calendario: solo el día, no la
+     * hora, define el vencimiento).
+     */
+    public boolean estaVencido(LocalDate hoy) {
+        return this.fechaVencimiento != null && this.fechaVencimiento.isBefore(hoy);
     }
 }

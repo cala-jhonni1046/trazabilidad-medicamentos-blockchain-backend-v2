@@ -3,7 +3,6 @@ package com.medichain.modules.recepcion;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -23,7 +22,7 @@ public class RecepcionResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Long version;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private LocalDateTime fechaHora;
+    private Instant fechaHora;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private BigDecimal temperatura;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
@@ -92,12 +91,12 @@ public class RecepcionResponseDTO {
     }
 
     /** Devuelve la fecha y hora de la recepción. */
-    public LocalDateTime getFechaHora() {
+    public Instant getFechaHora() {
         return fechaHora;
     }
 
     /** Establece la fecha y hora de la recepción. */
-    public void setFechaHora(LocalDateTime fechaHora) {
+    public void setFechaHora(Instant fechaHora) {
         this.fechaHora = fechaHora;
     }
 

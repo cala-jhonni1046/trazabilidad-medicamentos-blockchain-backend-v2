@@ -1,11 +1,12 @@
 package com.medichain.modules.telemetriagps;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
@@ -31,8 +32,9 @@ public class TelemetriaGpsRequestDTO {
     @Size(max = 255, message = "El campo lugar no puede superar 255 caracteres")
     private String lugar;
 
+    @Schema(description = "Momento de la lectura. Con offset obligatorio (ISO-8601, ej. -03:00); sin offset → 400", example = "2026-12-01T18:00:00-03:00", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "El campo fechaHora es obligatorio")
-    private LocalDateTime fechaHora;
+    private OffsetDateTime fechaHora;
 
     // Campo 'despachoId': UUID del despacho al que pertenece la lectura (obligatorio).
     @NotNull(message = "El campo despachoId es obligatorio")
@@ -44,7 +46,7 @@ public class TelemetriaGpsRequestDTO {
 
     /** Constructor con todos los campos obligatorios de alta. */
     public TelemetriaGpsRequestDTO(String sensorId, Double latitud, Double longitud,
-                                    LocalDateTime fechaHora, UUID despachoId) {
+                                    OffsetDateTime fechaHora, UUID despachoId) {
         this.sensorId = sensorId;
         this.latitud = latitud;
         this.longitud = longitud;
@@ -93,12 +95,12 @@ public class TelemetriaGpsRequestDTO {
     }
 
     /** Devuelve la fecha y hora informada. */
-    public LocalDateTime getFechaHora() {
+    public OffsetDateTime getFechaHora() {
         return fechaHora;
     }
 
     /** Establece la fecha y hora informada. */
-    public void setFechaHora(LocalDateTime fechaHora) {
+    public void setFechaHora(OffsetDateTime fechaHora) {
         this.fechaHora = fechaHora;
     }
 

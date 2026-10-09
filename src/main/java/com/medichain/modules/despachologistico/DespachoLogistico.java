@@ -5,6 +5,7 @@ import com.medichain.modules.bulto.Bulto;
 import com.medichain.modules.empresa.Empresa;
 import com.medichain.modules.usuario.Usuario;
 import com.medichain.utils.BaseEntity;
+import com.medichain.utils.Tiempo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,7 +16,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -50,10 +51,10 @@ public class DespachoLogistico extends BaseEntity {
 
     // nullable = true: solo tiene valor una vez que se registra la salida.
     @Column(name = "fecha_salida", nullable = true, unique = false)
-    private LocalDateTime fechaSalida;
+    private Instant fechaSalida;
 
     @Column(name = "fecha_estimada_entrega", nullable = false, unique = false)
-    private LocalDateTime fechaEstimadaEntrega;
+    private Instant fechaEstimadaEntrega;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false, length = 30, unique = false)
@@ -87,7 +88,7 @@ public class DespachoLogistico extends BaseEntity {
 
     /** Programa un viaje: nace PROGRAMADO, con origen y creador; los bultos se agregan al crearlo. */
     public DespachoLogistico(String codigo, TramoDespacho tramo, String patente, String chofer,
-                             LocalDateTime fechaEstimadaEntrega, Empresa origen, Usuario creadoPor) {
+                             Instant fechaEstimadaEntrega, Empresa origen, Usuario creadoPor) {
         this.codigo = codigo;
         this.tramo = tramo;
         this.patente = patente;
@@ -111,7 +112,7 @@ public class DespachoLogistico extends BaseEntity {
     public void registrarSalida() {
         exigirEstado(EstadoDespacho.PROGRAMADO, "salida");
         this.estado = EstadoDespacho.EN_TRANSITO;
-        this.fechaSalida = LocalDateTime.now();
+        this.fechaSalida = Tiempo.ahora();
     }
 
     /** Cancela un viaje que no salió: PROGRAMADO → CANCELADO; sus bultos quedan sin viaje. */
@@ -200,12 +201,12 @@ public class DespachoLogistico extends BaseEntity {
     }
 
     /** Devuelve la fecha de salida. */
-    public LocalDateTime getFechaSalida() {
+    public Instant getFechaSalida() {
         return fechaSalida;
     }
 
     /** Devuelve la fecha estimada de entrega. */
-    public LocalDateTime getFechaEstimadaEntrega() {
+    public Instant getFechaEstimadaEntrega() {
         return fechaEstimadaEntrega;
     }
 

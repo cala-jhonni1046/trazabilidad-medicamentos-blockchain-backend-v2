@@ -8,7 +8,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Entidad TelemetriaGps en MediChain.
@@ -34,7 +34,7 @@ public class TelemetriaGps extends BaseEntity {
     private String lugar;
 
     @Column(name = "fecha_hora", nullable = false, unique = false)
-    private LocalDateTime fechaHora;
+    private Instant fechaHora;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "despacho_id", nullable = false)
@@ -45,7 +45,7 @@ public class TelemetriaGps extends BaseEntity {
     }
 
     /** Crea la posición GPS completa (no tiene setters); el Service resuelve el viaje contra la base. */
-    public TelemetriaGps(String sensorId, Double latitud, Double longitud, String lugar, LocalDateTime fechaHora,
+    public TelemetriaGps(String sensorId, Double latitud, Double longitud, String lugar, Instant fechaHora,
                          DespachoLogistico despacho) {
         this.lugar = lugar;
         this.despacho = despacho;
@@ -76,7 +76,7 @@ public class TelemetriaGps extends BaseEntity {
     }
 
     /** Devuelve la fecha y hora de la lectura. */
-    public LocalDateTime getFechaHora() {
+    public Instant getFechaHora() {
         return fechaHora;
     }
 

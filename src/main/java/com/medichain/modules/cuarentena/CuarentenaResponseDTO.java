@@ -3,7 +3,6 @@ package com.medichain.modules.cuarentena;
 import com.medichain.utils.enums.Provincia;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -40,9 +39,9 @@ public class CuarentenaResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Provincia provincia;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private LocalDateTime fechaInicio;
+    private Instant fechaInicio;
     @Schema(nullable = true)
-    private LocalDateTime fechaFin;
+    private Instant fechaFin;
     @Schema(nullable = true)
     private UUID loteId;
     @Schema(nullable = true)
@@ -181,22 +180,22 @@ public class CuarentenaResponseDTO {
     }
 
     /** Devuelve la fecha de inicio de la medida. */
-    public LocalDateTime getFechaInicio() {
+    public Instant getFechaInicio() {
         return fechaInicio;
     }
 
     /** Establece la fecha de inicio de la medida. */
-    public void setFechaInicio(LocalDateTime fechaInicio) {
+    public void setFechaInicio(Instant fechaInicio) {
         this.fechaInicio = fechaInicio;
     }
 
     /** Devuelve la fecha de fin de la medida. */
-    public LocalDateTime getFechaFin() {
+    public Instant getFechaFin() {
         return fechaFin;
     }
 
     /** Establece la fecha de fin de la medida. */
-    public void setFechaFin(LocalDateTime fechaFin) {
+    public void setFechaFin(Instant fechaFin) {
         this.fechaFin = fechaFin;
     }
 

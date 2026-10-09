@@ -15,7 +15,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import tools.jackson.databind.JsonNode;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -178,7 +179,7 @@ class FiltrosListadosIT extends IntegracionBase {
     /** Lectura de temperatura enviada por la empresa origen (viaje EN_TRANSITO); devuelve su id. */
     private String leerTemperatura(String origen, DespachoLogistico viaje, String grados) throws Exception {
         String cuerpo = JSON.writeValueAsString(Map.of("sensorId", "SENSOR-IT", "temperatura", grados,
-                "fechaHora", LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).toString(),
+                "fechaHora", OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toString(),
                 "despachoId", viaje.getId().toString()));
         String respuesta = mockMvc.perform(post("/api/telemetria-temperatura").header("Authorization", origen)
                         .contentType(MediaType.APPLICATION_JSON).content(cuerpo))
@@ -189,7 +190,7 @@ class FiltrosListadosIT extends IntegracionBase {
     /** Lectura de GPS enviada por la empresa origen. */
     private void leerGps(String origen, DespachoLogistico viaje) throws Exception {
         String cuerpo = JSON.writeValueAsString(Map.of("sensorId", "GPS-IT", "latitud", -24.18, "longitud", -65.3,
-                "lugar", "Ruta 9", "fechaHora", LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).toString(),
+                "lugar", "Ruta 9", "fechaHora", OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toString(),
                 "despachoId", viaje.getId().toString()));
         mockMvc.perform(post("/api/telemetria-gps").header("Authorization", origen)
                         .contentType(MediaType.APPLICATION_JSON).content(cuerpo))

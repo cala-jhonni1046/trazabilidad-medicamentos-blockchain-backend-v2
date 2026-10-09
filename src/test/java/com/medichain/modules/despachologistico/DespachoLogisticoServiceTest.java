@@ -34,7 +34,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -128,7 +128,7 @@ class DespachoLogisticoServiceTest {
         DespachoLogisticoRequestDTO dto = new DespachoLogisticoRequestDTO();
         dto.setPatente("AB123CD");
         dto.setChofer("Juan Pérez");
-        dto.setFechaEstimadaEntrega(LocalDateTime.now().plusDays(1));
+        dto.setFechaEstimadaEntrega(OffsetDateTime.now().plusDays(1));
         dto.setBultos(List.of(codigos));
         return dto;
     }

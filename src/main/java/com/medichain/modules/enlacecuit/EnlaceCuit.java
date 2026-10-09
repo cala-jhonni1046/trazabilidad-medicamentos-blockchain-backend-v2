@@ -5,6 +5,7 @@ import com.medichain.modules.empresa.Empresa;
 import com.medichain.modules.inspectoranmat.InspectorAnmat;
 import com.medichain.modules.usuario.Usuario;
 import com.medichain.utils.BaseEntity;
+import com.medichain.utils.Tiempo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,7 +14,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -39,19 +40,19 @@ public class EnlaceCuit extends BaseEntity {
     private EstadoEnlaceCuit estado;
 
     @Column(name = "fecha_propuesta", nullable = false, unique = false)
-    private LocalDateTime fechaPropuesta;
+    private Instant fechaPropuesta;
 
     // nullable = true: solo tiene valor una vez que la distribuidora acepta el circuito.
     @Column(name = "fecha_aceptacion_distribuidor", nullable = true, unique = false)
-    private LocalDateTime fechaAceptacionDistribuidor;
+    private Instant fechaAceptacionDistribuidor;
 
     // nullable = true: solo tiene valor una vez que la farmacia acepta el circuito.
     @Column(name = "fecha_aceptacion_farmacia", nullable = true, unique = false)
-    private LocalDateTime fechaAceptacionFarmacia;
+    private Instant fechaAceptacionFarmacia;
 
     // nullable = true: solo tiene valor una vez que el inspector aprueba el circuito.
     @Column(name = "fecha_aprobacion", nullable = true, unique = false)
-    private LocalDateTime fechaAprobacion;
+    private Instant fechaAprobacion;
 
     // nullable = true: solo tiene valor cuando el estado es RECHAZADO.
     @Column(name = "motivo_rechazo", nullable = true, columnDefinition = "TEXT")
@@ -113,7 +114,7 @@ public class EnlaceCuit extends BaseEntity {
         this.farmacia = farmacia;
         this.propuestoPor = propuestoPor;
         this.estado = EstadoEnlaceCuit.PENDIENTE_EMPRESAS;
-        this.fechaPropuesta = LocalDateTime.now();
+        this.fechaPropuesta = Tiempo.ahora();
         this.suspendidoPorEmpresa = false;
     }
 
@@ -130,12 +131,12 @@ public class EnlaceCuit extends BaseEntity {
             if (fechaAceptacionDistribuidor != null) {
                 throw transicionInvalida("La distribuidora ya aceptó este circuito");
             }
-            this.fechaAceptacionDistribuidor = LocalDateTime.now();
+            this.fechaAceptacionDistribuidor = Tiempo.ahora();
         } else if (esFarmacia(empresa)) {
             if (fechaAceptacionFarmacia != null) {
                 throw transicionInvalida("La farmacia ya aceptó este circuito");
             }
-            this.fechaAceptacionFarmacia = LocalDateTime.now();
+            this.fechaAceptacionFarmacia = Tiempo.ahora();
         } else {
             throw new IllegalArgumentException("La empresa no participa del circuito");
         }
@@ -178,7 +179,7 @@ public class EnlaceCuit extends BaseEntity {
         exigirRevisor(inspector);
         this.estado = EstadoEnlaceCuit.APROBADO;
         this.inspectorAprobador = inspector;
-        this.fechaAprobacion = LocalDateTime.now();
+        this.fechaAprobacion = Tiempo.ahora();
     }
 
     /** El revisor rechaza (definitivo): PENDIENTE_INSPECTOR → RECHAZADO. */
@@ -312,22 +313,22 @@ public class EnlaceCuit extends BaseEntity {
     }
 
     /** Devuelve la fecha de la propuesta. */
-    public LocalDateTime getFechaPropuesta() {
+    public Instant getFechaPropuesta() {
         return fechaPropuesta;
     }
 
     /** Devuelve la fecha de aceptación de la distribuidora. */
-    public LocalDateTime getFechaAceptacionDistribuidor() {
+    public Instant getFechaAceptacionDistribuidor() {
         return fechaAceptacionDistribuidor;
     }
 
     /** Devuelve la fecha de aceptación de la farmacia. */
-    public LocalDateTime getFechaAceptacionFarmacia() {
+    public Instant getFechaAceptacionFarmacia() {
         return fechaAceptacionFarmacia;
     }
 
     /** Devuelve la fecha de aprobación. */
-    public LocalDateTime getFechaAprobacion() {
+    public Instant getFechaAprobacion() {
         return fechaAprobacion;
     }
 

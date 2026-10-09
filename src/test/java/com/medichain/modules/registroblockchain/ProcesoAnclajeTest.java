@@ -16,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -277,7 +276,7 @@ class ProcesoAnclajeTest {
         assertEquals(EstadoAnclaje.PENDIENTE, anclaje.getEstado());
         assertEquals(1, anclaje.getIntentos());
         assertEquals("No se pudo transmitir: timeout", anclaje.getUltimoError());
-        assertEquals(LocalDateTime.of(2026, 10, 5, 12, 0, 30), anclaje.getProximoIntento());
+        assertEquals(Instant.parse("2026-10-05T12:00:30Z"), anclaje.getProximoIntento());
 
         proceso.cicloSeguimiento();
         verify(cliente, times(1)).firmarAnclaje(anyString(), anyLong(), any(), any(), any(), any());

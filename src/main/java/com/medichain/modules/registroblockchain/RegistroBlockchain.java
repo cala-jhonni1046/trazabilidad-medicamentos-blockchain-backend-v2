@@ -9,7 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Set;
 
 /**
@@ -106,15 +106,15 @@ public class RegistroBlockchain extends BaseEntity {
 
     // nullable = true: cuándo reintentar después de un envío fallido.
     @Column(name = "proximo_intento", nullable = true, unique = false)
-    private LocalDateTime proximoIntento;
+    private Instant proximoIntento;
 
     // nullable = true: cuándo se transmitió la transacción vigente (UTC).
     @Column(name = "fecha_envio", nullable = true, unique = false)
-    private LocalDateTime fechaEnvio;
+    private Instant fechaEnvio;
 
     // nullable = true: cuándo alcanzó las confirmaciones necesarias (UTC).
     @Column(name = "fecha_confirmacion", nullable = true, unique = false)
-    private LocalDateTime fechaConfirmacion;
+    private Instant fechaConfirmacion;
 
     /** Constructor vacío exigido por JPA. */
     protected RegistroBlockchain() {
@@ -144,7 +144,7 @@ public class RegistroBlockchain extends BaseEntity {
     }
 
     /** true si se puede intentar ahora (no hay una espera programada o ya venció). */
-    public boolean puedeIntentarse(LocalDateTime ahora) {
+    public boolean puedeIntentarse(Instant ahora) {
         return proximoIntento == null || !ahora.isBefore(proximoIntento);
     }
 
@@ -164,7 +164,7 @@ public class RegistroBlockchain extends BaseEntity {
     }
 
     /** PENDIENTE → ENVIADO: la red aceptó la transacción. */
-    public void marcarEnviado(LocalDateTime ahora) {
+    public void marcarEnviado(Instant ahora) {
         exigirEstado(Set.of(EstadoAnclaje.PENDIENTE), "marcar como enviado");
         if (transactionHash == null) {
             throw new ReglaNegocioException("TRANSICION_INVALIDA", "No hay transacción firmada para marcar como enviada");
@@ -176,7 +176,7 @@ public class RegistroBlockchain extends BaseEntity {
     }
 
     /** ENVIADO → ENVIADO: la transacción de reemplazo (mismo nonce, más comisión) fue aceptada. */
-    public void registrarReemplazo(TransaccionFirmada transaccion, LocalDateTime ahora) {
+    public void registrarReemplazo(TransaccionFirmada transaccion, Instant ahora) {
         exigirEstado(Set.of(EstadoAnclaje.ENVIADO), "reemplazar la transacción");
         aplicarTransaccion(transaccion);
         this.bloque = null;
@@ -190,7 +190,7 @@ public class RegistroBlockchain extends BaseEntity {
      * Un intento falló (error ya saneado). Si se llegó a maxIntentos → FALLIDO;
      * si no, queda en su estado esperando hasta proximoIntento.
      */
-    public void registrarFallo(String error, LocalDateTime proximoIntento, int maxIntentos) {
+    public void registrarFallo(String error, Instant proximoIntento, int maxIntentos) {
         exigirEstado(Set.of(EstadoAnclaje.PENDIENTE, EstadoAnclaje.ENVIADO), "registrar un fallo");
         this.ultimoError = error;
         if (intentos >= maxIntentos) {
@@ -207,7 +207,7 @@ public class RegistroBlockchain extends BaseEntity {
      * (bloques construidos encima). Con las requeridas → CONFIRMADO.
      */
     public void registrarInclusion(ReciboTransaccion recibo, int confirmacionesActuales, int requeridas,
-                                   LocalDateTime ahora) {
+                                   Instant ahora) {
         exigirEstado(Set.of(EstadoAnclaje.ENVIADO), "registrar la inclusión en un bloque");
         this.bloque = recibo.getBloque();
         this.gasUsado = recibo.getGasUsado();
@@ -382,17 +382,17 @@ public class RegistroBlockchain extends BaseEntity {
     }
 
     /** Devuelve cuándo se reintenta, si hay una espera programada. */
-    public LocalDateTime getProximoIntento() {
+    public Instant getProximoIntento() {
         return proximoIntento;
     }
 
     /** Devuelve cuándo se transmitió la transacción vigente. */
-    public LocalDateTime getFechaEnvio() {
+    public Instant getFechaEnvio() {
         return fechaEnvio;
     }
 
     /** Devuelve cuándo alcanzó las confirmaciones necesarias. */
-    public LocalDateTime getFechaConfirmacion() {
+    public Instant getFechaConfirmacion() {
         return fechaConfirmacion;
     }
 }

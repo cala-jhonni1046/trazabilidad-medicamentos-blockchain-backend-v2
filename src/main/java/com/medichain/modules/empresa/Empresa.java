@@ -3,6 +3,7 @@ package com.medichain.modules.empresa;
 import com.medichain.exceptions.ReglaNegocioException;
 import com.medichain.modules.inspectoranmat.InspectorAnmat;
 import com.medichain.utils.BaseEntity;
+import com.medichain.utils.Tiempo;
 import com.medichain.utils.enums.Provincia;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,7 +13,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Entidad Empresa en MediChain.
@@ -69,11 +70,11 @@ public class Empresa extends BaseEntity {
     private EstadoHabilitacion estado;
 
     @Column(name = "fecha_solicitud", nullable = false, unique = false)
-    private LocalDateTime fechaSolicitud;
+    private Instant fechaSolicitud;
 
     // nullable = true: solo tiene valor una vez que el inspector habilita la empresa.
     @Column(name = "fecha_habilitacion", nullable = true, unique = false)
-    private LocalDateTime fechaHabilitacion;
+    private Instant fechaHabilitacion;
 
     // nullable = true: solo tiene valor cuando el estado es RECHAZADA.
     @Column(name = "motivo_rechazo", nullable = true, columnDefinition = "TEXT")
@@ -111,7 +112,7 @@ public class Empresa extends BaseEntity {
         this.localidad = localidad;
         this.domicilio = domicilio;
         this.estado = EstadoHabilitacion.PENDIENTE;
-        this.fechaSolicitud = LocalDateTime.now();
+        this.fechaSolicitud = Tiempo.ahora();
     }
 
     /** Devuelve el tipo de empresa (laboratorio, distribuidor o farmacia). */
@@ -235,22 +236,22 @@ public class Empresa extends BaseEntity {
     }
 
     /** Devuelve la fecha y hora de la solicitud de habilitación. */
-    public LocalDateTime getFechaSolicitud() {
+    public Instant getFechaSolicitud() {
         return fechaSolicitud;
     }
 
     /** Establece la fecha y hora de la solicitud de habilitación. */
-    public void setFechaSolicitud(LocalDateTime fechaSolicitud) {
+    public void setFechaSolicitud(Instant fechaSolicitud) {
         this.fechaSolicitud = fechaSolicitud;
     }
 
     /** Devuelve la fecha y hora en que se habilitó la empresa. */
-    public LocalDateTime getFechaHabilitacion() {
+    public Instant getFechaHabilitacion() {
         return fechaHabilitacion;
     }
 
     /** Establece la fecha y hora en que se habilitó la empresa. */
-    public void setFechaHabilitacion(LocalDateTime fechaHabilitacion) {
+    public void setFechaHabilitacion(Instant fechaHabilitacion) {
         this.fechaHabilitacion = fechaHabilitacion;
     }
 
@@ -327,7 +328,7 @@ public class Empresa extends BaseEntity {
         exigirRevisor(inspector);
         this.estado = EstadoHabilitacion.HABILITADA;
         this.inspectorHabilitador = inspector;
-        this.fechaHabilitacion = LocalDateTime.now();
+        this.fechaHabilitacion = Tiempo.ahora();
     }
 
     /** Rechaza la solicitud: PENDIENTE → RECHAZADA, solo por su revisor y con motivo. */

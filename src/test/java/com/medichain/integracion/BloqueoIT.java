@@ -15,7 +15,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import tools.jackson.databind.JsonNode;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Map;
@@ -114,7 +115,7 @@ class BloqueoIT extends IntegracionBase {
                         .header("Authorization", bearer(actores.adminLaboratorio().getEmail(), EscenarioIntegracion.CLAVE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON.writeValueAsString(Map.of(
                                 "sensorId", "SENSOR-IT", "temperatura", "40", "despachoId", viaje.getId().toString(),
-                                "fechaHora", LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).toString()))))
+                                "fechaHora", OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toString()))))
                 .andExpect(status().isCreated());
 
         assertBloqueado(obtener("/api/bultos/" + bulto.getId()), "BULTO_CON_MEDIDA_VIGENTE");

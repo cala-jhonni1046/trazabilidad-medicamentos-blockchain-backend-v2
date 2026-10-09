@@ -4,7 +4,6 @@ import com.medichain.modules.cuarentena.CausaBloqueo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -35,7 +34,7 @@ public class LoteResponseDTO {
     @Schema(nullable = true)
     private EstadoLote estadoPrevio;
     @Schema(nullable = true)
-    private LocalDateTime fechaLiberacion;
+    private Instant fechaLiberacion;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID medicamentoId;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
@@ -156,12 +155,12 @@ public class LoteResponseDTO {
     }
 
     /** Devuelve la fecha de liberación del lote. */
-    public LocalDateTime getFechaLiberacion() {
+    public Instant getFechaLiberacion() {
         return fechaLiberacion;
     }
 
     /** Establece la fecha de liberación del lote. */
-    public void setFechaLiberacion(LocalDateTime fechaLiberacion) {
+    public void setFechaLiberacion(Instant fechaLiberacion) {
         this.fechaLiberacion = fechaLiberacion;
     }
 

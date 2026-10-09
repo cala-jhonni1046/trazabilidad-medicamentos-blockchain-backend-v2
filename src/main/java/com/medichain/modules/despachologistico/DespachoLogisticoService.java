@@ -121,7 +121,7 @@ public class DespachoLogisticoService {
 
         String codigo = String.format("VJ-%04d", repository.siguienteNumeroCodigo());
         DespachoLogistico viaje = new DespachoLogistico(codigo, tramo, dto.getPatente(), dto.getChofer(),
-                dto.getFechaEstimadaEntrega(), origen, verificadorUsuario.obtener(actual.getUsuarioId()));
+                dto.getFechaEstimadaEntrega().toInstant(), origen, verificadorUsuario.obtener(actual.getUsuarioId()));
         for (Bulto bulto : bultos) {
             viaje.agregarBulto(bulto);
         }

@@ -7,13 +7,16 @@ import com.medichain.modules.enlacecuit.EnlaceCuit;
 import com.medichain.modules.lote.Lote;
 import com.medichain.modules.unidadtrazable.UnidadTrazable;
 import com.medichain.testutil.DatosDePrueba;
+import com.medichain.utils.Calendario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,7 +46,7 @@ class EvaluadorBloqueoTest {
 
     @BeforeEach
     void setUp() {
-        evaluador = new EvaluadorBloqueo(cuarentenaRepository);
+        evaluador = new EvaluadorBloqueo(cuarentenaRepository, new Calendario(Clock.systemUTC(), ZoneId.of("America/Argentina/Buenos_Aires")));
         Empresa laboratorio = DatosDePrueba.empresaHabilitada(TipoEmpresa.LABORATORIO);
         lote = DatosDePrueba.loteDe(laboratorio);
         circuito = DatosDePrueba.circuitoAprobado(laboratorio,

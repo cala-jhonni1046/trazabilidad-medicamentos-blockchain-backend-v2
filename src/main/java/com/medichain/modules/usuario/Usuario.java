@@ -10,7 +10,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Entidad Usuario en MediChain.
@@ -53,7 +53,7 @@ public class Usuario extends BaseEntity {
 
     // nullable = true: solo tiene valor una vez que el usuario inició sesión por primera vez.
     @Column(name = "ultimo_login", nullable = true, unique = false)
-    private LocalDateTime ultimoLogin;
+    private Instant ultimoLogin;
 
     // nullable = true: cardinalidad "0..1", no todo usuario trabaja en una empresa (p. ej. SEDE_CENTRAL, PACIENTE).
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
@@ -173,12 +173,12 @@ public class Usuario extends BaseEntity {
     }
 
     /** Devuelve la fecha del último inicio de sesión. */
-    public LocalDateTime getUltimoLogin() {
+    public Instant getUltimoLogin() {
         return ultimoLogin;
     }
 
     /** Establece la fecha del último inicio de sesión. */
-    public void setUltimoLogin(LocalDateTime ultimoLogin) {
+    public void setUltimoLogin(Instant ultimoLogin) {
         this.ultimoLogin = ultimoLogin;
     }
 

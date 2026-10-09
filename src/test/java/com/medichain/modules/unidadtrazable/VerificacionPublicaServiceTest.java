@@ -1,5 +1,8 @@
 package com.medichain.modules.unidadtrazable;
 
+import com.medichain.utils.Calendario;
+import java.time.Clock;
+import java.time.ZoneId;
 import com.medichain.modules.bulto.Bulto;
 import com.medichain.modules.cuarentena.Bloqueo;
 import com.medichain.modules.cuarentena.CausaBloqueo;
@@ -103,7 +106,7 @@ class VerificacionPublicaServiceTest {
     private VerificacionPublicaService service() {
         return new VerificacionPublicaService(unidadTrazableRepository, medicamentoRepository,
                 despachoLogisticoRepository, recepcionRepository, evaluadorBloqueo, registroIntentos,
-                eventoRepository, registroBlockchainRepository, propiedadesAnclaje);
+                eventoRepository, registroBlockchainRepository, propiedadesAnclaje, new Calendario(Clock.systemUTC(), ZoneId.of("America/Argentina/Buenos_Aires")));
     }
 
     /** Registra la caja en el mock y la verifica. */

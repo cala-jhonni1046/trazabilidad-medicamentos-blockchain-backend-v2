@@ -13,8 +13,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.medichain.utils.Tiempo;
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 /**
  * Servicio AuthService en MediChain.
@@ -61,7 +61,7 @@ public class AuthService {
         Usuario usuario = usuarioRepository.findByEmail(dto.getEmail())
                 .orElseThrow(CredencialesInvalidasException::new);
 
-        usuario.setUltimoLogin(LocalDateTime.now());
+        usuario.setUltimoLogin(Tiempo.ahora());
         usuarioRepository.save(usuario);
 
         // Provincia solo para el inspector (la misma que va en el JWT).
