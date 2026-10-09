@@ -32,6 +32,7 @@
 | 08/10 | Paso B11a | Contrato OpenAPI para el frontend (operationId, errores, enums, required, páginas estables, docs/openapi.json) y login completo | 443 + 47 de integración · e2e 106/106 |
 | 08/10 | Paso B11b | Filtros por estado, temperatura del viaje para la receptora, indicador de bloqueo R10 y todo 409 con código | 453 + 58 de integración · e2e 114/114 |
 | 08/10 | Paso B11c | Tablero de la Sede: empresas y circuitos pendientes de provincias sin inspector | 453 + 60 de integración · e2e 119/119 |
+| 09/10 | Paso B11d | Las 25 fechas del negocio a `Instant`/UTC (`timestamptz`, V4); "hoy" por el calendario de Argentina; entrada con offset obligatorio | 453 + 63 de integración · e2e 123/123 |
 
 "Tests" es la cantidad de tests automáticos (JUnit) al cerrar cada paso; desde el paso 9 se suman los de integración, que corren contra PostgreSQL real. "e2e" es la prueba de punta a punta por la API real (`scripts/prueba-e2e.py`): verificaciones correctas / total.
 
@@ -511,19 +512,47 @@
 
 ---
 
+## 09/10 · Paso B11d: fechas y horas del negocio a UTC (Instant)
+
+- **Objetivo:** cerrar el contrato de fechas para el frontend. Hasta ahora, solo las de auditoría y el `fechaHora` del evento eran `Instant`/UTC; las otras 25 fechas del negocio seguían como `LocalDateTime`/`timestamp` sin zona, escritas con la zona de la JVM. El frontend no debería adivinar la zona.
+- **Decisiones del autor:**
+  - salida en UTC con `Z` (igual que auditoría); entrada del cliente como `OffsetDateTime` con offset **obligatorio** (sin offset → 400);
+  - el día ("vencido" de un lote, R10; fechas del recorrido) según el **calendario de Argentina**, configurable (`medichain.zona-horaria`), no según UTC;
+  - `intento_verificacion.fecha` se queda en día UTC (su regla es por día UTC).
+- **Choque con una regla, avisado y aprobado:** R10 cambia de matiz: un lote que vence "hoy" dejaba de estar bloqueado a las 21:00 de Argentina (ya era otro día en UTC); ahora el día lo decide el calendario de Argentina. El autor lo aprobó.
+- **Qué se hizo:**
+  - **`utils/Tiempo`** (`ahora()` = `Instant.now()` en micros) y **`utils/Calendario`** (`hoy()`, `fecha(Instant)`, con `Clock` y `ZoneId` inyectados); **`config/ZonaHorariaConfig`** publica la zona y hace que Bean Validation (`@Future`/`@PastOrPresent`) use el mismo calendario.
+  - Las 25 fechas de las entidades pasaron a `Instant`; los DTO de salida también; los tres DTO de entrada a `OffsetDateTime` (el service los convierte con `.toInstant()`). `Lote.estaVencido(LocalDate hoy)` recibe el día; se lo pasan `EvaluadorBloqueo` y `LoteService`. La verificación pública arma el recorrido con `Calendario.fecha(...)`.
+  - **Migración `V4__fechas_negocio_utc.sql`:** las 25 columnas `timestamp` → `timestamptz` con `AT TIME ZONE 'UTC'` (el valor guardado ya era UTC). No toca `lotes.fecha_fabricacion`/`fecha_vencimiento` (solo fecha) ni `eventos_trazabilidad`.
+  - `spring.jackson.time-zone=UTC`.
+  - **Cadena intacta:** `fechaEstimadaEntrega` (VIAJE_CREADO) y `fechaHoraLectura` (RUPTURA_FRIO) viajan dentro de los datos del evento; los nuevos las llevan con `Z`, los viejos siguen verificando porque `datos_json` guarda el JSON congelado y la verificación lo reinserta crudo.
+  - **`FechasNegocioIT`** (3 tests): las 25 columnas son `timestamptz`; un viaje y una ruptura de frío reales dejan la fecha con `Z` y la cadena verifica; una cadena **mixta** (un evento con el formato viejo sin `Z` y uno nuevo con `Z`) sigue íntegra. El test de deriva de `MigracionesIT` obliga a que entidades y V4 coincidan.
+  - **Scripts:** `simular-sensor.py` y `prueba-e2e.py` mandan la hora en UTC con offset; sección e2e B11d (4 verificaciones: salida con `Z` en una fecha de negocio y en la fecha estimada del viaje; entrada sin offset → 400; con offset se parsea).
+- **Resultado:**
+
+  | | Antes | Después |
+  |---|---|---|
+  | Migraciones Flyway | V1 a V3 | V1 a V4 |
+  | Tests de integración | 60 | 63 |
+  | Prueba e2e | 119/119 | 123/123 |
+
+  El contrato (`docs/openapi.json`) casi no cambió (los `date-time` ya eran `date-time`): solo descripciones y ejemplos de las tres fechas de entrada, con el offset.
+
+---
+
 ## Estado al 08/10 (reconstruido del código)
 
 | Métrica | Valor |
 |---|---|
 | Entidades / tablas | 19 entidades (17 del dominio + `CadenaEstado` + `IntentoVerificacion`) en 21 tablas (más 2 de unión) |
-| Esquema | 3 migraciones Flyway (V1 a V3); Hibernate solo valida |
+| Esquema | 4 migraciones Flyway (V1 a V4); Hibernate solo valida |
 | Controllers / endpoints | 21 / 91. Ningún PUT ni DELETE: los estados cambian solo con acciones POST |
 | Roles | 6 |
 | Reglas de negocio | 15 (R1 a R15) |
 | Tipos de evento | 47 |
-| Tests automáticos | 453 unitarios (en 53 clases) + 60 de integración contra PostgreSQL real (en 15 clases) |
+| Tests automáticos | 453 unitarios (en 53 clases) + 63 de integración contra PostgreSQL real (en 16 clases) |
 | Contrato OpenAPI | `docs/openapi.json` (94 operaciones), publicado solo con `SWAGGER_HABILITADO=true` |
-| Prueba e2e | 119 verificaciones. La variante con anclaje real (`--sepolia`) dio 94 el 05/10, antes de la sección 9 |
+| Prueba e2e | 123 verificaciones. La variante con anclaje real (`--sepolia`) dio 94 el 05/10, antes de la sección 9 |
 
 ## Metodología y uso de IA
 
@@ -546,10 +575,8 @@
 
 ## Pendiente
 
-- **Paso B11 (resto):** B11d (fechas del negocio a UTC).
 - **Paso 11:** Actuator, Docker (imagen + docker-compose) y README.
 - **Pendientes ya anotados en `CLAUDE.md`, sin paso asignado:**
-  - pasar a `Instant`/UTC las 25 fechas del negocio que siguen sin zona horaria, con su propio diseño (dos entran a eventos nuevos y una la escribe el usuario sin zona);
   - rate limiting en login, registro, verificación pública e intentos de lote inválidos;
   - captcha y verificación de email en el registro;
   - que la Sede asigne cuarentenas, reportes y lotes biológicos de provincias sin inspectores;
