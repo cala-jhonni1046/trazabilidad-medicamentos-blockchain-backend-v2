@@ -5,6 +5,10 @@ import com.medichain.modules.bulto.BultoRequestDTO;
 import com.medichain.modules.bulto.BultoService;
 import com.medichain.modules.despachologistico.DespachoLogisticoRequestDTO;
 import com.medichain.modules.despachologistico.DespachoLogisticoService;
+import com.medichain.modules.cuarentena.CuarentenaRequestDTO;
+import com.medichain.modules.cuarentena.CuarentenaService;
+import com.medichain.modules.cuarentena.MotivoBloqueo;
+import com.medichain.modules.despachologistico.DespachoLogistico;
 import com.medichain.modules.empresa.Empresa;
 import com.medichain.modules.empresa.EmpresaRepository;
 import com.medichain.modules.empresa.EmpresaService;
@@ -23,9 +27,13 @@ import com.medichain.modules.medicamento.Medicamento;
 import com.medichain.modules.medicamento.MedicamentoMapper;
 import com.medichain.modules.medicamento.MedicamentoRequestDTO;
 import com.medichain.modules.medicamento.MedicamentoService;
+import com.medichain.modules.recepcion.RecepcionRequestDTO;
+import com.medichain.modules.recepcion.RecepcionService;
 import com.medichain.modules.reporteciudadano.MotivoReporte;
 import com.medichain.modules.reporteciudadano.ReporteCiudadanoRequestDTO;
 import com.medichain.modules.reporteciudadano.ReporteCiudadanoService;
+import com.medichain.modules.telemetriatemperatura.TelemetriaTemperaturaRequestDTO;
+import com.medichain.modules.telemetriatemperatura.TelemetriaTemperaturaService;
 import com.medichain.modules.usuario.RegistroPacienteRequestDTO;
 import com.medichain.modules.usuario.RolUsuario;
 import com.medichain.modules.usuario.Usuario;
@@ -76,6 +84,15 @@ import java.util.Optional;
  *       en vivo), y BUL-0002 ARMADO sin viaje (camino feliz).</li>
  *   <li>Reporte ciudadano REP-0001 del paciente, ABIERTO: una caja de Cuyafen
  *       con una serie que no existe (sospecha de falsificación), en Mendoza.</li>
+ *   <li>Segunda cadena (para ver stock, depósito y un viaje en curso; cuentas
+ *       {@code admin@distribuidora-valleuco.demo} y {@code admin@farmacia-parque.demo}):
+ *       Distribuidora del Valle de Uco y Farmacia del Parque, el circuito CIR-0003
+ *       (Andino → Uco → Parque, APROBADO) y el lote L2026-0010 de Cuyafen, liberado:
+ *       4 cajas EN_STOCK en la farmacia, 3 EN_DEPOSITO en la distribuidora y 3 en un viaje
+ *       EN_TRANSITO con lecturas de temperatura en rango. Más L2026-0011, liberado y
+ *       en cuarentena PREVENTIVA ACTIVA. Se crea DESPUÉS de todo lo anterior: no
+ *       cambia los códigos (CIR-0001/0002, BUL-0001/0002, VJ-0001) ni nada de la
+ *       cadena A.</li>
  * </ol>
  * Idempotente (si el laboratorio de demo ya existe por CUIT, no carga
  * nada) y en una sola transacción. La contraseña de todos sale de
@@ -93,6 +110,12 @@ public class DatosDemo implements CommandLineRunner {
     private static final String CUIT_DISTRIBUIDORA = "30-71000002-2";
     private static final String CUIT_FARMACIA = "30-71000003-0";
     private static final String CUIT_FARMACIA_DOS = "30-71000004-9";
+    // Segunda cadena (Valle de Uco): CUIT y GLN con dígito verificador válido, lejos de los que usa prueba-e2e.py
+    // (…06 y …07 para las farmacias que registra) y de los que generan al azar los e2e del frontend.
+    private static final String CUIT_DISTRIBUIDORA_UCO = "30-71000010-3";
+    private static final String CUIT_FARMACIA_PARQUE = "30-71000011-1";
+    private static final String EMAIL_ADMIN_UCO = "admin@distribuidora-valleuco.demo";
+    private static final String EMAIL_ADMIN_PARQUE = "admin@farmacia-parque.demo";
     private static final String GTIN_MEDICAMENTO = "07799000001010";
     private static final String GTIN_VACUNA = "07799000002024";
     private static final String EMAIL_ADMIN_LABORATORIO = "admin@laboratorio-andino.demo";
@@ -109,6 +132,9 @@ public class DatosDemo implements CommandLineRunner {
     private final EnlaceCuitService enlaceCuitService;
     private final BultoService bultoService;
     private final DespachoLogisticoService despachoLogisticoService;
+    private final RecepcionService recepcionService;
+    private final TelemetriaTemperaturaService telemetriaTemperaturaService;
+    private final CuarentenaService cuarentenaService;
     private final ReporteCiudadanoService reporteCiudadanoService;
     private final EjecutorComoUsuario ejecutor;
     private final String demoPassword;
@@ -120,6 +146,9 @@ public class DatosDemo implements CommandLineRunner {
                      MedicamentoService medicamentoService, MedicamentoMapper medicamentoMapper,
                      LoteService loteService, EnlaceCuitService enlaceCuitService, BultoService bultoService,
                      DespachoLogisticoService despachoLogisticoService,
+                     RecepcionService recepcionService,
+                     TelemetriaTemperaturaService telemetriaTemperaturaService,
+                     CuarentenaService cuarentenaService,
                      ReporteCiudadanoService reporteCiudadanoService,
                      EjecutorComoUsuario ejecutor,
                      @Value("${medichain.demo.password}") String demoPassword) {
@@ -135,6 +164,9 @@ public class DatosDemo implements CommandLineRunner {
         this.enlaceCuitService = enlaceCuitService;
         this.bultoService = bultoService;
         this.despachoLogisticoService = despachoLogisticoService;
+        this.recepcionService = recepcionService;
+        this.telemetriaTemperaturaService = telemetriaTemperaturaService;
+        this.cuarentenaService = cuarentenaService;
         this.reporteCiudadanoService = reporteCiudadanoService;
         this.ejecutor = ejecutor;
         this.demoPassword = demoPassword;
@@ -312,11 +344,152 @@ public class DatosDemo implements CommandLineRunner {
             reporteCiudadanoService.reportar(reporte);
         });
 
+        // 9. Segunda cadena (Valle de Uco): stock, depósito, un viaje en tránsito y una cuarentena.
+        cargarCadenaValleDeUco(adminLaboratorio, inspector, loteComun.getMedicamento(), creados);
+
         StringBuilder resumen = new StringBuilder("Datos de demo cargados (contraseña: la de DEMO_PASSWORD):");
         for (String creado : creados) {
             resumen.append("\n  - ").append(creado);
         }
         logger.info(resumen.toString());
+    }
+
+    /**
+     * Segunda cadena de la demo, creada DESPUÉS de todo lo demás para no mover ningún código:
+     * dos empresas nuevas con su admin, el circuito CIR-0003 (Andino → Uco → Parque) y dos lotes
+     * de Cuyafen. Cada acción sale por el mismo Service y con el mismo actor que en la API.
+     * Cuyafen no es biológico: lo libera el DT del laboratorio. No se dispensa nada a propósito
+     * (la prueba e2e cuenta los eventos DISPENSACION de toda la cadena).
+     */
+    private void cargarCadenaValleDeUco(Usuario adminLaboratorio, InspectorAnmat inspector, Medicamento cuyafen,
+                                        List<String> creados) {
+        // Empresas nuevas, registradas por la vía pública y habilitadas por el inspector de Mendoza.
+        List<Empresa> nuevas = new ArrayList<>();
+        nuevas.add(registrar(TipoEmpresa.DISTRIBUIDOR, CUIT_DISTRIBUIDORA_UCO, "Distribuidora del Valle de Uco S.A.",
+                "7799000001058", "Tunuyán", "Ruta 40 km 3000", "HAB-MZA-005", null,
+                EMAIL_ADMIN_UCO, "Ramiro", "Gil", "30111007", false, creados));
+        nuevas.add(registrar(TipoEmpresa.FARMACIA, CUIT_FARMACIA_PARQUE, "Farmacia del Parque",
+                "7799000001126", "Mendoza", "Av. del Parque 1200", "HAB-MZA-006", "Farm. Julieta Castro",
+                EMAIL_ADMIN_PARQUE, "Julieta", "Castro", "30111008", false, creados));
+        ejecutor.ejecutarComo(inspector.getUsuario(), () -> {
+            for (Empresa empresa : nuevas) {
+                empresaService.tomar(empresa.getId());
+                empresaService.habilitar(empresa.getId());
+            }
+        });
+        Usuario adminUco = usuario(EMAIL_ADMIN_UCO);
+        Usuario adminParque = usuario(EMAIL_ADMIN_PARQUE);
+
+        // Circuito C (CIR-0003): propuesto por el DT, aceptado por las dos empresas, tomado y aprobado por el inspector.
+        EnlaceCuit circuito = ejecutor.ejecutarComo(adminLaboratorio,
+                () -> enlaceCuitService.proponer(CUIT_DISTRIBUIDORA_UCO, CUIT_FARMACIA_PARQUE));
+        ejecutor.ejecutarComo(adminUco, () -> enlaceCuitService.aceptar(circuito.getId()));
+        ejecutor.ejecutarComo(adminParque, () -> enlaceCuitService.aceptar(circuito.getId()));
+        ejecutor.ejecutarComo(inspector.getUsuario(), () -> {
+            enlaceCuitService.tomar(circuito.getId());
+            enlaceCuitService.aprobar(circuito.getId());
+        });
+
+        // Lotes: L2026-0010 (12 cajas, liberado) y L2026-0011 (5 cajas, liberado y luego en cuarentena preventiva).
+        Lote lote = ejecutor.ejecutarComo(adminLaboratorio, () -> registrarYLiberar("L2026-0010", 12, cuyafen));
+        Lote loteEnCuarentena = ejecutor.ejecutarComo(adminLaboratorio, () -> registrarYLiberar("L2026-0011", 5, cuyafen));
+        ejecutor.ejecutarComo(inspector.getUsuario(), () -> {
+            CuarentenaRequestDTO cuarentena = new CuarentenaRequestDTO();
+            cuarentena.setLoteId(loteEnCuarentena.getId());
+            cuarentena.setMotivo(MotivoBloqueo.PREVENTIVA);
+            cuarentena.setDescripcion("Control preventivo del lote de la demo (texto ficticio).");
+            return cuarentenaService.abrir(cuarentena);
+        });
+
+        // Tres bultos del lote L2026-0010 (4, 3 y 3 cajas; quedan 2 cajas sueltas en el laboratorio).
+        List<Bulto> bultos = ejecutor.ejecutarComo(adminLaboratorio, () -> List.of(
+                armarBulto(circuito, lote, "PRE-000003", 4),
+                armarBulto(circuito, lote, "PRE-000004", 3),
+                armarBulto(circuito, lote, "PRE-000005", 3)));
+        Bulto aFarmacia = bultos.get(0);
+        Bulto enDeposito = bultos.get(1);
+        Bulto enCamino = bultos.get(2);
+
+        // Tramo 1: un viaje del laboratorio con los tres bultos; la distribuidora los recibe (EN_DEPOSITO).
+        DespachoLogistico tramoUno = ejecutor.ejecutarComo(adminLaboratorio, () -> {
+            DespachoLogistico viaje = despachoLogisticoService.crear(
+                    viaje("CD111EF", "Chofer Demo Uco", aFarmacia, enDeposito, enCamino));
+            return despachoLogisticoService.salida(viaje.getId());
+        });
+        ejecutor.ejecutarComo(adminUco, () -> {
+            recibir(aFarmacia, 4);
+            recibir(enDeposito, 3);
+            recibir(enCamino, 3);
+            return tramoUno;
+        });
+
+        // Tramo 2, primer viaje: un bulto llega a la farmacia (4 cajas EN_STOCK).
+        ejecutor.ejecutarComo(adminUco, () -> {
+            DespachoLogistico viaje = despachoLogisticoService.crear(viaje("EF222GH", "Chofer Demo Parque", aFarmacia));
+            return despachoLogisticoService.salida(viaje.getId());
+        });
+        ejecutor.ejecutarComo(adminParque, () -> recibir(aFarmacia, 4));
+
+        // Tramo 2, segundo viaje: sigue EN_TRANSITO, con tres lecturas de temperatura dentro del rango de Cuyafen.
+        DespachoLogistico enTransito = ejecutor.ejecutarComo(adminUco, () -> {
+            DespachoLogistico viaje = despachoLogisticoService.crear(viaje("GH333IJ", "Chofer Demo Parque", enCamino));
+            return despachoLogisticoService.salida(viaje.getId());
+        });
+        ejecutor.ejecutarComo(adminUco, () -> {
+            String[] grados = {"21.0", "22.5", "21.8"};
+            for (int i = 0; i < grados.length; i++) {
+                TelemetriaTemperaturaRequestDTO lectura = new TelemetriaTemperaturaRequestDTO();
+                lectura.setSensorId("SENSOR-DEMO-UCO");
+                lectura.setTemperatura(new BigDecimal(grados[i]));
+                lectura.setFechaHora(OffsetDateTime.now().minusMinutes(30L * (grados.length - i)));
+                lectura.setDespachoId(enTransito.getId());
+                telemetriaTemperaturaService.create(lectura);
+            }
+            return enTransito;
+        });
+    }
+
+    /** Registra un lote de Cuyafen con "cantidad" series generadas y lo libera (como el DT del laboratorio). */
+    private Lote registrarYLiberar(String codigo, int cantidad, Medicamento medicamento) {
+        LoteRequestDTO dto = new LoteRequestDTO();
+        dto.setCodigo(codigo);
+        dto.setFechaFabricacion(LocalDate.of(2026, 9, 1));
+        dto.setFechaVencimiento(LocalDate.of(2028, 9, 1));
+        dto.setCantidad(cantidad);
+        dto.setMedicamentoId(medicamento.getId());
+        Lote lote = loteService.registrar(dto);
+        loteService.liberar(lote.getId());
+        return lote;
+    }
+
+    /** Arma un bulto del circuito con las primeras "cantidad" cajas libres del lote. */
+    private Bulto armarBulto(EnlaceCuit circuito, Lote lote, String precinto, int cantidad) {
+        BultoRequestDTO dto = new BultoRequestDTO();
+        dto.setCircuitoId(circuito.getId());
+        dto.setLoteId(lote.getId());
+        dto.setPrecinto(precinto);
+        dto.setCantidad(cantidad);
+        return bultoService.armar(dto);
+    }
+
+    /** Viaje con los bultos dados (se crea PROGRAMADO; la salida la registra quien lo llama). */
+    private DespachoLogisticoRequestDTO viaje(String patente, String chofer, Bulto... bultos) {
+        DespachoLogisticoRequestDTO dto = new DespachoLogisticoRequestDTO();
+        dto.setPatente(patente);
+        dto.setChofer(chofer);
+        dto.setFechaEstimadaEntrega(OffsetDateTime.now().plusDays(2));
+        dto.setBultos(java.util.Arrays.stream(bultos).map(Bulto::getCodigo).toList());
+        return dto;
+    }
+
+    /** Recepción conforme del bulto: precinto intacto, cantidad exacta y 20 °C (dentro del rango de Cuyafen). */
+    private void recibir(Bulto bulto, int cantidad) {
+        RecepcionRequestDTO dto = new RecepcionRequestDTO();
+        dto.setCodigoBulto(bulto.getCodigo());
+        dto.setPrecintoIntacto(true);
+        dto.setCantidadVerificada(cantidad);
+        dto.setTemperatura(new BigDecimal("20"));
+        recepcionService.recibir(dto);
     }
 
     /** Busca un usuario de demo por email. */

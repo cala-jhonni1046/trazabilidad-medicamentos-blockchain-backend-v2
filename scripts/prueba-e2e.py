@@ -342,6 +342,8 @@ def seccion_7d_viajes(ctx, demo, admin):
                                                 "bultos": ["BUL-0002"]}, token=lab)
     ctx.verificar("7d.6", "viaje para BUL-0002 → 201 PROGRAMADO (sin salida)", 201, r,
                   r.campo("estado") == "PROGRAMADO" and r.campo("bultoCodigos") == ["BUL-0002"])
+    # El código del viaje sale de una secuencia global: la demo ya usó otros (cadena del Valle de Uco), no es VJ-0002.
+    ctx.datos["viaje_bul2"] = r.campo("codigo")
 
 
 def eventos_de_tipo(ctx, admin, tipo):
@@ -369,11 +371,12 @@ def seccion_7e_recepcion_dispensacion(ctx, demo, admin):
     def estado_viaje(codigo):
         return buscar_viaje(ctx.base, lab, codigo)[1]
 
-    # --- Tramo 1: salida de VJ-0002 y recepción de BUL-0002 en Piedemonte ---
-    vj2, _ = buscar_viaje(ctx.base, lab, "VJ-0002")
-    exigir(vj2, "no encontré VJ-0002 (lo crea la sección 7d)")
+    # --- Tramo 1: salida del viaje de BUL-0002 (lo crea 7d.6) y recepción en Piedemonte ---
+    codigo_vj2 = exigir(ctx.datos.get("viaje_bul2"), "no sé el código del viaje de BUL-0002 (lo crea la sección 7d)")
+    vj2, _ = buscar_viaje(ctx.base, lab, codigo_vj2)
+    exigir(vj2, "no encontré el viaje %s (lo crea la sección 7d)" % codigo_vj2)
     r = pedir("POST", ctx.url("/api/viajes/%s/salida" % vj2), token=lab)
-    ctx.verificar("7e.1", "salida de VJ-0002 → EN_TRANSITO", 200, r, r.campo("estado") == "EN_TRANSITO")
+    ctx.verificar("7e.1", "salida de %s → EN_TRANSITO" % codigo_vj2, 200, r, r.campo("estado") == "EN_TRANSITO")
 
     r = recibir(farmacia, "BUL-0002")
     ctx.verificar("7e.2", "Los Álamos intenta recibir BUL-0002 en el tramo 1 (no es la destino) → 404", 404, r)
@@ -385,8 +388,8 @@ def seccion_7e_recepcion_dispensacion(ctx, demo, admin):
 
     r = recibir(distribuidora, "BUL-0002")
     ctx.verificar("7e.4", "Piedemonte recibe BUL-0002 conforme → 201", 201, r, r.campo("conforme") is True)
-    ctx.verificar("7e.5", "VJ-0002 quedó FINALIZADO (no quedan bultos en curso)", 200, None,
-                  estado_viaje("VJ-0002") == "FINALIZADO", detalle="estado %s" % estado_viaje("VJ-0002"))
+    ctx.verificar("7e.5", "%s quedó FINALIZADO (no quedan bultos en curso)" % codigo_vj2, 200, None,
+                  estado_viaje(codigo_vj2) == "FINALIZADO", detalle="estado %s" % estado_viaje(codigo_vj2))
 
     r = recibir(distribuidora, "BUL-0002")
     duplicados = eventos_de_tipo(ctx, admin, "BULTO_DUPLICADO")
@@ -1009,6 +1012,37 @@ def seccion_b12c_nombres(ctx, demo, admin):
                   "Andino" in (del_lab.get("empresaRazonSocial") or "") and de_sede.get("empresaRazonSocial") is None)
 
 
+def seccion_b12f_demo_valle_de_uco(ctx, demo, admin):
+    """B12f: la segunda cadena de la demo (Valle de Uco) deja stock, depósito, un viaje en tránsito y una cuarentena."""
+    uco = ctx.token("admin@distribuidora-valleuco.demo", demo)
+    parque = ctx.token("admin@farmacia-parque.demo", demo)
+    lab = ctx.token(EMAIL_LABORATORIO, demo)
+
+    r = pedir("GET", ctx.url("/api/unidades-trazables?estado=EN_STOCK&size=100"), token=parque)
+    ctx.verificar("b12f.1", "Farmacia del Parque tiene 4 cajas EN_STOCK de L2026-0010", 200, r,
+                  total(r) == 4 and all(c["loteCodigo"] == "L2026-0010" for c in contenido(r)))
+    r = pedir("GET", ctx.url("/api/bultos?estado=EN_DEPOSITO&size=100"), token=uco)
+    ctx.verificar("b12f.2", "la Distribuidora del Valle de Uco tiene 1 bulto EN_DEPOSITO (3 cajas)", 200, r,
+                  total(r) == 1 and contenido(r)[0]["cantidad"] == 3
+                  and contenido(r)[0]["circuitoCodigo"] == "CIR-0003")
+    r = pedir("GET", ctx.url("/api/viajes?estado=EN_TRANSITO&size=100"), token=uco)
+    viajes = contenido(r)
+    ctx.verificar("b12f.3", "Uco tiene 1 viaje EN_TRANSITO hacia la Farmacia del Parque", 200, r,
+                  len(viajes) == 1 and viajes[0]["tramo"] == "DISTRIBUIDOR_A_FARMACIA"
+                  and viajes[0]["paradaRazonesSociales"] == ["Farmacia del Parque"])
+    r = pedir("GET", ctx.url("/api/viajes/%s/telemetria-temperatura" % viajes[0]["id"]), token=parque)
+    ctx.verificar("b12f.4", "la farmacia receptora ve 3 lecturas de temperatura, todas en rango", 200, r,
+                  total(r) == 3 and all(l["fueraDeRango"] is False for l in contenido(r)))
+    r = pedir("GET", ctx.url("/api/lotes?size=100"), token=lab)
+    lotes = contenido(r)
+    ctx.verificar("b12f.5", "L2026-0010 LIBERADO y L2026-0011 en CUARENTENA", 200, r,
+                  (buscar(lotes, "codigo", "L2026-0010") or {}).get("estado") == "LIBERADO"
+                  and (buscar(lotes, "codigo", "L2026-0011") or {}).get("estado") == "CUARENTENA")
+    r = pedir("GET", ctx.url("/api/cuarentenas?estado=ACTIVA&size=100"), token=lab)
+    previas = [c for c in contenido(r) if c.get("motivo") == "PREVENTIVA" and c.get("loteCodigo") == "L2026-0011"]
+    ctx.verificar("b12f.6", "hay una cuarentena PREVENTIVA ACTIVA sobre L2026-0011", 200, r, len(previas) == 1)
+
+
 def seccion_final_cadena(ctx, demo, admin):
     """Final: la cadena sigue íntegra después de todo el recorrido."""
     sede = ctx.token(admin[0], admin[1])
@@ -1036,6 +1070,7 @@ SECCIONES = [
     ("B12a · Contrato: enums, regla solo en 409 y tamaño máximo de página", seccion_b12a_contrato),
     ("B12b · ?estado= en cajas y viajes", seccion_b12b_filtros_cajas_viajes),
     ("B12c · Nombres en los DTO", seccion_b12c_nombres),
+    ("B12f · Demo: segunda cadena (Valle de Uco)", seccion_b12f_demo_valle_de_uco),
     ("Final · Cadena íntegra", seccion_final_cadena),
 ]
 

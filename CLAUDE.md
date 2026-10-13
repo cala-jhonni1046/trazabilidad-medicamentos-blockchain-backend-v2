@@ -107,6 +107,24 @@ Java 21 · Spring Boot 4.1.1 · PostgreSQL · Spring Data JPA · Spring Security
 - Tags en el orden del flujo (declarados en `OpenApiConfig`): Registro público → Autenticación → Empresas → Inspectores ANMAT → Usuarios → Circuitos → Medicamentos → Lotes → Unidades trazables → Bultos → Viajes → Telemetría de temperatura → Telemetría GPS → Recepciones → Dispensaciones → Cuarentenas → Reportes ciudadanos → Verificación pública → Eventos de trazabilidad → Registros blockchain. Un controller nuevo usa uno de esos tags (o se agrega a la lista).
 - `ErrorResponseDTO` (`status`, `message`, `regla`, `errors[{field, message}]`) es el cuerpo de TODO error (`regla` solo en los 409).
 
+## Datos de demo (perfil `demo`, `DatosDemo`)
+
+Solo con `SPRING_PROFILES_ACTIVE=demo` y una base vacía (`./reset-demo.sh`: una base que ya tiene la demo no se toca). Todos los usuarios usan la contraseña `DEMO_PASSWORD`, todo está en Mendoza y los nombres son ficticios.
+
+| Cuenta | Qué es |
+|---|---|
+| `inspector.mendoza@medichain.demo` | Inspector de Mendoza |
+| `admin@laboratorio-andino.demo` | Laboratorio Andino Cuyano (admin y DT) |
+| `admin@distribuidora-piedemonte.demo` | Distribuidora Piedemonte (cadena A) |
+| `admin@farmacia-losalamos.demo`, `admin@farmacia-cerroarco.demo` | Farmacias de la cadena A |
+| `admin@distribuidora-valleuco.demo` | Distribuidora del Valle de Uco (cadena B) |
+| `admin@farmacia-parque.demo` | Farmacia del Parque (cadena B) |
+| `paciente@medichain.demo` | Paciente |
+
+- **Cadena A** (la que usa `scripts/prueba-e2e.py`, no se toca): circuitos CIR-0001 (aprobado) y CIR-0002 (propuesto), lote L2026-0001 (Cuyafen, liberado) con BUL-0001 en VJ-0001 (PROGRAMADO) y BUL-0002 (ARMADO), lote biológico L2026-0002 pendiente y el reporte REP-0001.
+- **Cadena B** (se crea al final, después de todo lo anterior, para no mover ningún código): CIR-0003 (Andino → Uco → Parque, aprobado); lote L2026-0010 (12 cajas, liberado) con un bulto recibido en la farmacia (4 cajas EN_STOCK), otro EN_DEPOSITO en la distribuidora (3 cajas) y otro en un viaje del tramo 2 EN_TRANSITO con 3 lecturas de temperatura en rango; y el lote L2026-0011 liberado y en cuarentena PREVENTIVA ACTIVA. No se dispensa nada a propósito: la e2e cuenta los eventos DISPENSACION de toda la cadena.
+- Un dato nuevo de la demo va DESPUÉS de lo existente (los códigos CIR/BUL/VJ/REP salen de secuencias globales) y con CUIT y GLN que no usen `prueba-e2e.py` (…06 y …07) ni los que generan al azar los e2e del frontend. La e2e no debe asumir el código de un viaje que ella crea (lo guarda de la respuesta).
+
 ## Roles
 
 | Rol | Hace |
