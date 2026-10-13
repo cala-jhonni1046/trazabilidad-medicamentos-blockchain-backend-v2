@@ -4,7 +4,7 @@
 
 - **Stack:** Java 21 · Spring Boot 4.1.1 · Spring Security (JWT, BCrypt) · Spring Data JPA · PostgreSQL · springdoc (Swagger) · web3j 6.0.0 · Solidity 0.8.37 (contrato `MediChainAnchor`) · Ethereum Sepolia · Flyway (migraciones) · Tests: JUnit 5, Mockito y Testcontainers.
 - **Objetivo:** que cada caja (identificada por GTIN + número de serie, lo que codifica el DataMatrix) tenga un recorrido verificable. Que un paciente pueda comprobar con su caja si es auténtica, si fue retirada del mercado o si ya se dispensó, sin exponer datos personales (Ley 25.326). Que la integridad del registro sea demostrable frente a terceros.
-- **Alcance de esta bitácora:** del 27/09/2026 al 08/10/2026. Las fechas son de Argentina. Lo marcado **(aprox.)** o **(reconstruido del código)** no tiene un registro exacto de fecha o contenido.
+- **Alcance de esta bitácora:** del 27/09/2026 al 13/10/2026. Las fechas son de Argentina. Lo marcado **(aprox.)** o **(reconstruido del código)** no tiene un registro exacto de fecha o contenido.
 
 ## Resumen
 
@@ -33,6 +33,7 @@
 | 08/10 | Paso B11b | Filtros por estado, temperatura del viaje para la receptora, indicador de bloqueo R10 y todo 409 con código | 453 + 58 de integración · e2e 114/114 |
 | 08/10 | Paso B11c | Tablero de la Sede: empresas y circuitos pendientes de provincias sin inspector | 453 + 60 de integración · e2e 119/119 |
 | 09/10 | Paso B11d | Las 25 fechas del negocio a `Instant`/UTC (`timestamptz`, V4); "hoy" por el calendario de Argentina; entrada con offset obligatorio | 453 + 63 de integración · e2e 123/123 |
+| 13/10 | Paso B12 (a–g) | Pedidos del frontend: contrato más fiel (enums, nulables, binario, size), `?estado=` en cajas y viajes, nombres en los DTO, módulo tablero, trazabilidad por código y búsquedas, demo con segunda cadena y contrato nuevo por script | 463 + 74 de integración · e2e 159/159 |
 
 "Tests" es la cantidad de tests automáticos (JUnit) al cerrar cada paso; desde el paso 9 se suman los de integración, que corren contra PostgreSQL real. "e2e" es la prueba de punta a punta por la API real (`scripts/prueba-e2e.py`): verificaciones correctas / total.
 
@@ -540,19 +541,66 @@
 
 ---
 
-## Estado al 08/10 (reconstruido del código)
+## 13/10 · Paso B12: lo que el frontend pidió (contrato, filtros, nombres, tablero, trazabilidad, demo y contrato nuevo)
+
+- **Contexto:** el frontend Angular quedó terminado y probado contra esta API (96 e2e de lectura y 4 de flujo en verde). Durante el trabajo anotó rodeos (`TODO B12`) que el backend puede simplificar. Se hizo en sub-pasos chicos, cada uno con sus tests y su commit: B12a, b, c, f, d, e y g.
+- **Decisiones del autor:**
+  - la demo suma **empresas nuevas** (Distribuidora del Valle de Uco y Farmacia del Parque), con su admin, sin tocar lo que usa la e2e;
+  - `regla` queda documentada, **no** pasa a ser un enum (son 83 lugares);
+  - el tablero es un **módulo nuevo** con su propio tag, y "anclajes" cuenta solo los CONFIRMADO;
+  - nombres en los DTO como **campos planos** junto al id;
+  - un código de lote repetido entre laboratorios devuelve todos los visibles, cada uno con su razón social;
+  - la fuga de alcance de las paradas de un viaje se **anota, no se cambia**;
+  - anclaje: **contrato nuevo en cada reset, automatizado, y no resetear con el anclaje prendido si no hace falta**; el script solo puede cambiar la línea `ANCHOR_CONTRACT_ADDRESS` del `.env` (con copia) y **nunca despliega sin confirmación**.
+- **Qué se hizo:**
+  - **B12a, contrato** (sin migración): `EtapaRecorrido` y `EstadoAnclajeCaja` reemplazan los dos textos libres; las 10 referencias que pueden venir null salen como `anyOf [$ref, null]` (el generador del frontend las tipa `T | null`; la forma anterior perdía el null); el PDF de habilitación es `format: binary` (el cliente genera `Blob`); cada `size` declara `maximum: 100` (un valor mayor no da 400: se recorta); `EmpresaResumenDTO` marca sus campos `required` y `ContratoOpenApiIT` exige todo esto en todo DTO de salida; `regla` solo viaja en los 409 (test del handler y e2e); se silencia el WARN de springdoc.
+  - **B12b:** `?estado=` en `listarCajas` y `listarViajes`, dentro del alcance de cada rol. Las consultas de distribuidora y farmacia tienen un `OR` (lo propio o lo que viene en camino): el alcance va entre paréntesis y el filtro con `AND` afuera.
+  - **B12c:** nombres en los DTO: nombre y apellido del inspector, razones sociales de circuitos, viajes (origen y paradas) y usuarios, código del lote y medicamento en lotes, cajas, bultos y cuarentenas. Los mappers leen la relación LAZY y con `default_batch_fetch_size` una página no hace más consultas por tener más filas.
+  - **B12f:** la demo suma una segunda cadena (CIR-0003, lotes L2026-0010 y L2026-0011, 4 cajas EN_STOCK en la farmacia, 3 EN_DEPOSITO en la distribuidora, un viaje EN_TRANSITO con 3 lecturas de temperatura y una cuarentena preventiva), creada después de todo lo existente para no mover ningún código. Cuentas nuevas: `admin@distribuidora-valleuco.demo` y `admin@farmacia-parque.demo` (misma `DEMO_PASSWORD`); están en la sección "Datos de demo" de `CLAUDE.md`.
+  - **B12d:** módulo `tablero`: `GET /api/tablero/resumen` (Sede) con los 7 totales en una respuesta y `GET /api/tablero/bandeja-inspector` (inspector) con el total de cada una de sus 5 bandejas, pidiéndole una página de 1 fila al mismo service que la lista (pedido 12 del frontend, que salió barato).
+  - **B12e:** `GET /api/eventos-trazabilidad/recorrido` (lote, bulto o caja, con los eventos de lo que los rodea); `?codigo=` en lotes y bultos y `?serie=` en cajas (pedidos 15c y 16); `?entidadId=` en `listarEventos`; migración **V5** (índice `(entidad_id, numero)`).
+  - **B12g, Sepolia:** `scripts/nuevo-contrato.sh` (`--simular` por defecto, `--desplegar` con confirmación), `scripts/actualizar_env.py` y `--simular` en `DesplegadorContrato`. Despliega el mismo contrato que la guía de Remix.
+- **Problemas encontrados y solución:**
+  1. **Los paréntesis de las consultas con `OR`.** Sin ellos, el filtro de estado de una farmacia con cajas propias y otras en camino devolvía 4 cajas en vez de 2. Se probó el test **rompiendo a propósito** la consulta: falló como debía.
+  2. **Medir "sin N+1" comparaba cosas distintas.** Una página completa no hace la consulta de conteo y una página de una sola fila no tiene cajas sueltas: da distinto sin que haya N+1. Se comparan páginas parciales de composición parecida.
+  3. **El CUIT y el GLN de la demo nueva chocaban con los que la e2e registra** (409 EMPRESA_DUPLICADA en la sección 7a). Se eligieron lejos de esos y de los que genera al azar la e2e del frontend.
+  4. **La e2e asumía que el viaje de BUL-0002 era `VJ-0002`.** El código sale de una secuencia global y la demo ya usa los siguientes: ahora lo toma de la respuesta.
+  5. **Un bug propio de `actualizar_env.py`:** con un `.env` de fin de línea `\r\n` lo reescribía con `\n`. Lo encontró su test (con archivos falsos) y se corrigió.
+  6. **El e2e cuenta eventos por tipo** (DISPENSACION, CUARENTENA_TOMADA…): por eso la demo nueva no dispensa ni toma ninguna medida.
+  7. **El costo del contrato nuevo.** La simulación real (solo lectura) dio 2.937.992 de gas; con la comisión de ese momento (0,001 gwei) fue una fracción de lo previsto. A 1,2 gwei serían ≈ 0.0035 ETH.
+- **Resultado:**
+
+  | | Antes | Después |
+  |---|---|---|
+  | Tests unitarios | 453 | 463 |
+  | Tests de integración | 63 | 74 |
+  | Prueba e2e | 123/123 | 159/159 |
+  | Operaciones del contrato | 94 | 97 |
+  | Migraciones Flyway | V1 a V4 | V1 a V5 |
+
+- **Pendiente que quedó anotado:**
+  - `regla` como enum (`CodigoRegla`, 83 lugares); hoy está documentada;
+  - más de 100 lecturas de temperatura de un viaje (el front pide hasta 100 por página);
+  - filtros y búsqueda de dispensaciones;
+  - **posible fuga de alcance** (sin decidir): una farmacia con una parada en un viaje de varias paradas ve todos sus bultos y las otras paradas (desde B12c, también sus razones sociales);
+  - el inspector **no** se limita por provincia al ver lotes, bultos, cajas ni la trazabilidad por código (solo actúa por provincia: D1);
+  - la trazabilidad de una caja no alcanza los eventos de un bulto que se desarmó (la caja solo recuerda su bulto actual).
+
+---
+
+## Estado al 13/10 (reconstruido del código)
 
 | Métrica | Valor |
 |---|---|
 | Entidades / tablas | 19 entidades (17 del dominio + `CadenaEstado` + `IntentoVerificacion`) en 21 tablas (más 2 de unión) |
-| Esquema | 4 migraciones Flyway (V1 a V4); Hibernate solo valida |
-| Controllers / endpoints | 21 / 91. Ningún PUT ni DELETE: los estados cambian solo con acciones POST |
+| Esquema | 5 migraciones Flyway (V1 a V5); Hibernate solo valida |
+| Controllers / endpoints | 21 / 97. Ningún PUT ni DELETE: los estados cambian solo con acciones POST |
 | Roles | 6 |
 | Reglas de negocio | 15 (R1 a R15) |
 | Tipos de evento | 47 |
-| Tests automáticos | 453 unitarios (en 53 clases) + 63 de integración contra PostgreSQL real (en 16 clases) |
-| Contrato OpenAPI | `docs/openapi.json` (94 operaciones), publicado solo con `SWAGGER_HABILITADO=true` |
-| Prueba e2e | 123 verificaciones. La variante con anclaje real (`--sepolia`) dio 94 el 05/10, antes de la sección 9 |
+| Tests automáticos | 463 unitarios (en 54 clases) + 74 de integración contra PostgreSQL real (en 19 clases) |
+| Contrato OpenAPI | `docs/openapi.json` (97 operaciones), publicado solo con `SWAGGER_HABILITADO=true` |
+| Prueba e2e | 159 verificaciones. La variante con anclaje real (`--sepolia`) dio 94 el 05/10, antes de la sección 9 |
 
 ## Metodología y uso de IA
 
@@ -576,6 +624,7 @@
 ## Pendiente
 
 - **Paso 11:** Actuator, Docker (imagen + docker-compose) y README.
+- **Del paso B12 (detalle arriba):** `regla` como enum; más de 100 lecturas de temperatura por viaje; filtros y búsqueda de dispensaciones; la posible fuga de alcance de las paradas de un viaje; el límite por provincia del inspector al ver lotes, bultos y cajas.
 - **Pendientes ya anotados en `CLAUDE.md`, sin paso asignado:**
   - rate limiting en login, registro, verificación pública e intentos de lote inválidos;
   - captcha y verificación de email en el registro;
