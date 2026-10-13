@@ -41,7 +41,14 @@ import java.util.Optional;
  * se niega si supera --max-eth (por defecto 0.002) o si la comisión supera
  * --tope-gwei (por defecto 5). Informa saldo antes y después, gas real,
  * costo y los enlaces a Etherscan.
- * Uso: scripts/desplegar-contrato.sh [--saldo] [--max-eth 0.002] [--tope-gwei 5]
+ * Uso: scripts/desplegar-contrato.sh [--saldo | --simular] [--max-eth 0.002] [--tope-gwei 5]
+ * <ul>
+ *   <li>{@code --saldo}: solo la billetera y su saldo.</li>
+ *   <li>{@code --simular}: hace TODO menos enviar: red, saldo, bytecode, estimación de gas,
+ *       comisión y los dos chequeos de tope; informa el costo y cuánto saldo quedaría. No firma ni
+ *       envía ninguna transacción: no gasta nada.</li>
+ * </ul>
+ * La línea final {@code ANCHOR_CONTRACT_ADDRESS=0x…} la lee scripts/nuevo-contrato.sh.
  */
 public final class DesplegadorContrato {
 
@@ -73,11 +80,12 @@ public final class DesplegadorContrato {
             salir("WALLET_PRIVATE_KEY no tiene el formato de una clave privada (64 hexadecimales).");
         }
         boolean soloSaldo = List.of(args).contains("--saldo");
+        boolean simular = List.of(args).contains("--simular");
         BigDecimal maxEth = new BigDecimal(argumento(args, "--max-eth", "0.002"));
         long topeGwei = Long.parseLong(argumento(args, "--tope-gwei", "5"));
         DesplegadorContrato desplegador = new DesplegadorContrato(rpcUrl.trim(), clave.trim());
         try {
-            desplegador.ejecutar(soloSaldo, maxEth, topeGwei);
+            desplegador.ejecutar(soloSaldo, simular, maxEth, topeGwei);
         } catch (IOException | RuntimeException e) {
             salir("Error: " + desplegador.ocultador.ocultar(e.getClass().getSimpleName() + ": " + e.getMessage()));
         } finally {
@@ -85,8 +93,8 @@ public final class DesplegadorContrato {
         }
     }
 
-    /** Informa la billetera y, salvo --saldo, despliega el contrato. */
-    private void ejecutar(boolean soloSaldo, BigDecimal maxEth, long topeGwei) throws IOException {
+    /** Informa la billetera y, salvo --saldo, despliega el contrato (con --simular, todo menos enviarlo). */
+    private void ejecutar(boolean soloSaldo, boolean simular, BigDecimal maxEth, long topeGwei) throws IOException {
         long chainId = exigir(web3j.ethChainId().send()).getChainId().longValueExact();
         if (chainId != CHAIN_ID_SEPOLIA) {
             salir("El RPC apunta a la red con chainId " + chainId + ", no a Sepolia (11155111). No se despliega.");
@@ -119,6 +127,14 @@ public final class DesplegadorContrato {
                 + " ETH (máximo posible " + costoMaximo.setScale(8, RoundingMode.UP).toPlainString() + ")");
         if (costoMaximo.compareTo(maxEth) > 0) {
             salir("El costo máximo posible supera --max-eth " + maxEth.toPlainString() + ". No se despliega.");
+        }
+
+        if (simular) {
+            BigInteger restante = saldoAntes.subtract(limiteGas.multiply(maxima));
+            System.out.println("SIMULACIÓN: no se firmó ni se envió nada. Con el costo máximo posible el saldo quedaría en "
+                    + eth(restante.max(BigInteger.ZERO)) + " SepoliaETH"
+                    + (restante.signum() < 0 ? " (¡NO alcanza para desplegar!)" : "") + ".");
+            return;
         }
 
         BigInteger nonce = exigir(web3j.ethGetTransactionCount(credenciales.getAddress(),

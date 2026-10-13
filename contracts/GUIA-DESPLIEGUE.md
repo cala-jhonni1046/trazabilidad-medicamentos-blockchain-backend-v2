@@ -2,14 +2,17 @@
 
 `MediChainAnchor.sol` es el registro público de MediChain en Ethereum. Cada 5 minutos, si hubo eventos nuevos, el backend guarda ahí el hash del último evento de su cadena. Como cada evento incluye el hash del anterior, ese único hash protege a todos los eventos hasta ese número. Una vez escrito en la blockchain, nadie puede reescribirlo, ni siquiera MediChain.
 
-Esta guía despliega el contrato **principal** (el de la demo) a mano, con Remix y MetaMask. Para las pruebas automáticas hay otro camino: `scripts/desplegar-contrato.sh`, que despliega contratos descartables.
+Esta guía despliega el contrato **principal** (el de la demo) a mano, con Remix y MetaMask. Hay otros dos caminos con el mismo contrato:
+
+- **`scripts/nuevo-contrato.sh`** (ver "Alternativa: desplegar con el script" al final): despliega el MISMO contrato que esta guía desde la cuenta de `WALLET_PRIVATE_KEY` y actualiza solo la línea `ANCHOR_CONTRACT_ADDRESS` del `.env`. Es lo cómodo después de cada `./reset-demo.sh`.
+- `scripts/desplegar-contrato.sh`: la herramienta que usa el anterior; con `--max-eth` bajo sirve para contratos descartables de las pruebas.
 
 ## Antes de empezar
 
 - **MetaMask, red y cuenta:** MetaMask en la red **Sepolia**, con la **misma cuenta** cuya clave está en `WALLET_PRIVATE_KEY`. El contrato solo acepta anclajes de quien lo desplegó.
   - Para ver qué dirección es, corré `set -a; source .env; set +a; scripts/desplegar-contrato.sh --saldo`. Muestra la dirección pública y el saldo, nunca la clave.
 - **Saldo:** desde Glamsterdam (ver "Costos") el despliegue cuesta unos **0.0035 ETH** con el optimizador (0.006 sin él) y cada anclaje unos **0.0002 ETH** (el primero, 0.0004). La tarea automática necesita saldo para al menos 10 anclajes.
-- **Base y contrato:** **una base nueva necesita un contrato nuevo.** Si reseteaste la base (`./reset-demo.sh`), desplegá otro contrato con esta guía.
+- **Base y contrato:** **una base nueva necesita un contrato nuevo.** Si reseteaste la base (`./reset-demo.sh`), desplegá otro contrato con esta guía o con `scripts/nuevo-contrato.sh`. Mejor todavía: con el anclaje prendido, no resetees si no hace falta (cada reset cuesta un contrato).
 
 ## 1. Cargar el código en Remix
 
@@ -153,3 +156,18 @@ A ~1,1–1,2 gwei: el primer anclaje cuesta unos **0.0004 ETH** y los siguientes
 - **Quién puede escribir y qué no se puede:** solo la billetera de MediChain (`duenio`, fijado al desplegar y `immutable`). Ni ella puede reescribir: `hastaNumero` tiene que ser estrictamente creciente, y no hay funciones para borrar ni reiniciar.
 - **Quién puede leer:** cualquiera, sin cuenta ni costo (`hashAnclado`, `verificar`, `anclajes`).
 - **Qué ataque detecta:** alguien con acceso a la base altera un evento y recalcula todos los hashes. La cadena local queda coherente consigo misma, pero ya no coincide con el hash anclado. Se demuestra con `scripts/simular-ataque.py`.
+
+## Alternativa: desplegar con el script (después de cada reset)
+
+`scripts/nuevo-contrato.sh` despliega el **mismo contrato** que los pasos 1 a 3: el fuente `MediChainAnchor.sol` compilado con solc 0.8.37, optimizador 200 y EVM osaka, que es `contracts/MediChainAnchor.bin` (la variante con optimizador que esta guía recomienda, 2,94 M de gas). Sale de la cuenta de `WALLET_PRIVATE_KEY`, que queda como dueña (`duenio()`): es lo que la app exige al arrancar. El backend verifica el código desplegado igual que si viniera de Remix. Lo único que no hace es publicar el código en Etherscan (paso 6, opcional): el hash de metadatos del bytecode puede no coincidir con el de una compilación nueva en Remix.
+
+```bash
+scripts/nuevo-contrato.sh --simular     # NO gasta nada
+scripts/nuevo-contrato.sh --desplegar   # simula, pide escribir DESPLEGAR y despliega
+```
+
+- **`--simular`** (por defecto): chequea la red (Sepolia), la billetera y el saldo, estima el gas con `eth_estimateGas`, calcula el costo esperado y el máximo posible con la comisión actual, aplica los mismos topes que el despliegue real (`--max-eth`, 0.006 por defecto; `--tope-gwei`, 20) y dice cuánto saldo quedaría. No firma ni envía nada.
+- **`--desplegar`**: hace lo anterior y **pide escribir `DESPLEGAR`** (sin terminal interactiva se niega). Después de desplegar comprueba que el dueño sea la billetera, hace una copia de seguridad del `.env` (`.env.bak-AAAAMMDD-HHMMSS`, permisos 600), cambia **solo** la línea `ANCHOR_CONTRACT_ADDRESS` y muestra la dirección vieja y la nueva. Si el cambio tocara otra línea, restaura la copia y falla.
+- Nunca imprime `SEPOLIA_RPC_URL` ni `WALLET_PRIVATE_KEY`. Anotá la dirección nueva en la bitácora.
+
+Qué cuesta (Sepolia): ~2,94 M de gas el despliegue. A 1,2 gwei son ≈ 0.0035 ETH; con la red tranquila (el 13/10/2026 la comisión estaba en 0,001 gwei) fue una fracción de eso. La simulación lo dice con la comisión del momento. Un reset completo (contrato nuevo + el primer anclaje, ≈ 0.0004 ETH) cuesta ≈ 0.004 ETH a 1,2 gwei.

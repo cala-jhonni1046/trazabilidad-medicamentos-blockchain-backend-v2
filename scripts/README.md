@@ -69,6 +69,7 @@ contrato principal de la demo se despliega a mano con Remix
 ```bash
 set -a; source .env; set +a
 scripts/desplegar-contrato.sh --saldo                  # solo billetera y saldo
+scripts/desplegar-contrato.sh --simular                # todo menos enviar: estimación y costo (no gasta nada)
 scripts/desplegar-contrato.sh --max-eth 0.002 --tope-gwei 5
 ```
 
@@ -79,6 +80,19 @@ scripts/desplegar-contrato.sh --max-eth 0.002 --tope-gwei 5
 - Es Java (`src/test/java/.../herramientas/DesplegadorContrato.java`) y no
   Python: firmar una transacción necesita keccak-256 y secp256k1, que Python no
   trae, y web3j ya es dependencia del proyecto. No forma parte de la aplicación.
+
+## nuevo-contrato.sh
+
+Deja un contrato `MediChainAnchor` **nuevo** para una base nueva (después de `./reset-demo.sh`) y actualiza `ANCHOR_CONTRACT_ADDRESS` en el `.env`. Es el MISMO contrato que despliega la guía de Remix (`contracts/MediChainAnchor.bin`, optimizador 200), con la billetera de `WALLET_PRIVATE_KEY` como dueña. Detalles y costos en `contracts/GUIA-DESPLIEGUE.md`.
+
+```bash
+scripts/nuevo-contrato.sh --simular     # por defecto: NO gasta nada (saldo, gas, costo, qué cambiaría)
+scripts/nuevo-contrato.sh --desplegar   # simula, pide escribir DESPLEGAR y despliega (gasta SepoliaETH)
+```
+
+- Del `.env` toca SOLO la línea `ANCHOR_CONTRACT_ADDRESS` (`actualizar_env.py`): copia de seguridad `.env.bak-FECHA` (permisos 600), dirección vieja y nueva a la vista, y si el cambio tocara otra línea restaura la copia y falla.
+- Sin terminal interactiva no despliega. `reset-demo.sh` solo ofrece ver la simulación: nunca despliega solo.
+- `scripts/test_actualizar_env.py` prueba el cambio de la línea con archivos `.env` falsos: `python3 -m unittest discover -s scripts -p "test_actualizar_env.py"`.
 
 ## anclar-prueba.sh
 

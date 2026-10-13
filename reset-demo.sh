@@ -26,7 +26,8 @@ if [[ -n "${DOCUMENTOS_DIR:-}" ]]; then
     echo "También se borran los PDF de habilitación (<sha256>.pdf) de '${DOCUMENTOS_DIR}'."
 fi
 if [[ "${ANCLAJE_HABILITADO:-false}" == "true" ]]; then
-    echo "El anclaje en Sepolia está habilitado: una base nueva necesita un contrato NUEVO (ver al final)."
+    echo "El anclaje en Sepolia está habilitado: una base nueva necesita un contrato NUEVO (~0.0035 SepoliaETH, ver al final)."
+    echo "Si no hace falta resetear, mejor no: un reset con el anclaje prendido cuesta un contrato nuevo."
 fi
 read -r -p "Escribí BORRAR para confirmar: " CONFIRMACION
 if [[ "${CONFIRMACION}" != "BORRAR" ]]; then
@@ -50,10 +51,20 @@ echo "Base '${BASE}' vaciada. Arrancá con ./levantar.sh: Flyway aplica las migr
 echo "y se crean la Sede (ADMIN_EMAIL) y, con SPRING_PROFILES_ACTIVE=demo, los datos de demo."
 
 # Anclaje (paso 8): el contrato viejo ya ancló eventos de la base anterior; para él, una cadena
-# que vuelve a empezar en #1 es igual a eventos borrados. Con el contrato viejo la app no arranca.
+# que vuelve a empezar en #1 es igual a eventos borrados. Con el contrato viejo la app no arranca
+# (o el anclaje queda detenido). scripts/nuevo-contrato.sh deja un contrato nuevo y actualiza SOLO la
+# línea ANCHOR_CONTRACT_ADDRESS del .env (con copia de seguridad). NUNCA despliega solo.
 if [[ "${ANCLAJE_HABILITADO:-false}" == "true" ]]; then
     echo ""
-    echo "IMPORTANTE (anclaje habilitado): antes de ./levantar.sh desplegá un contrato NUEVO con Remix"
-    echo "(contracts/GUIA-DESPLIEGUE.md) y actualizá ANCHOR_CONTRACT_ADDRESS en .env."
-    echo "Con el contrato anterior la app no arranca: ya ancló eventos que la base nueva no tiene."
+    echo "IMPORTANTE (anclaje habilitado): antes de ./levantar.sh hace falta un contrato NUEVO."
+    echo "Con el contrato anterior la app no arranca (o el anclaje queda detenido): ya ancló eventos que la base nueva no tiene."
+    echo "  1) scripts/nuevo-contrato.sh --simular     (NO gasta nada: saldo, costo estimado y qué cambiaría en el .env)"
+    echo "  2) scripts/nuevo-contrato.sh --desplegar   (pide escribir DESPLEGAR; gasta ~0.0035 SepoliaETH)"
+    echo "Alternativa manual: Remix (contracts/GUIA-DESPLIEGUE.md) y actualizar ANCHOR_CONTRACT_ADDRESS en .env."
+    if [[ -t 0 ]]; then
+        read -r -p "¿Ver ahora la simulación (no gasta nada)? [s/N] " VER
+        if [[ "${VER}" == "s" || "${VER}" == "S" ]]; then
+            scripts/nuevo-contrato.sh --simular
+        fi
+    fi
 fi
