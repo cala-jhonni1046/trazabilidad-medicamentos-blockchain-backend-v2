@@ -148,13 +148,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -465,13 +466,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -616,13 +618,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -699,13 +702,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -782,13 +786,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -1614,13 +1619,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -1775,13 +1781,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -2184,13 +2191,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -2511,13 +2519,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -2594,13 +2603,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -2752,13 +2762,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -2997,11 +3008,11 @@
               "application/pdf" : {
                 "schema" : {
                   "type" : "string",
-                  "format" : "byte"
+                  "format" : "binary"
                 }
               }
             },
-            "description" : "OK"
+            "description" : "El PDF de habilitación"
           },
           "400" : {
             "content" : {
@@ -3478,13 +3489,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -3678,13 +3690,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -4064,13 +4077,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -4225,13 +4239,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -4464,13 +4479,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 50,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -4557,13 +4573,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -4777,13 +4794,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -5108,13 +5126,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -5368,13 +5387,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -5519,13 +5539,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -5839,13 +5860,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -6069,13 +6091,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -6299,13 +6322,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -6531,13 +6555,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -6794,13 +6819,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 20,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -7289,13 +7315,14 @@
             "minimum" : 0
           }
         }, {
-          "description" : "The size of the page to be returned",
+          "description" : "Tamaño de la página: de 1 a 100. Un valor mayor no da error: se recorta a 100.",
           "in" : "query",
           "name" : "size",
           "required" : false,
           "schema" : {
             "type" : "integer",
             "default" : 100,
+            "maximum" : 100,
             "minimum" : 1
           }
         }, {
@@ -7386,7 +7413,7 @@
             "type" : [ "string", "null" ]
           },
           "estado" : {
-            "type" : "string"
+            "$ref" : "#/components/schemas/EstadoAnclajeCaja"
           },
           "red" : {
             "type" : [ "string", "null" ]
@@ -7499,8 +7526,11 @@
             "example" : "el lote L2026-0415 está vencido"
           },
           "motivoBloqueo" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/CausaBloqueo",
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/CausaBloqueo"
+            }, {
+              "type" : "null"
+            } ],
             "description" : "Causa del bloqueo (código); null si no está bloqueado"
           },
           "precinto" : {
@@ -8021,7 +8051,8 @@
           "tipo" : {
             "$ref" : "#/components/schemas/TipoEmpresa"
           }
-        }
+        },
+        "required" : [ "cuit", "id", "provincia", "razonSocial", "tipo" ]
       },
       "EnlaceCuitRequestDTO" : {
         "type" : "object",
@@ -8110,8 +8141,11 @@
             "format" : "uuid"
           },
           "rechazadoPor" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/OrigenRechazo"
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/OrigenRechazo"
+            }, {
+              "type" : "null"
+            } ]
           },
           "suspendidoPorEmpresa" : {
             "type" : "boolean"
@@ -8175,6 +8209,11 @@
         "description" : "Ciclo de vida del anclaje de un rango de eventos a la blockchain: nace PENDIENTE, pasa a ENVIADO al transmitir la transacción, y termina CONFIRMADO o FALLIDO.",
         "enum" : [ "PENDIENTE", "ENVIADO", "CONFIRMADO", "FALLIDO" ]
       },
+      "EstadoAnclajeCaja" : {
+        "type" : "string",
+        "description" : "Anclaje que cubre el recorrido público de la caja: CONFIRMADO o ENVIADO (con transacción), PENDIENTE (todavía no se ancló) o NO_DISPONIBLE (el anclaje está deshabilitado).",
+        "enum" : [ "CONFIRMADO", "ENVIADO", "PENDIENTE", "NO_DISPONIBLE" ]
+      },
       "EstadoAnclajeResponseDTO" : {
         "type" : "object",
         "properties" : {
@@ -8182,8 +8221,11 @@
             "type" : "boolean"
           },
           "anclajeEnCurso" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/RegistroBlockchainResponseDTO"
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/RegistroBlockchainResponseDTO"
+            }, {
+              "type" : "null"
+            } ]
           },
           "anclajesEstimados" : {
             "type" : [ "integer", "null" ],
@@ -8250,8 +8292,11 @@
             "type" : [ "string", "null" ]
           },
           "ultimoAnclaje" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/RegistroBlockchainResponseDTO"
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/RegistroBlockchainResponseDTO"
+            }, {
+              "type" : "null"
+            } ]
           },
           "ultimoNumeroAnclado" : {
             "type" : [ "integer", "null" ],
@@ -8319,6 +8364,11 @@
         "description" : "Resultado de comparar la cadena local con los anclajes del contrato: VERIFICADA (todos coinciden), ALTERADA (algún evento anclado no coincide o falta), NO_CONSULTADA (la red no respondió: no es lo mismo que alterada) y NO_DISPONIBLE (anclaje deshabilitado).",
         "enum" : [ "VERIFICADA", "ALTERADA", "NO_CONSULTADA", "NO_DISPONIBLE" ]
       },
+      "EtapaRecorrido" : {
+        "type" : "string",
+        "description" : "Hito del recorrido público de una caja: FABRICADO y LIBERADO (lote), DESPACHADO (salida de un viaje), RECIBIDO o RECHAZADO (recepción del bulto). Nunca la dispensación (R13).",
+        "enum" : [ "FABRICADO", "LIBERADO", "DESPACHADO", "RECIBIDO", "RECHAZADO" ]
+      },
       "EtapaRecorridoDTO" : {
         "type" : "object",
         "properties" : {
@@ -8326,7 +8376,7 @@
             "type" : "string"
           },
           "etapa" : {
-            "type" : "string"
+            "$ref" : "#/components/schemas/EtapaRecorrido"
           },
           "fecha" : {
             "type" : "string",
@@ -8546,8 +8596,11 @@
             "example" : "Elena"
           },
           "provincia" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/Provincia",
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/Provincia"
+            }, {
+              "type" : "null"
+            } ],
             "description" : "Provincia del inspector (la de su jurisdicción); null para los demás roles"
           },
           "rol" : {
@@ -8641,8 +8694,11 @@
             "$ref" : "#/components/schemas/EstadoLote"
           },
           "estadoPrevio" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/EstadoLote"
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/EstadoLote"
+            }, {
+              "type" : "null"
+            } ]
           },
           "fechaActualizacion" : {
             "type" : "string",
@@ -8688,8 +8744,11 @@
             "example" : "el lote L2026-0415 está vencido"
           },
           "motivoBloqueo" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/CausaBloqueo",
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/CausaBloqueo"
+            }, {
+              "type" : "null"
+            } ],
             "description" : "Causa del bloqueo (código); null si no está bloqueado"
           },
           "version" : {
@@ -9574,8 +9633,11 @@
             "$ref" : "#/components/schemas/Provincia"
           },
           "provinciaCaja" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/Provincia"
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/Provincia"
+            }, {
+              "type" : "null"
+            } ]
           },
           "serieReportada" : {
             "type" : "string"
@@ -9809,8 +9871,11 @@
             "example" : "el lote L2026-0415 está vencido"
           },
           "motivoBloqueo" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/CausaBloqueo",
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/CausaBloqueo"
+            }, {
+              "type" : "null"
+            } ],
             "description" : "Causa del bloqueo (código); null si no está bloqueado"
           },
           "serie" : {
@@ -10004,8 +10069,11 @@
         "type" : "object",
         "properties" : {
           "anclaje" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/AnclajeDTO"
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/AnclajeDTO"
+            }, {
+              "type" : "null"
+            } ]
           },
           "concentracion" : {
             "type" : [ "string", "null" ]

@@ -12,6 +12,7 @@ import com.medichain.modules.medicamento.MedicamentoRepository;
 import com.medichain.modules.recepcion.Recepcion;
 import com.medichain.modules.recepcion.RecepcionRepository;
 import com.medichain.modules.registroblockchain.AnclajeProperties;
+import com.medichain.modules.registroblockchain.EstadoAnclaje;
 import com.medichain.modules.registroblockchain.PasosAnclaje;
 import com.medichain.modules.registroblockchain.RegistroBlockchain;
 import com.medichain.modules.registroblockchain.RegistroBlockchainRepository;
@@ -190,9 +191,9 @@ public class VerificacionPublicaService {
         Lote lote = caja.getLote();
         String laboratorio = lote.getLaboratorio().getRazonSocial();
         List<EtapaRecorridoDTO> etapas = new ArrayList<>();
-        etapas.add(new EtapaRecorridoDTO("FABRICADO", laboratorio, lote.getFechaFabricacion()));
+        etapas.add(new EtapaRecorridoDTO(EtapaRecorrido.FABRICADO, laboratorio, lote.getFechaFabricacion()));
         if (lote.getFechaLiberacion() != null) {
-            etapas.add(new EtapaRecorridoDTO("LIBERADO", laboratorio, calendario.fecha(lote.getFechaLiberacion())));
+            etapas.add(new EtapaRecorridoDTO(EtapaRecorrido.LIBERADO, laboratorio, calendario.fecha(lote.getFechaLiberacion())));
         }
         Bulto bulto = caja.getBulto();
         if (bulto == null) {
@@ -200,11 +201,11 @@ public class VerificacionPublicaService {
         }
         List<EtapaRecorridoDTO> movimientos = new ArrayList<>();
         for (DespachoLogistico viaje : salidas) {
-            movimientos.add(new EtapaRecorridoDTO("DESPACHADO", viaje.getOrigen().getRazonSocial(),
+            movimientos.add(new EtapaRecorridoDTO(EtapaRecorrido.DESPACHADO, viaje.getOrigen().getRazonSocial(),
                     calendario.fecha(viaje.getFechaSalida())));
         }
         for (Recepcion recepcion : recepcionRepository.findByBultoIdOrderByFechaHoraAsc(bulto.getId())) {
-            movimientos.add(new EtapaRecorridoDTO(recepcion.getConforme() ? "RECIBIDO" : "RECHAZADO",
+            movimientos.add(new EtapaRecorridoDTO(recepcion.getConforme() ? EtapaRecorrido.RECIBIDO : EtapaRecorrido.RECHAZADO,
                     recepcion.getReceptora().getRazonSocial(), calendario.fecha(recepcion.getFechaHora())));
         }
         movimientos.sort((a, b) -> a.getFecha().compareTo(b.getFecha()));
@@ -233,7 +234,11 @@ public class VerificacionPublicaService {
                     .findFirstByHastaNumeroGreaterThanEqualAndEstadoInOrderByHastaNumeroAsc(ultimoHito,
                             PasosAnclaje.EXITOSOS);
             if (anclaje.isPresent()) {
-                AnclajeDTO dto = AnclajeDTO.conEstado(anclaje.get().getEstado().name());
+                // Solo llegan anclajes EXITOSOS (ENVIADO o CONFIRMADO): un FALLIDO no cubre nada.
+                EstadoAnclajeCaja estado = anclaje.get().getEstado() == EstadoAnclaje.CONFIRMADO
+                        ? EstadoAnclajeCaja.CONFIRMADO
+                        : EstadoAnclajeCaja.ENVIADO;
+                AnclajeDTO dto = AnclajeDTO.conEstado(estado);
                 dto.setRed(anclaje.get().getRed());
                 dto.setTransactionHash(anclaje.get().getTransactionHash());
                 dto.setBloque(anclaje.get().getBloque());
@@ -241,7 +246,8 @@ public class VerificacionPublicaService {
                 return dto;
             }
         }
-        return AnclajeDTO.conEstado(propiedadesAnclaje.isHabilitado() ? "PENDIENTE" : "NO_DISPONIBLE");
+        return AnclajeDTO.conEstado(propiedadesAnclaje.isHabilitado() ? EstadoAnclajeCaja.PENDIENTE
+                : EstadoAnclajeCaja.NO_DISPONIBLE);
     }
 
     /** Datos públicos del producto y su laboratorio. */

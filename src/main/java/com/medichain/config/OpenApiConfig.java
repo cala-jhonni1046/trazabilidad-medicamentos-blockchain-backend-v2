@@ -8,8 +8,10 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.JsonSchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
@@ -18,13 +20,16 @@ import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springdoc.core.customizers.OperationCustomizer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.HandlerMethod;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Configuración OpenApiConfig en MediChain.
@@ -37,7 +42,9 @@ import java.util.Map;
  *   <li>servidor relativo "/" (mismo origen): el contrato no depende del host;</li>
  *   <li>los esquemas ErrorResponseDTO y ErrorCampoDTO, y las respuestas de error
  *       de cada operación a partir de su anotación @RespuestasError;</li>
- *   <li>las páginas {content, page} con sus campos obligatorios.</li>
+ *   <li>las páginas {content, page} con sus campos obligatorios;</li>
+ *   <li>las referencias que pueden venir null como anyOf [$ref, null];</li>
+ *   <li>el tamaño máximo de página (max-page-size) en cada parámetro size.</li>
  * </ul>
  * Swagger UI y /api-docs solo se publican con SWAGGER_HABILITADO=true
  * (application.properties); en producción, sin esa variable, responden 404.
@@ -147,6 +154,81 @@ public class OpenApiConfig {
                 }
             });
         };
+    }
+
+    /**
+     * Una propiedad que es una referencia ($ref a un enum o a otro DTO) y puede
+     * venir null sale de springdoc como {"type":"null","$ref":…}, que los
+     * generadores leen como la referencia sola (pierden el null). Se reescribe
+     * como anyOf [$ref, {type: null}], la forma de OpenAPI 3.1, conservando la
+     * descripción: el cliente generado la tipa como "T | null".
+     */
+    @Bean
+    public OpenApiCustomizer referenciasNulablesConAnyOf() {
+        return openApi -> {
+            if (openApi.getComponents() == null || openApi.getComponents().getSchemas() == null) {
+                return;
+            }
+            for (Schema<?> esquema : openApi.getComponents().getSchemas().values()) {
+                Map<String, Schema> propiedades = esquema.getProperties();
+                if (propiedades == null) {
+                    continue;
+                }
+                propiedades.replaceAll((nombre, propiedad) -> esReferenciaNulable(propiedad)
+                        ? referenciaONull(propiedad)
+                        : propiedad);
+            }
+        };
+    }
+
+    /**
+     * Declara en cada parámetro "size" de los listados el máximo de la página
+     * (spring.data.web.pageable.max-page-size). Spring no responde 400 con un
+     * valor mayor: lo recorta al máximo, y la descripción lo dice.
+     */
+    @Bean
+    public OpenApiCustomizer tamanoMaximoDePagina(
+            @Value("${spring.data.web.pageable.max-page-size}") int maximo) {
+        return openApi -> {
+            if (openApi.getPaths() == null) {
+                return;
+            }
+            openApi.getPaths().values().forEach(ruta -> ruta.readOperations().forEach(operacion -> {
+                if (operacion.getParameters() == null) {
+                    return;
+                }
+                for (Parameter parametro : operacion.getParameters()) {
+                    if ("size".equals(parametro.getName()) && "query".equals(parametro.getIn())
+                            && parametro.getSchema() != null) {
+                        parametro.getSchema().setMaximum(BigDecimal.valueOf(maximo));
+                        parametro.setDescription("Tamaño de la página: de 1 a " + maximo
+                                + ". Un valor mayor no da error: se recorta a " + maximo + ".");
+                    }
+                }
+            }));
+        };
+    }
+
+    /** Indica si la propiedad es una referencia marcada como nulable (con type null o nullable). */
+    private static boolean esReferenciaNulable(Schema<?> propiedad) {
+        if (propiedad.get$ref() == null) {
+            return false;
+        }
+        boolean tipoNull = propiedad.getTypes() != null && propiedad.getTypes().contains("null");
+        return tipoNull || Boolean.TRUE.equals(propiedad.getNullable());
+    }
+
+    /** anyOf [la referencia, null], con la descripción de la propiedad original. */
+    private static Schema<?> referenciaONull(Schema<?> propiedad) {
+        Schema<Object> referencia = new JsonSchema();
+        referencia.set$ref(propiedad.get$ref());
+        Schema<Object> nulo = new JsonSchema();
+        nulo.setTypes(Set.of("null"));
+        Schema<Object> alternativa = new JsonSchema();
+        alternativa.setDescription(propiedad.getDescription());
+        alternativa.addAnyOfItem(referencia);
+        alternativa.addAnyOfItem(nulo);
+        return alternativa;
     }
 
     /** Tags del contrato, en el orden del flujo del negocio. */

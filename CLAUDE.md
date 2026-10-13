@@ -96,9 +96,15 @@ Java 21 · Spring Boot 4.1.1 · PostgreSQL · Spring Data JPA · Spring Security
 - Errores: `@RespuestasError({…})` en cada operación (`config/RespuestasError`; `OpenApiConfig` los convierte en respuestas con `ErrorResponseDTO`). Criterios: 400 si recibe datos (body, path, query o paginación); 401 si no es pública (y el login); 403 si restringe por rol; 404 si tiene `{id}` o referencia otro recurso; 409 en las escrituras; 503 solo si consulta la blockchain en vivo.
 - Operaciones públicas (login, registro de empresa y de paciente, verificación pública): `@SecurityRequirements` vacío (sin `bearerAuth`).
 - Enums: `@Schema(enumAsRef = true, description = …)` en cada enum (esquema con nombre, nunca en línea).
+- Enums que no se guardan también: `EtapaRecorrido` (recorrido público) y `EstadoAnclajeCaja` (anclaje de la verificación pública; no es `EstadoAnclaje`, que es el ciclo de vida de un `RegistroBlockchain`). Nada de texto libre donde el valor sea de una lista fija.
+- Referencias que pueden venir null: el contrato las publica como `anyOf [{$ref}, {type: null}]` (`OpenApiConfig.referenciasNulablesConAnyOf`), nunca `{type: null, $ref}`: así el cliente generado las tipa `T | null`. `ContratoOpenApiIT` lo exige.
+- Todo DTO de salida (no solo `*ResponseDTO`) marca `required` sus campos que siempre vienen.
+- Cada parámetro `size` declara `maximum: 100` (`spring.data.web.pageable.max-page-size`): un valor mayor NO da 400, se recorta a 100.
+- La descarga del PDF de habilitación es binaria (`format: binary`, no `byte`: el cliente generado la tipa `Blob`).
+- `regla` del `ErrorResponseDTO` solo viaja en los 409 (`ReglaNegocioException`, `DataIntegrityViolationException`, `OptimisticLockingFailureException`); en 400, 401, 403, 404, 405, 500 y 503 es null. Sigue siendo texto: convertirla en un enum `CodigoRegla` (83 lugares) queda PENDIENTE para más adelante.
 - ResponseDTO: cada campo con `@Schema(requiredMode = REQUIRED)` si siempre viene no null (columna `nullable = false`, listas, calculados) o `@Schema(nullable = true)` si puede venir null; ejemplos (`example`) en los DTO del flujo principal. `ContratoOpenApiIT` recorre el flujo real y valida cada respuesta contra su esquema.
 - Tags en el orden del flujo (declarados en `OpenApiConfig`): Registro público → Autenticación → Empresas → Inspectores ANMAT → Usuarios → Circuitos → Medicamentos → Lotes → Unidades trazables → Bultos → Viajes → Telemetría de temperatura → Telemetría GPS → Recepciones → Dispensaciones → Cuarentenas → Reportes ciudadanos → Verificación pública → Eventos de trazabilidad → Registros blockchain. Un controller nuevo usa uno de esos tags (o se agrega a la lista).
-- `ErrorResponseDTO` (`status`, `message`, `regla`, `errors[{field, message}]`) es el cuerpo de TODO error.
+- `ErrorResponseDTO` (`status`, `message`, `regla`, `errors[{field, message}]`) es el cuerpo de TODO error (`regla` solo en los 409).
 
 ## Roles
 

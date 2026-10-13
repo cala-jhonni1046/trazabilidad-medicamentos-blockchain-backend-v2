@@ -1,6 +1,7 @@
 package com.medichain.modules.empresa;
 
 import com.medichain.utils.enums.Provincia;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
 
 /**
@@ -10,10 +11,15 @@ import java.util.UUID;
  */
 public class EmpresaResumenDTO {
 
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID id;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String cuit;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String razonSocial;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private TipoEmpresa tipo;
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Provincia provincia;
 
     /** Constructor vacío exigido por Jackson. */

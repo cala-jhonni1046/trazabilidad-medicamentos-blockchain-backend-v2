@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class AnclajeDTO {
 
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private String estado;
+    private EstadoAnclajeCaja estado;
     @Schema(nullable = true)
     private String red;
     @Schema(nullable = true)
@@ -27,19 +27,19 @@ public class AnclajeDTO {
     }
 
     /** Anclaje con solo el estado (los demás campos se completan si hay transacción). */
-    public static AnclajeDTO conEstado(String estado) {
+    public static AnclajeDTO conEstado(EstadoAnclajeCaja estado) {
         AnclajeDTO anclaje = new AnclajeDTO();
         anclaje.setEstado(estado);
         return anclaje;
     }
 
     /** Devuelve el estado del anclaje. */
-    public String getEstado() {
+    public EstadoAnclajeCaja getEstado() {
         return estado;
     }
 
     /** Establece el estado del anclaje. */
-    public void setEstado(String estado) {
+    public void setEstado(EstadoAnclajeCaja estado) {
         this.estado = estado;
     }
 

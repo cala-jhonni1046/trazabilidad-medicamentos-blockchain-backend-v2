@@ -55,6 +55,23 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("B12a: 'regla' solo viaja en los 409; 404, 500 y 503 la dejan en null")
+    void reglaSoloEnLos409() {
+        ResponseEntity<ErrorResponseDTO> noEncontrado = handler.handleResourceNotFoundException(
+                new com.medichain.exceptions.ResourceNotFoundException("no existe"));
+        ResponseEntity<ErrorResponseDTO> interno = handler.handleGeneralException(new RuntimeException("falla"));
+        ResponseEntity<ErrorResponseDTO> blockchain = handler.handleErrorBlockchainException(
+                new com.medichain.modules.registroblockchain.ErrorBlockchainException("sin red"));
+
+        assertEquals(HttpStatus.NOT_FOUND, noEncontrado.getStatusCode());
+        assertNull(noEncontrado.getBody().getRegla());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, interno.getStatusCode());
+        assertNull(interno.getBody().getRegla());
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, blockchain.getStatusCode());
+        assertNull(blockchain.getBody().getRegla());
+    }
+
+    @Test
     @DisplayName("Conflicto de @Version (cualquier OptimisticLockingFailureException) → 409 CONFLICTO_VERSION")
     void conflictoDeVersionTieneCodigo() {
         ResponseEntity<ErrorResponseDTO> respuesta = handler.handleOptimisticLockingFailureException(

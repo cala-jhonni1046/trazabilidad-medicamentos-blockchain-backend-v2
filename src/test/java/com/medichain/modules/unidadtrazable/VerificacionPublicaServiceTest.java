@@ -123,8 +123,8 @@ class VerificacionPublicaServiceTest {
         assertEquals(EstadoVerificacion.APTA, respuesta.getEstado());
         assertEquals(lote.getMedicamento().getNombreComercial(), respuesta.getProducto());
         assertEquals(lote.getCodigo(), respuesta.getLote());
-        assertEquals("NO_DISPONIBLE", respuesta.getAnclaje().getEstado());
-        assertEquals("FABRICADO", respuesta.getRecorrido().get(0).getEtapa());
+        assertEquals(EstadoAnclajeCaja.NO_DISPONIBLE, respuesta.getAnclaje().getEstado());
+        assertEquals(EtapaRecorrido.FABRICADO, respuesta.getRecorrido().get(0).getEtapa());
     }
 
     @Test
@@ -222,7 +222,7 @@ class VerificacionPublicaServiceTest {
         // Y el recorrido de una caja dispensada termina en la recepción en farmacia: no hay etapa de dispensación.
         UnidadTrazable caja = DatosDePrueba.cajaEnStock(lote, "S1", farmacia);
         caja.dispensar();
-        assertTrue(verificar(caja).getRecorrido().stream().noneMatch(e -> e.getEtapa().contains("DISPENS")));
+        assertTrue(verificar(caja).getRecorrido().stream().noneMatch(e -> e.getEtapa().name().contains("DISPENS")));
     }
 
     @Test
@@ -241,7 +241,7 @@ class VerificacionPublicaServiceTest {
 
         List<EtapaRecorridoDTO> etapas = verificar(caja).getRecorrido();
 
-        assertEquals(List.of("FABRICADO", "LIBERADO", "DESPACHADO"),
+        assertEquals(List.of(EtapaRecorrido.FABRICADO, EtapaRecorrido.LIBERADO, EtapaRecorrido.DESPACHADO),
                 etapas.stream().map(EtapaRecorridoDTO::getEtapa).toList());
     }
 
@@ -271,7 +271,7 @@ class VerificacionPublicaServiceTest {
 
         AnclajeDTO dto = verificar(DatosDePrueba.cajaEnStock(lote, "S1", farmacia)).getAnclaje();
 
-        assertEquals("CONFIRMADO", dto.getEstado());
+        assertEquals(EstadoAnclajeCaja.CONFIRMADO, dto.getEstado());
         assertEquals("sepolia", dto.getRed());
         assertEquals(anclaje.getTransactionHash(), dto.getTransactionHash());
         assertEquals(9_000_000L, dto.getBloque());
@@ -319,7 +319,7 @@ class VerificacionPublicaServiceTest {
 
         AnclajeDTO dto = verificar(DatosDePrueba.cajaEnStock(lote, "S1", farmacia)).getAnclaje();
 
-        assertEquals("PENDIENTE", dto.getEstado());
+        assertEquals(EstadoAnclajeCaja.PENDIENTE, dto.getEstado());
         assertEquals(null, dto.getTransactionHash());
     }
 }

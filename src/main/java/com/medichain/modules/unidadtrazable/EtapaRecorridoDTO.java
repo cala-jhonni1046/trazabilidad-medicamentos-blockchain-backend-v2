@@ -11,7 +11,7 @@ import java.time.LocalDate;
 public class EtapaRecorridoDTO {
 
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-    private String etapa;
+    private EtapaRecorrido etapa;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private String empresa;
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
@@ -22,19 +22,19 @@ public class EtapaRecorridoDTO {
     }
 
     /** Crea la etapa con todos sus datos. */
-    public EtapaRecorridoDTO(String etapa, String empresa, LocalDate fecha) {
+    public EtapaRecorridoDTO(EtapaRecorrido etapa, String empresa, LocalDate fecha) {
         this.etapa = etapa;
         this.empresa = empresa;
         this.fecha = fecha;
     }
 
     /** Devuelve la etapa (FABRICADO, LIBERADO, DESPACHADO, RECIBIDO, RECHAZADO). */
-    public String getEtapa() {
+    public EtapaRecorrido getEtapa() {
         return etapa;
     }
 
     /** Establece la etapa. */
-    public void setEtapa(String etapa) {
+    public void setEtapa(EtapaRecorrido etapa) {
         this.etapa = etapa;
     }
 

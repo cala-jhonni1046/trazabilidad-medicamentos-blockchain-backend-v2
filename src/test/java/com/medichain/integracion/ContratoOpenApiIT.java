@@ -39,7 +39,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *       descripción con roles (o "Público"), un tag del flujo y en orden, el
  *       código de éxito real (201 en las altas, 202 en /anclar), los errores con
  *       ErrorResponseDTO según los criterios de @RespuestasError, enums como
- *       esquemas con nombre, required en los ResponseDTO y páginas {content, page}.</li>
+ *       esquemas con nombre, required en todo DTO de salida, páginas {content, page},
+ *       referencias nulables como anyOf [$ref, null], el máximo de página en cada
+ *       size y el PDF de habilitación como binario (B12a).</li>
  *   <li><b>Archivo versionado:</b> docs/openapi.json es igual al contrato
  *       generado. Para regenerarlo: ./mvnw verify -Dit.test=ContratoOpenApiIT
  *       -Dmedichain.contrato.actualizar=true</li>
@@ -110,11 +112,18 @@ class ContratoOpenApiIT extends IntegracionBase {
         for (String nombre : esquemas.propertyNames()) {
             JsonNode esquema = esquemas.path(nombre);
             for (String propiedad : esquema.path("properties").propertyNames()) {
-                if (esquema.path("properties").path(propiedad).has("enum")) {
+                JsonNode valor = esquema.path("properties").path(propiedad);
+                if (valor.has("enum")) {
                     problemas.add(nombre + "." + propiedad + ": enum en línea (debe ser un esquema con nombre)");
                 }
+                // B12a: una referencia que puede venir null va como anyOf [$ref, null], nunca {type: null, $ref}.
+                if (valor.has("$ref") && (valor.has("type") || valor.has("nullable"))) {
+                    problemas.add(nombre + "." + propiedad + ": referencia nulable sin anyOf [$ref, null]");
+                }
             }
-            if ((nombre.endsWith("ResponseDTO") || nombre.equals("PageMetadata")) && esquema.path("required").isEmpty()) {
+            // B12a: todo DTO de salida (no solo los *ResponseDTO: también EmpresaResumenDTO, AnclajeDTO…) marca required.
+            boolean deSalida = nombre.endsWith("DTO") && !nombre.endsWith("RequestDTO");
+            if ((deSalida || nombre.equals("PageMetadata")) && esquema.path("required").isEmpty()) {
                 problemas.add(nombre + ": sin campos required");
             }
             if (nombre.startsWith("Page") && !nombre.startsWith("PagedModel") && !nombre.equals("PageMetadata")) {
@@ -122,6 +131,26 @@ class ContratoOpenApiIT extends IntegracionBase {
             }
         }
         assertTrue(esquemas.has("ErrorResponseDTO") && esquemas.has("ErrorCampoDTO"), "esquemas de error");
+
+        // B12a: cada parámetro size declara el máximo de la página (max-page-size = 100).
+        int parametrosSize = 0;
+        for (String ruta : contrato.path("paths").propertyNames()) {
+            for (String metodo : contrato.path("paths").path(ruta).propertyNames()) {
+                for (JsonNode parametro : contrato.path("paths").path(ruta).path(metodo).path("parameters")) {
+                    if ("size".equals(parametro.path("name").asString())) {
+                        parametrosSize++;
+                        if (parametro.path("schema").path("maximum").asInt() != 100) {
+                            problemas.add(metodo.toUpperCase() + " " + ruta + ": size sin maximum 100");
+                        }
+                    }
+                }
+            }
+        }
+        assertTrue(parametrosSize > 0, "ningún listado con parámetro size");
+        // B12a: el PDF de habilitación es binario (format binary), no base64 (byte).
+        JsonNode pdf = contrato.path("paths").path("/api/empresas/{id}/documento").path("get").path("responses")
+                .path("200").path("content").path("application/pdf").path("schema");
+        assertEquals("binary", pdf.path("format").asString(), "el PDF de habilitación debe ser format binary");
         assertTrue(problemas.isEmpty(), "Problemas del contrato:\n  " + String.join("\n  ", problemas));
     }
 

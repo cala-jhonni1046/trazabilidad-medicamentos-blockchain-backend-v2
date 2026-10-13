@@ -907,6 +907,28 @@ def seccion_b11d_fechas(ctx, demo, admin):
                   r.codigo != 400, detalle="HTTP %s" % r.codigo)
 
 
+def seccion_b12a_contrato(ctx, demo, admin):
+    """B12a: etapa y estado del anclaje de la verificación pública son enums; 'regla' solo viaja en los 409."""
+    # La caja L20260001S000011 viajó en BUL-0002 y llegó a Los Álamos (sección 7e): recorrido completo.
+    r = pedir("GET", ctx.url("/api/verificacion?gtin=%s&serie=L20260001S000011" % GTIN_CUYAFEN))
+    etapas = [e.get("etapa") for e in (r.campo("recorrido") or [])]
+    validas = {"FABRICADO", "LIBERADO", "DESPACHADO", "RECIBIDO", "RECHAZADO"}
+    ctx.verificar("b12a.1", "recorrido público: todas las etapas son del enum (%s)" % ",".join(etapas), 200, r,
+                  len(etapas) >= 4 and set(etapas) <= validas and etapas[0] == "FABRICADO")
+    anclaje = r.campo("anclaje") or {}
+    ctx.verificar("b12a.2", "anclaje público sin blockchain: estado NO_DISPONIBLE (enum), sin transacción", 200, r,
+                  anclaje.get("estado") == "NO_DISPONIBLE" and anclaje.get("transactionHash") is None)
+
+    sede = ctx.token(admin[0], admin[1])
+    r = pedir("GET", ctx.url("/api/empresas/00000000-0000-0000-0000-000000000000"), token=sede)
+    ctx.verificar("b12a.3", "un 404 no trae 'regla' (solo los 409 la traen)", 404, r,
+                  r.campo("status") == 404 and r.campo("regla") is None)
+    r = pedir("GET", ctx.url("/api/lotes?size=1000"), token=sede)
+    pagina = r.campo("page") or {}
+    ctx.verificar("b12a.4", "size mayor al máximo no da error: se recorta a 100 (como dice el contrato)", 200, r,
+                  pagina.get("size") == 100)
+
+
 def seccion_final_cadena(ctx, demo, admin):
     """Final: la cadena sigue íntegra después de todo el recorrido."""
     sede = ctx.token(admin[0], admin[1])
@@ -931,6 +953,7 @@ SECCIONES = [
     ("B11b · Filtros, temperatura del viaje, bloqueo R10 y códigos de error", seccion_b11b_filtros_bloqueo_errores),
     ("B11c · Tablero de la Sede: pendientes sin inspector", seccion_b11c_sin_inspector),
     ("B11d · Fechas en UTC con Z y entrada con offset", seccion_b11d_fechas),
+    ("B12a · Contrato: enums, regla solo en 409 y tamaño máximo de página", seccion_b12a_contrato),
     ("Final · Cadena íntegra", seccion_final_cadena),
 ]
 

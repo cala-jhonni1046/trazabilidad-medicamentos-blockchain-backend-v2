@@ -3,6 +3,9 @@ package com.medichain.modules.empresa;
 import com.medichain.config.RespuestasError;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -101,6 +104,9 @@ public class EmpresaController {
     /** Descarga el PDF de habilitación de la empresa. */
     @GetMapping(value = "/{id}/documento", produces = MediaType.APPLICATION_PDF_VALUE)
     @Operation(operationId = "descargarDocumentoEmpresa", summary = "Descargar el PDF de habilitación", description = "Roles: SEDE_CENTRAL; INSPECTOR de la provincia de la empresa o su revisor.")
+    // El cuerpo es el PDF crudo (binario), no base64: format binary (con byte, el cliente generado lo tipa como texto).
+    @ApiResponse(responseCode = "200", description = "El PDF de habilitación",
+            content = @Content(mediaType = MediaType.APPLICATION_PDF_VALUE, schema = @Schema(type = "string", format = "binary")))
     @RespuestasError({400, 401, 403, 404})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR')")
     public ResponseEntity<byte[]> documento(@PathVariable UUID id) {
