@@ -3,9 +3,11 @@ package com.medichain.modules.unidadtrazable;
 import com.medichain.config.RespuestasError;
 import com.medichain.modules.cuarentena.Bloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
+import com.medichain.utils.BusquedaTexto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Size;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -51,13 +53,14 @@ public class UnidadTrazableController {
 
     /** Lista las unidades trazables de forma paginada. */
     @GetMapping
-    @Operation(operationId = "listarCajas", summary = "Listar unidades trazables", description = "Devuelve una página de unidades trazables. Filtro opcional ?estado=EN_LABORATORIO, EN_TRANSITO, EN_DEPOSITO, EN_STOCK, DISPENSADA, DEVUELTA, ROBADA o RECHAZADA (una sola por consulta; lo ajeno sigue sin verse). Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.")
+    @Operation(operationId = "listarCajas", summary = "Listar unidades trazables", description = "Devuelve una página de unidades trazables. Filtros opcionales: ?estado=EN_LABORATORIO, EN_TRANSITO, EN_DEPOSITO, EN_STOCK, DISPENSADA, DEVUELTA, ROBADA o RECHAZADA (una sola por consulta) y ?serie= (la serie contiene el texto, sin distinguir mayúsculas); lo ajeno sigue sin verse. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.")
     @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<UnidadTrazableResponseDTO>> getAll(
             @Parameter(description = "Estado (opcional): EN_LABORATORIO, EN_TRANSITO, EN_DEPOSITO, EN_STOCK, DISPENSADA, DEVUELTA, ROBADA o RECHAZADA") @RequestParam(required = false) EstadoUnidad estado,
+            @Parameter(description = "Serie (opcional): la contiene, sin distinguir mayúsculas") @RequestParam(required = false) @Size(max = BusquedaTexto.MAXIMO, message = "La serie buscada no puede superar 50 caracteres") String serie,
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<UnidadTrazableResponseDTO> page = pagina(service.getAll(estado, pageable));
+        Page<UnidadTrazableResponseDTO> page = pagina(service.getAll(estado, serie, pageable));
         return ResponseEntity.status(HttpStatus.OK).body(page);
     }
 

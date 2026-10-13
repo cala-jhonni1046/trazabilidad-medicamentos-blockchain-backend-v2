@@ -23,23 +23,27 @@ public interface BultoRepository extends JpaRepository<Bulto, UUID> {
     Page<Bulto> findByLoteMedicamentoLaboratorioId(UUID laboratorioId, Pageable pageable);
 
     /** Bultos: todos, opcionalmente de un estado (Sede e inspectores). */
-    @Query("select b from Bulto b where (:estado is null or b.estado = :estado)")
-    Page<Bulto> findPorEstado(@Param("estado") EstadoBulto estado, Pageable pageable);
+    @Query("select b from Bulto b where (:estado is null or b.estado = :estado) "
+            + "and lower(b.codigo) like :patron escape '\\'")
+    Page<Bulto> findPorEstado(@Param("estado") EstadoBulto estado, @Param("patron") String patron, Pageable pageable);
 
     /** Bultos de lotes del laboratorio dado, opcionalmente de un estado. */
-    @Query("select b from Bulto b where b.lote.laboratorio.id = :empresaId and (:estado is null or b.estado = :estado)")
+    @Query("select b from Bulto b where b.lote.laboratorio.id = :empresaId and (:estado is null or b.estado = :estado) "
+            + "and lower(b.codigo) like :patron escape '\\'")
     Page<Bulto> findDelLaboratorioPorEstado(@Param("empresaId") UUID empresaId, @Param("estado") EstadoBulto estado,
-                            Pageable pageable);
+                            @Param("patron") String patron, Pageable pageable);
 
     /** Bultos de circuitos donde la empresa es la distribuidora (los ve desde ARMADO), opcionalmente de un estado. */
-    @Query("select b from Bulto b where b.destino.distribuidor.id = :empresaId and (:estado is null or b.estado = :estado)")
+    @Query("select b from Bulto b where b.destino.distribuidor.id = :empresaId and (:estado is null or b.estado = :estado) "
+            + "and lower(b.codigo) like :patron escape '\\'")
     Page<Bulto> findDeLaDistribuidoraPorEstado(@Param("empresaId") UUID empresaId, @Param("estado") EstadoBulto estado,
-                            Pageable pageable);
+                            @Param("patron") String patron, Pageable pageable);
 
     /** Bultos de circuitos donde la empresa es la farmacia (los ve desde ARMADO), opcionalmente de un estado. */
-    @Query("select b from Bulto b where b.destino.farmacia.id = :empresaId and (:estado is null or b.estado = :estado)")
+    @Query("select b from Bulto b where b.destino.farmacia.id = :empresaId and (:estado is null or b.estado = :estado) "
+            + "and lower(b.codigo) like :patron escape '\\'")
     Page<Bulto> findDeLaFarmaciaPorEstado(@Param("empresaId") UUID empresaId, @Param("estado") EstadoBulto estado,
-                            Pageable pageable);
+                            @Param("patron") String patron, Pageable pageable);
 
     /** Bultos con los códigos dados (lo que se escanea al armar un viaje). */
     List<Bulto> findByCodigoIn(Collection<String> codigos);

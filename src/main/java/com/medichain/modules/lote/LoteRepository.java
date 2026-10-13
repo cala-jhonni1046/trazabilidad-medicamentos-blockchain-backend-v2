@@ -20,14 +20,16 @@ import java.util.UUID;
 public interface LoteRepository extends JpaRepository<Lote, UUID> {
 
     /** Lotes, opcionalmente de un estado (Sede e inspectores). */
-    @Query("select l from Lote l where (:estado is null or l.estado = :estado)")
-    Page<Lote> findPorEstado(@Param("estado") EstadoLote estado, Pageable pageable);
+    @Query("select l from Lote l where (:estado is null or l.estado = :estado) "
+            + "and lower(l.codigo) like :patron escape '\\'")
+    Page<Lote> findPorEstado(@Param("estado") EstadoLote estado, @Param("patron") String patron, Pageable pageable);
 
     /** Lotes de los medicamentos de un laboratorio (lote.medicamento.laboratorio.id), opcionalmente de un estado. */
     @Query("select l from Lote l where l.medicamento.laboratorio.id = :laboratorioId "
-            + "and (:estado is null or l.estado = :estado)")
+            + "and (:estado is null or l.estado = :estado) "
+            + "and lower(l.codigo) like :patron escape '\\'")
     Page<Lote> findDelLaboratorioPorEstado(@Param("laboratorioId") UUID laboratorioId, @Param("estado") EstadoLote estado,
-                                           Pageable pageable);
+                                           @Param("patron") String patron, Pageable pageable);
 
     /** Indica si el laboratorio ya tiene un lote con ese código (único por laboratorio). */
     boolean existsByLaboratorioIdAndCodigo(UUID laboratorioId, String codigo);
@@ -44,16 +46,18 @@ public interface LoteRepository extends JpaRepository<Lote, UUID> {
     /** Lotes que ve una distribuidora: los que tienen bultos que ya salieron hacia ella (tramo 1); opcionalmente de un estado. */
     @Query("select l from Lote l where exists (select d.id from DespachoLogistico d join d.bultos b "
             + "where b.lote.id = l.id and d.tramo = com.medichain.modules.despachologistico.TramoDespacho.LAB_A_DISTRIBUIDOR and d.estado in (com.medichain.modules.despachologistico.EstadoDespacho.EN_TRANSITO, com.medichain.modules.despachologistico.EstadoDespacho.FINALIZADO, com.medichain.modules.despachologistico.EstadoDespacho.ROBADO) "
-            + "and b.destino.distribuidor.id = :empresaId) and (:estado is null or l.estado = :estado)")
+            + "and b.destino.distribuidor.id = :empresaId) and (:estado is null or l.estado = :estado) "
+            + "and lower(l.codigo) like :patron escape '\\'")
     Page<Lote> findVisiblesParaDistribuidor(@Param("empresaId") UUID empresaId, @Param("estado") EstadoLote estado,
-                                            Pageable pageable);
+                                            @Param("patron") String patron, Pageable pageable);
 
     /** Lotes que ve una farmacia: los que tienen bultos que ya salieron hacia ella (tramo 2); opcionalmente de un estado. */
     @Query("select l from Lote l where exists (select d.id from DespachoLogistico d join d.bultos b "
             + "where b.lote.id = l.id and d.tramo = com.medichain.modules.despachologistico.TramoDespacho.DISTRIBUIDOR_A_FARMACIA and d.estado in (com.medichain.modules.despachologistico.EstadoDespacho.EN_TRANSITO, com.medichain.modules.despachologistico.EstadoDespacho.FINALIZADO, com.medichain.modules.despachologistico.EstadoDespacho.ROBADO) "
-            + "and b.destino.farmacia.id = :empresaId) and (:estado is null or l.estado = :estado)")
+            + "and b.destino.farmacia.id = :empresaId) and (:estado is null or l.estado = :estado) "
+            + "and lower(l.codigo) like :patron escape '\\'")
     Page<Lote> findVisiblesParaFarmacia(@Param("empresaId") UUID empresaId, @Param("estado") EstadoLote estado,
-                                        Pageable pageable);
+                                        @Param("patron") String patron, Pageable pageable);
 
     /** Indica si la distribuidora puede ver el lote (algún bulto suyo ya salió hacia ella). */
     @Query("select count(l) > 0 from Lote l where l.id = :loteId and exists (select d.id from DespachoLogistico d "
@@ -66,4 +70,7 @@ public interface LoteRepository extends JpaRepository<Lote, UUID> {
             + "join d.bultos b where b.lote.id = l.id and d.tramo = com.medichain.modules.despachologistico.TramoDespacho.DISTRIBUIDOR_A_FARMACIA and d.estado in (com.medichain.modules.despachologistico.EstadoDespacho.EN_TRANSITO, com.medichain.modules.despachologistico.EstadoDespacho.FINALIZADO, com.medichain.modules.despachologistico.EstadoDespacho.ROBADO) "
             + "and b.destino.farmacia.id = :empresaId)")
     boolean esVisibleParaFarmacia(@Param("loteId") UUID loteId, @Param("empresaId") UUID empresaId);
+
+    /** Lotes con ese código en cualquier laboratorio, sin distinguir mayúsculas (el código es único POR laboratorio). */
+    List<Lote> findByCodigoIgnoreCase(String codigo);
 }

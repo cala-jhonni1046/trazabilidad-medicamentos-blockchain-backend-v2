@@ -1,6 +1,8 @@
 package com.medichain.modules.trazabilidad;
 
 import org.springframework.data.domain.Limit;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,4 +37,10 @@ public interface EventoTrazabilidadRepository extends JpaRepository<EventoTrazab
      */
     @Query("select max(e.numero) from EventoTrazabilidad e where e.entidadId in :ids and e.tipo in :tipos")
     Long ultimoNumeroDe(@Param("ids") Collection<UUID> ids, @Param("tipos") Collection<TipoEvento> tipos);
+
+    /** Eventos de esas entidades en orden de número, hasta el límite dado (el recorrido por código). */
+    List<EventoTrazabilidad> findByEntidadIdInOrderByNumeroAsc(Collection<UUID> entidadIds, Limit limite);
+
+    /** Eventos de una entidad, paginados (el filtro ?entidadId= de listarEventos). */
+    Page<EventoTrazabilidad> findByEntidadId(UUID entidadId, Pageable pageable);
 }

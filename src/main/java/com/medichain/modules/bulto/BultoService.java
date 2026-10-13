@@ -2,6 +2,7 @@ package com.medichain.modules.bulto;
 
 import com.medichain.exceptions.ReglaNegocioException;
 import com.medichain.exceptions.ResourceNotFoundException;
+import com.medichain.utils.BusquedaTexto;
 import com.medichain.modules.auth.UsuarioAutenticado;
 import com.medichain.modules.cuarentena.Bloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
@@ -70,13 +71,14 @@ public class BultoService {
 
     /** Devuelve una página de bultos según el rol del usuario. */
     @Transactional(readOnly = true)
-    public Page<Bulto> getAll(EstadoBulto estado, Pageable pageable) {
+    public Page<Bulto> getAll(EstadoBulto estado, String codigo, Pageable pageable) {
         UsuarioAutenticado actual = usuarioActual.obtener();
+        String patron = BusquedaTexto.patron(codigo);
         return switch (actual.getRol()) {
-            case SEDE_CENTRAL, INSPECTOR -> repository.findPorEstado(estado, pageable);
-            case LABORATORIO -> repository.findDelLaboratorioPorEstado(actual.getEmpresaId(), estado, pageable);
-            case DISTRIBUIDOR -> repository.findDeLaDistribuidoraPorEstado(actual.getEmpresaId(), estado, pageable);
-            case FARMACIA -> repository.findDeLaFarmaciaPorEstado(actual.getEmpresaId(), estado, pageable);
+            case SEDE_CENTRAL, INSPECTOR -> repository.findPorEstado(estado, patron, pageable);
+            case LABORATORIO -> repository.findDelLaboratorioPorEstado(actual.getEmpresaId(), estado, patron, pageable);
+            case DISTRIBUIDOR -> repository.findDeLaDistribuidoraPorEstado(actual.getEmpresaId(), estado, patron, pageable);
+            case FARMACIA -> repository.findDeLaFarmaciaPorEstado(actual.getEmpresaId(), estado, patron, pageable);
             case PACIENTE -> Page.empty(pageable);
         };
     }
@@ -90,6 +92,13 @@ public class BultoService {
             throw new ResourceNotFoundException("Bulto no encontrado con id: " + id);
         }
         return bulto;
+    }
+
+    /** El bulto con ese código (sin distinguir mayúsculas) si el usuario puede verlo; si no, vacío. */
+    @Transactional(readOnly = true)
+    public Optional<Bulto> visiblePorCodigo(String codigo) {
+        UsuarioAutenticado actual = usuarioActual.obtener();
+        return repository.findByCodigo(codigo.toUpperCase(java.util.Locale.ROOT)).filter(bulto -> puedeVer(actual, bulto));
     }
 
     /**

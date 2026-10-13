@@ -130,7 +130,7 @@
     },
     "/api/bultos" : {
       "get" : {
-        "description" : "Devuelve una página de bultos. Filtro opcional ?estado=ARMADO, EN_TRANSITO, EN_DEPOSITO, RECIBIDO, RECHAZADO, ROBADO o DESARMADO (una sola por consulta; lo ajeno sigue sin verse). Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
+        "description" : "Devuelve una página de bultos. Filtros opcionales: ?estado=ARMADO, EN_TRANSITO, EN_DEPOSITO, RECIBIDO, RECHAZADO, ROBADO o DESARMADO (una sola por consulta) y ?codigo= (el código del bulto contiene el texto, sin distinguir mayúsculas); lo ajeno sigue sin verse. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
         "operationId" : "listarBultos",
         "parameters" : [ {
           "description" : "Estado (opcional): ARMADO, EN_TRANSITO, EN_DEPOSITO, RECIBIDO, RECHAZADO, ROBADO o DESARMADO",
@@ -139,6 +139,16 @@
           "required" : false,
           "schema" : {
             "$ref" : "#/components/schemas/EstadoBulto"
+          }
+        }, {
+          "description" : "Código del bulto (opcional): lo contiene, sin distinguir mayúsculas",
+          "in" : "query",
+          "name" : "codigo",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
           }
         }, {
           "description" : "Zero-based page index (0..N)",
@@ -3479,9 +3489,18 @@
     },
     "/api/eventos-trazabilidad" : {
       "get" : {
-        "description" : "Devuelve una página de eventos de trazabilidad, del más reciente al más antiguo. Roles: SEDE_CENTRAL, INSPECTOR. Reglas: R15.",
+        "description" : "Devuelve una página de eventos de trazabilidad, del más reciente al más antiguo. Filtro opcional ?entidadId= (los eventos de esa entidad: lote, bulto, viaje, empresa…). Roles: SEDE_CENTRAL, INSPECTOR. Reglas: R15.",
         "operationId" : "listarEventos",
         "parameters" : [ {
+          "description" : "Id de la entidad (opcional): solo los eventos de esa entidad",
+          "in" : "query",
+          "name" : "entidadId",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
           "description" : "Zero-based page index (0..N)",
           "in" : "query",
           "name" : "page",
@@ -3558,6 +3577,116 @@
           }
         },
         "summary" : "Listar eventos",
+        "tags" : [ "Eventos de trazabilidad" ]
+      }
+    },
+    "/api/eventos-trazabilidad/recorrido" : {
+      "get" : {
+        "description" : "Busca UNO de: ?lote= (código; con ?laboratorioId= opcional, porque el código solo es único por laboratorio), ?bulto= (código) o ?gtin= y ?serie= (una caja), y devuelve por cada coincidencia sus eventos (los del lote, bulto o caja y los de lo que lo rodea: medidas, viajes, el lote y el bulto de una caja), del más viejo al más nuevo, con el laboratorio de cada resultado. Solo lo que ya ves de cada entidad (la Sede y los inspectores, todo; cada empresa, lo suyo): lo ajeno responde 404. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R15.",
+        "operationId" : "buscarRecorridoPorCodigo",
+        "parameters" : [ {
+          "description" : "Código del lote",
+          "in" : "query",
+          "name" : "lote",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          }
+        }, {
+          "description" : "Laboratorio del lote (opcional, solo con lote)",
+          "in" : "query",
+          "name" : "laboratorioId",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "Código del bulto",
+          "in" : "query",
+          "name" : "bulto",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          }
+        }, {
+          "description" : "GTIN de la caja (con serie)",
+          "in" : "query",
+          "name" : "gtin",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 14,
+            "minLength" : 0
+          }
+        }, {
+          "description" : "Serie de la caja (con gtin)",
+          "in" : "query",
+          "name" : "serie",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 20,
+            "minLength" : 0
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RecorridoCodigoResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "Datos inválidos: campo obligatorio, formato o parámetro mal formado. En la validación, 'errors' trae un elemento por campo."
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "No autenticado: falta el token, no es válido, venció o la cuenta está desactivada (en el login: credenciales incorrectas)."
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "Tu rol (o tu marca de administrador o director técnico) no permite esta acción."
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "No existe o no es visible para tu empresa o provincia (lo ajeno responde 404, no 403)."
+          }
+        },
+        "summary" : "Trazabilidad por código",
         "tags" : [ "Eventos de trazabilidad" ]
       }
     },
@@ -4059,7 +4188,7 @@
     },
     "/api/lotes" : {
       "get" : {
-        "description" : "SEDE e INSPECTOR ven todos; el laboratorio, los suyos. Filtro opcional ?estado=PENDIENTE_LIBERACION, LIBERADO, CUARENTENA o RECALL (una sola por consulta; lo ajeno sigue sin verse). Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
+        "description" : "SEDE e INSPECTOR ven todos; el laboratorio, los suyos. Filtros opcionales: ?estado=PENDIENTE_LIBERACION, LIBERADO, CUARENTENA o RECALL (una sola por consulta) y ?codigo= (el código del lote contiene el texto, sin distinguir mayúsculas); lo ajeno sigue sin verse. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
         "operationId" : "listarLotes",
         "parameters" : [ {
           "description" : "Estado (opcional): PENDIENTE_LIBERACION, LIBERADO, CUARENTENA o RECALL",
@@ -4068,6 +4197,16 @@
           "required" : false,
           "schema" : {
             "$ref" : "#/components/schemas/EstadoLote"
+          }
+        }, {
+          "description" : "Código del lote (opcional): lo contiene, sin distinguir mayúsculas",
+          "in" : "query",
+          "name" : "codigo",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
           }
         }, {
           "description" : "Zero-based page index (0..N)",
@@ -6392,7 +6531,7 @@
     },
     "/api/unidades-trazables" : {
       "get" : {
-        "description" : "Devuelve una página de unidades trazables. Filtro opcional ?estado=EN_LABORATORIO, EN_TRANSITO, EN_DEPOSITO, EN_STOCK, DISPENSADA, DEVUELTA, ROBADA o RECHAZADA (una sola por consulta; lo ajeno sigue sin verse). Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
+        "description" : "Devuelve una página de unidades trazables. Filtros opcionales: ?estado=EN_LABORATORIO, EN_TRANSITO, EN_DEPOSITO, EN_STOCK, DISPENSADA, DEVUELTA, ROBADA o RECHAZADA (una sola por consulta) y ?serie= (la serie contiene el texto, sin distinguir mayúsculas); lo ajeno sigue sin verse. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
         "operationId" : "listarCajas",
         "parameters" : [ {
           "description" : "Estado (opcional): EN_LABORATORIO, EN_TRANSITO, EN_DEPOSITO, EN_STOCK, DISPENSADA, DEVUELTA, ROBADA o RECHAZADA",
@@ -6401,6 +6540,16 @@
           "required" : false,
           "schema" : {
             "$ref" : "#/components/schemas/EstadoUnidad"
+          }
+        }, {
+          "description" : "Serie (opcional): la contiene, sin distinguir mayúsculas",
+          "in" : "query",
+          "name" : "serie",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
           }
         }, {
           "description" : "Zero-based page index (0..N)",
@@ -9498,6 +9647,19 @@
         },
         "required" : [ "bultoId", "cantidadVerificada", "codigoBulto", "conforme", "despachoId", "fechaActualizacion", "fechaCreacion", "fechaHora", "id", "precintoIntacto", "receptoraId", "registradaPorId", "temperatura", "version" ]
       },
+      "RecorridoCodigoResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "resultados" : {
+            "type" : "array",
+            "description" : "Coincidencias dentro de lo que el usuario puede ver (al menos una; si no, 404)",
+            "items" : {
+              "$ref" : "#/components/schemas/ResultadoRecorridoDTO"
+            }
+          }
+        },
+        "required" : [ "resultados" ]
+      },
       "RegistroBlockchainResponseDTO" : {
         "type" : "object",
         "properties" : {
@@ -9844,6 +10006,52 @@
         },
         "required" : [ "cajaExiste", "codigo", "estado", "fechaReporte", "gtinReportado", "id", "motivo", "provincia", "serieReportada" ]
       },
+      "ResultadoRecorridoDTO" : {
+        "type" : "object",
+        "properties" : {
+          "codigo" : {
+            "type" : "string",
+            "description" : "Código del lote, código del bulto o serie de la caja",
+            "example" : "L2026-0001"
+          },
+          "entidadId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Id de lo encontrado (lote, bulto o caja)"
+          },
+          "eventos" : {
+            "type" : "array",
+            "description" : "Eventos de lo encontrado y de lo que lo rodea, del más viejo al más nuevo",
+            "items" : {
+              "$ref" : "#/components/schemas/EventoTrazabilidadResponseDTO"
+            }
+          },
+          "laboratorioRazonSocial" : {
+            "type" : "string",
+            "description" : "Razón social del laboratorio del lote (un código de lote puede repetirse entre laboratorios)"
+          },
+          "loteCodigo" : {
+            "type" : "string",
+            "description" : "Código del lote (el mismo lote si se buscó un lote)",
+            "example" : "L2026-0001"
+          },
+          "medicamentoNombre" : {
+            "type" : "string",
+            "description" : "Nombre comercial del medicamento",
+            "example" : "Cuyafen"
+          },
+          "tipo" : {
+            "$ref" : "#/components/schemas/TipoCodigoBuscado",
+            "description" : "Qué se encontró: LOTE, BULTO o CAJA"
+          },
+          "truncado" : {
+            "type" : "boolean",
+            "description" : "true si había más eventos que el máximo devuelto (1000)",
+            "example" : false
+          }
+        },
+        "required" : [ "codigo", "entidadId", "eventos", "laboratorioRazonSocial", "loteCodigo", "medicamentoNombre", "tipo", "truncado" ]
+      },
       "RolUsuario" : {
         "type" : "string",
         "description" : "Perfil de acceso de un usuario dentro del sistema.",
@@ -10048,6 +10256,11 @@
           }
         },
         "required" : [ "despachoId", "fechaActualizacion", "fechaCreacion", "fechaHora", "fueraDeRango", "id", "sensorId", "temperatura", "version" ]
+      },
+      "TipoCodigoBuscado" : {
+        "type" : "string",
+        "description" : "Qué encontró la búsqueda por código: un LOTE, un BULTO o una CAJA (GTIN + serie).",
+        "enum" : [ "LOTE", "BULTO", "CAJA" ]
       },
       "TipoEmpresa" : {
         "type" : "string",

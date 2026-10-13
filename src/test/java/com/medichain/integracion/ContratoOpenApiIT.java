@@ -103,7 +103,7 @@ class ContratoOpenApiIT extends IntegracionBase {
                 problemas.addAll(revisarRespuestas(donde, id, ruta, metodo, op, publica));
             }
         }
-        assertEquals(96, operaciones, "cantidad de operaciones del contrato");
+        assertEquals(97, operaciones, "cantidad de operaciones del contrato");
 
         List<String> tags = new ArrayList<>();
         contrato.path("tags").forEach(tag -> tags.add(tag.path("name").asString()));
@@ -235,6 +235,10 @@ class ContratoOpenApiIT extends IntegracionBase {
         }
         validar(validador, errores, "verificarCadena", llamar(HttpMethod.GET, "/api/eventos-trazabilidad/verificacion", sede, null));
         validar(validador, errores, "obtenerEstadoAnclaje", llamar(HttpMethod.GET, "/api/registros-blockchain/estado", sede, null));
+        validar(validador, errores, "buscarRecorridoPorCodigo", llamar(HttpMethod.GET,
+                "/api/eventos-trazabilidad/recorrido?lote=" + lote.getCodigo(), sede, null));
+        validar(validador, errores, "buscarRecorridoPorCodigo", llamar(HttpMethod.GET,
+                "/api/eventos-trazabilidad/recorrido?lote=NO-EXISTE", sede, null));
         validar(validador, errores, "obtenerResumenTablero", llamar(HttpMethod.GET, "/api/tablero/resumen", sede, null));
         validar(validador, errores, "obtenerBandejaInspector", llamar(HttpMethod.GET, "/api/tablero/bandeja-inspector", inspector, null));
 

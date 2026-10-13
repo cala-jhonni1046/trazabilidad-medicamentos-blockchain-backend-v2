@@ -24,14 +24,16 @@ public interface UnidadTrazableRepository extends JpaRepository<UnidadTrazable, 
     Page<UnidadTrazable> findByLoteMedicamentoLaboratorioId(UUID laboratorioId, Pageable pageable);
 
     /** Cajas: todas, opcionalmente de un estado (Sede e inspectores). */
-    @Query("select u from UnidadTrazable u where (:estado is null or u.estado = :estado)")
-    Page<UnidadTrazable> findPorEstado(@Param("estado") EstadoUnidad estado, Pageable pageable);
+    @Query("select u from UnidadTrazable u where (:estado is null or u.estado = :estado) "
+            + "and lower(u.serie) like :patron escape '\\'")
+    Page<UnidadTrazable> findPorEstado(@Param("estado") EstadoUnidad estado, @Param("patron") String patron, Pageable pageable);
 
     /** Cajas de los lotes de un laboratorio, opcionalmente de un estado. */
     @Query("select u from UnidadTrazable u where u.lote.medicamento.laboratorio.id = :empresaId "
-            + "and (:estado is null or u.estado = :estado)")
+            + "and (:estado is null or u.estado = :estado) "
+            + "and lower(u.serie) like :patron escape '\\'")
     Page<UnidadTrazable> findDelLaboratorioPorEstado(@Param("empresaId") UUID empresaId,
-                                                     @Param("estado") EstadoUnidad estado, Pageable pageable);
+                                                     @Param("estado") EstadoUnidad estado, @Param("patron") String patron, Pageable pageable);
 
     /** Unidades que están físicamente en la empresa dada. */
     Page<UnidadTrazable> findByEmpresaActualId(UUID empresaId, Pageable pageable);
@@ -63,17 +65,19 @@ public interface UnidadTrazableRepository extends JpaRepository<UnidadTrazable, 
     @Query("select u from UnidadTrazable u where (u.empresaActual.id = :empresaId or exists ("
             + "select d.id from DespachoLogistico d join d.bultos b where b.id = u.bulto.id "
             + "and d.tramo = com.medichain.modules.despachologistico.TramoDespacho.LAB_A_DISTRIBUIDOR and d.estado in (com.medichain.modules.despachologistico.EstadoDespacho.EN_TRANSITO, com.medichain.modules.despachologistico.EstadoDespacho.FINALIZADO, com.medichain.modules.despachologistico.EstadoDespacho.ROBADO) and b.destino.distribuidor.id = :empresaId)) "
-            + "and (:estado is null or u.estado = :estado)")
+            + "and (:estado is null or u.estado = :estado) "
+            + "and lower(u.serie) like :patron escape '\\'")
     Page<UnidadTrazable> findVisiblesParaDistribuidor(@Param("empresaId") UUID empresaId, @Param("estado") EstadoUnidad estado,
-                                                      Pageable pageable);
+                                                      @Param("patron") String patron, Pageable pageable);
 
     /** Cajas que ve una farmacia: las que tiene en su poder y las de bultos que ya salieron hacia ella (tramo 2). */
     @Query("select u from UnidadTrazable u where (u.empresaActual.id = :empresaId or exists ("
             + "select d.id from DespachoLogistico d join d.bultos b where b.id = u.bulto.id "
             + "and d.tramo = com.medichain.modules.despachologistico.TramoDespacho.DISTRIBUIDOR_A_FARMACIA and d.estado in (com.medichain.modules.despachologistico.EstadoDespacho.EN_TRANSITO, com.medichain.modules.despachologistico.EstadoDespacho.FINALIZADO, com.medichain.modules.despachologistico.EstadoDespacho.ROBADO) and b.destino.farmacia.id = :empresaId)) "
-            + "and (:estado is null or u.estado = :estado)")
+            + "and (:estado is null or u.estado = :estado) "
+            + "and lower(u.serie) like :patron escape '\\'")
     Page<UnidadTrazable> findVisiblesParaFarmacia(@Param("empresaId") UUID empresaId, @Param("estado") EstadoUnidad estado,
-                                                  Pageable pageable);
+                                                  @Param("patron") String patron, Pageable pageable);
 
     /** Indica si la distribuidora puede ver la caja (en su poder o en un bulto que ya salió hacia ella). */
     @Query("select count(u) > 0 from UnidadTrazable u where u.id = :unidadId and (u.empresaActual.id = :empresaId "

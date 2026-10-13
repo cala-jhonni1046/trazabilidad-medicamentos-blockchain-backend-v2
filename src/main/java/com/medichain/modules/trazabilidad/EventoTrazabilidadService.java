@@ -23,10 +23,10 @@ public class EventoTrazabilidadService {
         this.repository = repository;
     }
 
-    /** Devuelve una página de eventos de trazabilidad. */
+    /** Devuelve una página de eventos de trazabilidad, opcionalmente solo los de una entidad. */
     @Transactional(readOnly = true)
-    public Page<EventoTrazabilidad> getAll(Pageable pageable) {
-        return repository.findAll(pageable);
+    public Page<EventoTrazabilidad> getAll(UUID entidadId, Pageable pageable) {
+        return entidadId == null ? repository.findAll(pageable) : repository.findByEntidadId(entidadId, pageable);
     }
 
     /** Busca un evento por id o lanza ResourceNotFoundException si no existe. */

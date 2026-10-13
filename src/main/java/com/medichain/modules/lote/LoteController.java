@@ -6,11 +6,13 @@ import com.medichain.modules.cuarentena.EvaluadorBloqueo;
 import com.medichain.modules.unidadtrazable.UnidadTrazable;
 import com.medichain.modules.unidadtrazable.UnidadTrazableMapper;
 import com.medichain.modules.unidadtrazable.UnidadTrazableResponseDTO;
+import com.medichain.utils.BusquedaTexto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -58,13 +60,14 @@ public class LoteController {
 
     /** Lista los lotes visibles para el usuario. */
     @GetMapping
-    @Operation(operationId = "listarLotes", summary = "Listar lotes", description = "SEDE e INSPECTOR ven todos; el laboratorio, los suyos. Filtro opcional ?estado=PENDIENTE_LIBERACION, LIBERADO, CUARENTENA o RECALL (una sola por consulta; lo ajeno sigue sin verse). Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.")
+    @Operation(operationId = "listarLotes", summary = "Listar lotes", description = "SEDE e INSPECTOR ven todos; el laboratorio, los suyos. Filtros opcionales: ?estado=PENDIENTE_LIBERACION, LIBERADO, CUARENTENA o RECALL (una sola por consulta) y ?codigo= (el código del lote contiene el texto, sin distinguir mayúsculas); lo ajeno sigue sin verse. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.")
     @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<LoteResponseDTO>> getAll(
             @Parameter(description = "Estado (opcional): PENDIENTE_LIBERACION, LIBERADO, CUARENTENA o RECALL") @RequestParam(required = false) EstadoLote estado,
+            @Parameter(description = "Código del lote (opcional): lo contiene, sin distinguir mayúsculas") @RequestParam(required = false) @Size(max = BusquedaTexto.MAXIMO, message = "El código buscado no puede superar 50 caracteres") String codigo,
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.OK).body(pagina(service.getAll(estado, pageable)));
+        return ResponseEntity.status(HttpStatus.OK).body(pagina(service.getAll(estado, codigo, pageable)));
     }
 
     /** Bandeja de liberación del inspector. */

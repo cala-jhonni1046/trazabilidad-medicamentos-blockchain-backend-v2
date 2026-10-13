@@ -1,6 +1,7 @@
 package com.medichain.modules.unidadtrazable;
 
 import com.medichain.exceptions.ResourceNotFoundException;
+import com.medichain.utils.BusquedaTexto;
 import com.medichain.modules.auth.UsuarioAutenticado;
 import com.medichain.modules.empresa.Empresa;
 import com.medichain.modules.trazabilidad.DatosEventos;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -41,19 +43,27 @@ public class UnidadTrazableService {
     }
 
     /**
-     * Devuelve una página de unidades según el rol del usuario, opcionalmente de un estado
-     * (el filtro solo achica lo que el rol ya ve).
+     * Devuelve una página de unidades según el rol del usuario, opcionalmente de un estado y cuya serie
+     * contenga el texto dado (los dos filtros solo achican lo que el rol ya ve).
      */
     @Transactional(readOnly = true)
-    public Page<UnidadTrazable> getAll(EstadoUnidad estado, Pageable pageable) {
+    public Page<UnidadTrazable> getAll(EstadoUnidad estado, String serie, Pageable pageable) {
         UsuarioAutenticado actual = usuarioActual.obtener();
+        String patron = BusquedaTexto.patron(serie);
         return switch (actual.getRol()) {
-            case SEDE_CENTRAL, INSPECTOR -> repository.findPorEstado(estado, pageable);
-            case LABORATORIO -> repository.findDelLaboratorioPorEstado(actual.getEmpresaId(), estado, pageable);
-            case DISTRIBUIDOR -> repository.findVisiblesParaDistribuidor(actual.getEmpresaId(), estado, pageable);
-            case FARMACIA -> repository.findVisiblesParaFarmacia(actual.getEmpresaId(), estado, pageable);
+            case SEDE_CENTRAL, INSPECTOR -> repository.findPorEstado(estado, patron, pageable);
+            case LABORATORIO -> repository.findDelLaboratorioPorEstado(actual.getEmpresaId(), estado, patron, pageable);
+            case DISTRIBUIDOR -> repository.findVisiblesParaDistribuidor(actual.getEmpresaId(), estado, patron, pageable);
+            case FARMACIA -> repository.findVisiblesParaFarmacia(actual.getEmpresaId(), estado, patron, pageable);
             case PACIENTE -> Page.empty(pageable);
         };
+    }
+
+    /** La caja con ese GTIN y serie si el usuario puede verla; si no, vacío. */
+    @Transactional(readOnly = true)
+    public Optional<UnidadTrazable> visiblePorSerie(String gtin, String serie) {
+        UsuarioAutenticado actual = usuarioActual.obtener();
+        return repository.findByGtinAndSerie(gtin, serie).filter(unidad -> puedeVer(actual, unidad));
     }
 
     /** Busca una unidad por id; si no le corresponde al usuario, 404. */

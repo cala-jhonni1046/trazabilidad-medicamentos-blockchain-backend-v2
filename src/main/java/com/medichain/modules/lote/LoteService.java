@@ -2,6 +2,7 @@ package com.medichain.modules.lote;
 
 import com.medichain.exceptions.ReglaNegocioException;
 import com.medichain.exceptions.ResourceNotFoundException;
+import com.medichain.utils.BusquedaTexto;
 import com.medichain.modules.auth.UsuarioAutenticado;
 import com.medichain.modules.inspectoranmat.InspectorAnmat;
 import com.medichain.modules.inspectoranmat.InspectorAnmatRepository;
@@ -89,15 +90,19 @@ public class LoteService {
         this.calendario = calendario;
     }
 
-    /** Devuelve una página de lotes según el rol del usuario. */
+    /**
+     * Devuelve una página de lotes según el rol del usuario, opcionalmente de un estado y cuyo código
+     * contenga el texto dado (los dos filtros solo achican lo que el rol ya ve).
+     */
     @Transactional(readOnly = true)
-    public Page<Lote> getAll(EstadoLote estado, Pageable pageable) {
+    public Page<Lote> getAll(EstadoLote estado, String codigo, Pageable pageable) {
         UsuarioAutenticado actual = usuarioActual.obtener();
+        String patron = BusquedaTexto.patron(codigo);
         return switch (actual.getRol()) {
-            case SEDE_CENTRAL, INSPECTOR -> repository.findPorEstado(estado, pageable);
-            case LABORATORIO -> repository.findDelLaboratorioPorEstado(actual.getEmpresaId(), estado, pageable);
-            case DISTRIBUIDOR -> repository.findVisiblesParaDistribuidor(actual.getEmpresaId(), estado, pageable);
-            case FARMACIA -> repository.findVisiblesParaFarmacia(actual.getEmpresaId(), estado, pageable);
+            case SEDE_CENTRAL, INSPECTOR -> repository.findPorEstado(estado, patron, pageable);
+            case LABORATORIO -> repository.findDelLaboratorioPorEstado(actual.getEmpresaId(), estado, patron, pageable);
+            case DISTRIBUIDOR -> repository.findVisiblesParaDistribuidor(actual.getEmpresaId(), estado, patron, pageable);
+            case FARMACIA -> repository.findVisiblesParaFarmacia(actual.getEmpresaId(), estado, patron, pageable);
             case PACIENTE -> Page.empty(pageable);
         };
     }
@@ -111,6 +116,19 @@ public class LoteService {
             throw new ResourceNotFoundException("Lote no encontrado con id: " + id);
         }
         return lote;
+    }
+
+    /**
+     * Lotes con ese código (sin distinguir mayúsculas) que el usuario puede ver, opcionalmente de un
+     * laboratorio. El código es único por laboratorio: sin laboratorio pueden ser varios.
+     */
+    @Transactional(readOnly = true)
+    public List<Lote> visiblesPorCodigo(String codigo, UUID laboratorioId) {
+        UsuarioAutenticado actual = usuarioActual.obtener();
+        return repository.findByCodigoIgnoreCase(codigo).stream()
+                .filter(lote -> laboratorioId == null || lote.getLaboratorio().getId().equals(laboratorioId))
+                .filter(lote -> puedeVer(actual, lote))
+                .toList();
     }
 
     /** Cajas de un lote, paginadas: laboratorio dueño, SEDE e INSPECTOR (los demás, 404). */

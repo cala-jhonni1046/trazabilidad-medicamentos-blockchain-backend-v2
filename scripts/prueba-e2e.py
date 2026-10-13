@@ -1079,6 +1079,60 @@ def seccion_b12d_tablero(ctx, demo, admin):
     ctx.verificar("b12d.4", "la Sede no tiene bandeja de inspector → 403", 403, r)
 
 
+def seccion_b12e_trazabilidad_por_codigo(ctx, demo, admin):
+    """B12e: trazabilidad por código (lote, bulto, caja), búsqueda ?codigo= / ?serie= y filtro ?entidadId=."""
+    sede = ctx.token(admin[0], admin[1])
+    lab = ctx.token(EMAIL_LABORATORIO, demo)
+    farmacia_dos = ctx.token(EMAIL_FARMACIA_DOS, demo)
+    base = "/api/eventos-trazabilidad/recorrido"
+
+    r = pedir("GET", ctx.url(base + "?lote=l2026-0001"), token=sede)
+    resultados = r.campo("resultados") or []
+    eventos = (resultados[0].get("eventos") if resultados else None) or []
+    tipos = [e["tipo"] for e in eventos]
+    ctx.verificar("b12e.1", "el lote L2026-0001 (en minúsculas) trae su laboratorio y sus eventos en orden", 200, r,
+                  len(resultados) == 1 and resultados[0]["tipo"] == "LOTE"
+                  and "Andino" in resultados[0]["laboratorioRazonSocial"]
+                  and tipos[:2] == ["LOTE_REGISTRADO", "LOTE_LIBERADO"]
+                  and [e["numero"] for e in eventos] == sorted(e["numero"] for e in eventos), detalle=tipos)
+
+    r = pedir("GET", ctx.url(base + "?bulto=BUL-0001"), token=lab)
+    resultados = r.campo("resultados") or []
+    tipos = [e["tipo"] for e in (resultados[0]["eventos"] if resultados else [])]
+    ctx.verificar("b12e.2", "BUL-0001 trae sus eventos y los de su viaje y su cuarentena (ruptura de frío)", 200, r,
+                  len(resultados) == 1 and resultados[0]["tipo"] == "BULTO"
+                  and tipos[0] == "BULTO_ARMADO" and "VIAJE_SALIDA" in tipos and "RUPTURA_FRIO" in tipos
+                  and "BULTO_RECHAZADO" in tipos, detalle=tipos)
+
+    r = pedir("GET", ctx.url(base + "?gtin=%s&serie=L20260001S000011" % GTIN_CUYAFEN), token=sede)
+    resultados = r.campo("resultados") or []
+    tipos = [e["tipo"] for e in (resultados[0]["eventos"] if resultados else [])]
+    ctx.verificar("b12e.3", "una caja trae los eventos de su lote y de su bulto", 200, r,
+                  len(resultados) == 1 and resultados[0]["tipo"] == "CAJA"
+                  and "LOTE_REGISTRADO" in tipos and "BULTO_ARMADO" in tipos and "BULTO_RECIBIDO" in tipos, detalle=tipos)
+
+    r = pedir("GET", ctx.url(base + "?lote=L2026-0001"), token=farmacia_dos)
+    ctx.verificar("b12e.4", "lo ajeno no se ve: Cerro Arco no encuentra el lote → 404", 404, r)
+    r = pedir("GET", ctx.url(base + "?lote=L2026-0001&bulto=BUL-0001"), token=sede)
+    ctx.verificar("b12e.5", "dos criterios a la vez → 400", 400, r)
+
+    lotes = contenido(pedir("GET", ctx.url("/api/lotes?size=100"), token=sede))
+    lote = buscar(lotes, "codigo", "L2026-0001") or {}
+    r = pedir("GET", ctx.url("/api/eventos-trazabilidad?entidadId=%s&size=100" % lote.get("id")), token=sede)
+    ctx.verificar("b12e.6", "listarEventos ?entidadId= trae solo los eventos de esa entidad", 200, r,
+                  total(r) >= 2 and all(e["entidadId"] == lote.get("id") for e in contenido(r)))
+
+    r = pedir("GET", ctx.url("/api/lotes?codigo=2026-001&size=100"), token=lab)
+    ctx.verificar("b12e.7", "lotes ?codigo= busca por contenido (2026-001 → L2026-0010 y L2026-0011)", 200, r,
+                  sorted(l["codigo"] for l in contenido(r)) == ["L2026-0010", "L2026-0011"])
+    r = pedir("GET", ctx.url("/api/bultos?codigo=bul-0001"), token=lab)
+    ctx.verificar("b12e.8", "bultos ?codigo= no distingue mayúsculas", 200, r,
+                  [b["codigo"] for b in contenido(r)] == ["BUL-0001"])
+    r = pedir("GET", ctx.url("/api/unidades-trazables?serie=l20260001s000011"), token=lab)
+    ctx.verificar("b12e.9", "cajas ?serie= encuentra la caja", 200, r,
+                  [c["serie"] for c in contenido(r)] == ["L20260001S000011"])
+
+
 def seccion_final_cadena(ctx, demo, admin):
     """Final: la cadena sigue íntegra después de todo el recorrido."""
     sede = ctx.token(admin[0], admin[1])
@@ -1108,6 +1162,7 @@ SECCIONES = [
     ("B12c · Nombres en los DTO", seccion_b12c_nombres),
     ("B12f · Demo: segunda cadena (Valle de Uco)", seccion_b12f_demo_valle_de_uco),
     ("B12d · Tablero: resumen de la Sede y bandeja del inspector", seccion_b12d_tablero),
+    ("B12e · Trazabilidad por código y búsquedas", seccion_b12e_trazabilidad_por_codigo),
     ("Final · Cadena íntegra", seccion_final_cadena),
 ]
 

@@ -281,6 +281,16 @@ class MigracionesIT extends IntegracionBase {
         }
     }
 
+    @Test
+    @DisplayName("V5: el índice compuesto (entidad_id, numero) de los eventos existe, en ese orden de columnas")
+    void v5IndiceDeEventosPorEntidad() {
+        List<String> definiciones = jdbc.queryForList(
+                "SELECT indexdef FROM pg_indexes WHERE indexname = 'ix_eventos_trazabilidad_entidad_id_numero'",
+                String.class);
+        assertEquals(1, definiciones.size(), "el índice de V5 existe");
+        assertTrue(definiciones.get(0).contains("(entidad_id, numero)"), definiciones.get(0));
+    }
+
     // ---------- Utilidades ----------
 
     /** Ajustes de nombres con que la app construyó su EntityManagerFactory. */

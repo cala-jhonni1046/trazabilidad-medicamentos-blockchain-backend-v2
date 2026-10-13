@@ -1,6 +1,7 @@
 package com.medichain.utils;
 
 import com.medichain.exceptions.CredencialesInvalidasException;
+import com.medichain.exceptions.ConsultaInvalidaException;
 import com.medichain.exceptions.DocumentoInvalidoException;
 import com.medichain.exceptions.ReglaNegocioException;
 import com.medichain.exceptions.ResourceNotFoundException;
@@ -98,6 +99,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleMissingServletRequestParameterException(MissingServletRequestParameterException ex) {
         ErrorResponseDTO errorResponse = new ErrorResponseDTO(HttpStatus.BAD_REQUEST.value(),
                 "Falta el parámetro obligatorio: " + ex.getParameterName());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /** Consulta con parámetros que no se pueden combinar → 400. */
+    @ExceptionHandler(ConsultaInvalidaException.class)
+    public ResponseEntity<ErrorResponseDTO> handleConsultaInvalidaException(ConsultaInvalidaException ex) {
+        ErrorResponseDTO errorResponse = new ErrorResponseDTO(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 

@@ -55,4 +55,8 @@ public interface DespachoLogisticoRepository extends JpaRepository<DespachoLogis
     @Query("select d from DespachoLogistico d join d.bultos b where b.id = :bultoId and d.fechaSalida is not null "
             + "order by d.fechaSalida asc")
     List<DespachoLogistico> findSalidasDelBulto(@Param("bultoId") UUID bultoId);
+
+    /** Ids de todos los viajes que llevan o llevaron el bulto, en cualquier estado (para el recorrido por código). */
+    @Query("select d.id from DespachoLogistico d join d.bultos b where b.id = :bultoId")
+    List<UUID> idsDelBulto(@Param("bultoId") UUID bultoId);
 }

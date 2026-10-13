@@ -79,4 +79,12 @@ public interface CuarentenaRepository extends JpaRepository<Cuarentena, UUID> {
 
     /** Cantidad de medidas en un estado (tablero de la Sede). */
     long countByEstado(EstadoCuarentena estado);
+
+    /** Ids de las medidas de alcance LOTE sobre el lote (para el recorrido por código). */
+    @Query("select c.id from Cuarentena c where c.lote.id = :loteId")
+    List<UUID> idsDelLote(@Param("loteId") UUID loteId);
+
+    /** Ids de las medidas que incluyen el bulto (para el recorrido por código). */
+    @Query("select distinct c.id from Cuarentena c join c.bultos b where b.id = :bultoId")
+    List<UUID> idsDelBulto(@Param("bultoId") UUID bultoId);
 }

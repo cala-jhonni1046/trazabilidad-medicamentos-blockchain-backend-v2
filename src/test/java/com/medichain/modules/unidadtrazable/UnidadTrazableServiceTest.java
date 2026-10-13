@@ -148,26 +148,26 @@ class UnidadTrazableServiceTest {
         Empresa distribuidora = DatosDePrueba.empresaHabilitada(TipoEmpresa.DISTRIBUIDOR);
         Empresa farmacia = DatosDePrueba.empresaHabilitada(TipoEmpresa.FARMACIA);
         Page<UnidadTrazable> vacia = Page.empty(pagina);
-        lenient().when(repository.findPorEstado(EstadoUnidad.EN_STOCK, pagina)).thenReturn(vacia);
-        lenient().when(repository.findDelLaboratorioPorEstado(laboratorio.getId(), EstadoUnidad.EN_STOCK, pagina)).thenReturn(vacia);
-        lenient().when(repository.findVisiblesParaDistribuidor(distribuidora.getId(), EstadoUnidad.EN_STOCK, pagina)).thenReturn(vacia);
-        lenient().when(repository.findVisiblesParaFarmacia(farmacia.getId(), EstadoUnidad.EN_STOCK, pagina)).thenReturn(vacia);
+        lenient().when(repository.findPorEstado(EstadoUnidad.EN_STOCK, "%", pagina)).thenReturn(vacia);
+        lenient().when(repository.findDelLaboratorioPorEstado(laboratorio.getId(), EstadoUnidad.EN_STOCK, "%", pagina)).thenReturn(vacia);
+        lenient().when(repository.findVisiblesParaDistribuidor(distribuidora.getId(), EstadoUnidad.EN_STOCK, "%", pagina)).thenReturn(vacia);
+        lenient().when(repository.findVisiblesParaFarmacia(farmacia.getId(), EstadoUnidad.EN_STOCK, "%", pagina)).thenReturn(vacia);
 
         when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.SEDE_CENTRAL, null));
-        service().getAll(EstadoUnidad.EN_STOCK, pagina);
-        verify(repository).findPorEstado(EstadoUnidad.EN_STOCK, pagina);
+        service().getAll(EstadoUnidad.EN_STOCK, null, pagina);
+        verify(repository).findPorEstado(EstadoUnidad.EN_STOCK, "%", pagina);
 
         when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.LABORATORIO, laboratorio));
-        service().getAll(EstadoUnidad.EN_STOCK, pagina);
-        verify(repository).findDelLaboratorioPorEstado(laboratorio.getId(), EstadoUnidad.EN_STOCK, pagina);
+        service().getAll(EstadoUnidad.EN_STOCK, null, pagina);
+        verify(repository).findDelLaboratorioPorEstado(laboratorio.getId(), EstadoUnidad.EN_STOCK, "%", pagina);
 
         when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.DISTRIBUIDOR, distribuidora));
-        service().getAll(EstadoUnidad.EN_STOCK, pagina);
-        verify(repository).findVisiblesParaDistribuidor(distribuidora.getId(), EstadoUnidad.EN_STOCK, pagina);
+        service().getAll(EstadoUnidad.EN_STOCK, null, pagina);
+        verify(repository).findVisiblesParaDistribuidor(distribuidora.getId(), EstadoUnidad.EN_STOCK, "%", pagina);
 
         when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.FARMACIA, farmacia));
-        service().getAll(EstadoUnidad.EN_STOCK, pagina);
-        verify(repository).findVisiblesParaFarmacia(farmacia.getId(), EstadoUnidad.EN_STOCK, pagina);
+        service().getAll(EstadoUnidad.EN_STOCK, null, pagina);
+        verify(repository).findVisiblesParaFarmacia(farmacia.getId(), EstadoUnidad.EN_STOCK, "%", pagina);
     }
 
     @Test
@@ -175,12 +175,25 @@ class UnidadTrazableServiceTest {
     void listadoSinEstadoYPaciente() {
         Empresa farmacia = DatosDePrueba.empresaHabilitada(TipoEmpresa.FARMACIA);
         when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.FARMACIA, farmacia));
-        when(repository.findVisiblesParaFarmacia(farmacia.getId(), null, pagina)).thenReturn(Page.empty(pagina));
-        service().getAll(null, pagina);
-        verify(repository).findVisiblesParaFarmacia(farmacia.getId(), null, pagina);
+        when(repository.findVisiblesParaFarmacia(farmacia.getId(), null, "%", pagina)).thenReturn(Page.empty(pagina));
+        service().getAll(null, null, pagina);
+        verify(repository).findVisiblesParaFarmacia(farmacia.getId(), null, "%", pagina);
 
         when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.PACIENTE, null));
-        assertTrue(service().getAll(EstadoUnidad.EN_STOCK, pagina).isEmpty());
-        verify(repository, never()).findPorEstado(any(), any());
+        assertTrue(service().getAll(EstadoUnidad.EN_STOCK, null, pagina).isEmpty());
+        verify(repository, never()).findPorEstado(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("B12e: ?serie= llega a la consulta del rol como patrón 'contiene', en minúsculas y con comodines escapados")
+    void busquedaPorSerie() {
+        Empresa farmacia = DatosDePrueba.empresaHabilitada(TipoEmpresa.FARMACIA);
+        when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.FARMACIA, farmacia));
+        when(repository.findVisiblesParaFarmacia(farmacia.getId(), EstadoUnidad.EN_STOCK, "%s0000\\_1%", pagina))
+                .thenReturn(Page.empty(pagina));
+
+        service().getAll(EstadoUnidad.EN_STOCK, "S0000_1", pagina);
+
+        verify(repository).findVisiblesParaFarmacia(farmacia.getId(), EstadoUnidad.EN_STOCK, "%s0000\\_1%", pagina);
     }
 }

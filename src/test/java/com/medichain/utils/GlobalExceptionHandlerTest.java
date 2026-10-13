@@ -72,6 +72,17 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("B12e: ConsultaInvalidaException (parámetros que no se combinan) → 400 con su mensaje y sin regla")
+    void consultaInvalidaEs400() {
+        ResponseEntity<ErrorResponseDTO> respuesta = handler.handleConsultaInvalidaException(
+                new com.medichain.exceptions.ConsultaInvalidaException("Indicá UNO de: lote, bulto, o gtin y serie"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, respuesta.getStatusCode());
+        assertEquals("Indicá UNO de: lote, bulto, o gtin y serie", respuesta.getBody().getMessage());
+        assertNull(respuesta.getBody().getRegla());
+    }
+
+    @Test
     @DisplayName("Conflicto de @Version (cualquier OptimisticLockingFailureException) → 409 CONFLICTO_VERSION")
     void conflictoDeVersionTieneCodigo() {
         ResponseEntity<ErrorResponseDTO> respuesta = handler.handleOptimisticLockingFailureException(

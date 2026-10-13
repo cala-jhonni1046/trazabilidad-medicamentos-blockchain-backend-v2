@@ -3,12 +3,14 @@ package com.medichain.modules.bulto;
 import com.medichain.config.RespuestasError;
 import com.medichain.modules.cuarentena.Bloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
+import com.medichain.utils.BusquedaTexto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.constraints.Size;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,13 +53,14 @@ public class BultoController {
 
     /** Lista los bultos de forma paginada. */
     @GetMapping
-    @Operation(operationId = "listarBultos", summary = "Listar bultos", description = "Devuelve una página de bultos. Filtro opcional ?estado=ARMADO, EN_TRANSITO, EN_DEPOSITO, RECIBIDO, RECHAZADO, ROBADO o DESARMADO (una sola por consulta; lo ajeno sigue sin verse). Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.")
+    @Operation(operationId = "listarBultos", summary = "Listar bultos", description = "Devuelve una página de bultos. Filtros opcionales: ?estado=ARMADO, EN_TRANSITO, EN_DEPOSITO, RECIBIDO, RECHAZADO, ROBADO o DESARMADO (una sola por consulta) y ?codigo= (el código del bulto contiene el texto, sin distinguir mayúsculas); lo ajeno sigue sin verse. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.")
     @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<BultoResponseDTO>> getAll(
             @Parameter(description = "Estado (opcional): ARMADO, EN_TRANSITO, EN_DEPOSITO, RECIBIDO, RECHAZADO, ROBADO o DESARMADO") @RequestParam(required = false) EstadoBulto estado,
+            @Parameter(description = "Código del bulto (opcional): lo contiene, sin distinguir mayúsculas") @RequestParam(required = false) @Size(max = BusquedaTexto.MAXIMO, message = "El código buscado no puede superar 50 caracteres") String codigo,
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<BultoResponseDTO> page = pagina(service.getAll(estado, pageable));
+        Page<BultoResponseDTO> page = pagina(service.getAll(estado, codigo, pageable));
         return ResponseEntity.status(HttpStatus.OK).body(page);
     }
 
