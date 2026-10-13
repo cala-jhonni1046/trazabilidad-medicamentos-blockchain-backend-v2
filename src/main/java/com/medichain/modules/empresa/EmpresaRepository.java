@@ -63,4 +63,7 @@ public interface EmpresaRepository extends JpaRepository<Empresa, UUID> {
 
     /** Busca una empresa por CUIT exacto (formato normalizado XX-XXXXXXXX-X). */
     Optional<Empresa> findByCuit(String cuit);
+
+    /** Cantidad de empresas en un estado de habilitación (tablero de la Sede). */
+    long countByEstado(EstadoHabilitacion estado);
 }

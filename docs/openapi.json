@@ -72,6 +72,9 @@
   }, {
     "description" : "Anclaje del último hash de la cadena en Ethereum Sepolia (R15).",
     "name" : "Registros blockchain"
+  }, {
+    "description" : "Totales para el tablero de la Sede y los pendientes de la bandeja del inspector.",
+    "name" : "Tablero"
   } ],
   "paths" : {
     "/api/auth/login" : {
@@ -5845,6 +5848,86 @@
         "tags" : [ "Reportes ciudadanos" ]
       }
     },
+    "/api/tablero/bandeja-inspector" : {
+      "get" : {
+        "description" : "Cuántos pendientes tiene el inspector en cada bandeja (empresas, circuitos, lotes biológicos, cuarentenas y reportes): el mismo total que cada listado de bandeja, para mostrar insignias sin pedir las cinco listas. Roles: INSPECTOR. Reglas: R12.",
+        "operationId" : "obtenerBandejaInspector",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BandejaInspectorResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "No autenticado: falta el token, no es válido, venció o la cuenta está desactivada (en el login: credenciales incorrectas)."
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "Tu rol (o tu marca de administrador o director técnico) no permite esta acción."
+          }
+        },
+        "summary" : "Pendientes de la bandeja del inspector",
+        "tags" : [ "Tablero" ]
+      }
+    },
+    "/api/tablero/resumen" : {
+      "get" : {
+        "description" : "Totales de todo el sistema: empresas, empresas pendientes, inspectores activos, circuitos aprobados, cuarentenas activas, eventos de la cadena y anclajes CONFIRMADO. Roles: SEDE_CENTRAL.",
+        "operationId" : "obtenerResumenTablero",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TableroResumenResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "No autenticado: falta el token, no es válido, venció o la cuenta está desactivada (en el login: credenciales incorrectas)."
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponseDTO"
+                }
+              }
+            },
+            "description" : "Tu rol (o tu marca de administrador o director técnico) no permite esta acción."
+          }
+        },
+        "summary" : "Resumen del tablero de la Sede",
+        "tags" : [ "Tablero" ]
+      }
+    },
     "/api/telemetria-gps" : {
       "get" : {
         "description" : "Devuelve una página de lecturas GPS. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR.",
@@ -7450,6 +7533,42 @@
           }
         },
         "required" : [ "inspectorId" ]
+      },
+      "BandejaInspectorResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "circuitos" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Circuitos PENDIENTE_INSPECTOR de farmacias de tu provincia sin tomar, más los que tomaste",
+            "example" : 1
+          },
+          "cuarentenas" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Cuarentenas ACTIVA de tu provincia sin tomar, más las que tomaste",
+            "example" : 1
+          },
+          "empresas" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Solicitudes de habilitación de tu provincia sin tomar, más las que tomaste",
+            "example" : 2
+          },
+          "lotesBiologicos" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Lotes biológicos PENDIENTE_LIBERACION de laboratorios de tu provincia",
+            "example" : 0
+          },
+          "reportes" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Reportes ciudadanos ABIERTO de tu provincia, más los que investigás",
+            "example" : 3
+          }
+        },
+        "required" : [ "circuitos", "cuarentenas", "empresas", "lotesBiologicos", "reportes" ]
       },
       "BultoRequestDTO" : {
         "type" : "object",
@@ -9729,6 +9848,54 @@
         "type" : "string",
         "description" : "Perfil de acceso de un usuario dentro del sistema.",
         "enum" : [ "SEDE_CENTRAL", "INSPECTOR", "LABORATORIO", "DISTRIBUIDOR", "FARMACIA", "PACIENTE" ]
+      },
+      "TableroResumenResponseDTO" : {
+        "type" : "object",
+        "properties" : {
+          "anclajesConfirmados" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Anclajes en Sepolia CONFIRMADO (con sus 3 confirmaciones)",
+            "example" : 0
+          },
+          "circuitosAprobados" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Circuitos APROBADO",
+            "example" : 2
+          },
+          "cuarentenasActivas" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Cuarentenas y recalls en estado ACTIVA",
+            "example" : 0
+          },
+          "empresas" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Empresas registradas, en cualquier estado",
+            "example" : 6
+          },
+          "empresasPendientes" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Empresas con la solicitud de habilitación PENDIENTE",
+            "example" : 1
+          },
+          "eventos" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Eventos en la cadena (el último número: la numeración no tiene huecos)",
+            "example" : 30
+          },
+          "inspectoresActivos" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Inspectores ACTIVO",
+            "example" : 1
+          }
+        },
+        "required" : [ "anclajesConfirmados", "circuitosAprobados", "cuarentenasActivas", "empresas", "empresasPendientes", "eventos", "inspectoresActivos" ]
       },
       "TelemetriaGpsRequestDTO" : {
         "type" : "object",

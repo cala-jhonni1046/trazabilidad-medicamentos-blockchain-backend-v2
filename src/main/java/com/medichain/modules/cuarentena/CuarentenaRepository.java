@@ -76,4 +76,7 @@ public interface CuarentenaRepository extends JpaRepository<Cuarentena, UUID> {
 
     /** Medidas que nacieron del reporte ciudadano dado. */
     List<Cuarentena> findByReporteOrigenId(UUID reporteId);
+
+    /** Cantidad de medidas en un estado (tablero de la Sede). */
+    long countByEstado(EstadoCuarentena estado);
 }

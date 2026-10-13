@@ -254,6 +254,7 @@ public class OpenApiConfig {
         tags.put("Verificación pública", "Verificación de una caja por GTIN + serie. Público.");
         tags.put("Eventos de trazabilidad", "Cadena de eventos encadenados por hash y su verificación (R15).");
         tags.put("Registros blockchain", "Anclaje del último hash de la cadena en Ethereum Sepolia (R15).");
+        tags.put("Tablero", "Totales para el tablero de la Sede y los pendientes de la bandeja del inspector.");
         return tags;
     }
 

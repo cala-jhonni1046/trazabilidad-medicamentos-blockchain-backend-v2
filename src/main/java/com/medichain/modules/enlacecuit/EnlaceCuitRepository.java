@@ -94,4 +94,7 @@ public interface EnlaceCuitRepository extends JpaRepository<EnlaceCuit, UUID> {
     /** Próximo número para el código CIR-0001 (secuencia creada por la migración V1__esquema_inicial). */
     @Query(value = "select nextval('circuito_codigo_seq')", nativeQuery = true)
     Long siguienteNumeroCodigo();
+
+    /** Cantidad de circuitos en un estado (tablero de la Sede). */
+    long countByEstado(EstadoEnlaceCuit estado);
 }

@@ -1043,6 +1043,42 @@ def seccion_b12f_demo_valle_de_uco(ctx, demo, admin):
     ctx.verificar("b12f.6", "hay una cuarentena PREVENTIVA ACTIVA sobre L2026-0011", 200, r, len(previas) == 1)
 
 
+def seccion_b12d_tablero(ctx, demo, admin):
+    """B12d: resumen de la Sede y pendientes de la bandeja del inspector en un solo GET; cada total es el de su listado."""
+    sede = ctx.token(admin[0], admin[1])
+    inspector = ctx.token(EMAIL_INSPECTOR, demo)
+
+    r = pedir("GET", ctx.url("/api/tablero/resumen"), token=sede)
+    resumen = r.cuerpo if isinstance(r.cuerpo, dict) else {}
+    esperado = {
+        "empresas": total(pedir("GET", ctx.url("/api/empresas?size=1"), token=sede)),
+        "empresasPendientes": total(pedir("GET", ctx.url("/api/empresas?estado=PENDIENTE&size=1"), token=sede)),
+        "inspectoresActivos": total(pedir("GET", ctx.url("/api/inspectores-anmat?estado=ACTIVO&size=1"), token=sede)),
+        "circuitosAprobados": total(pedir("GET", ctx.url("/api/circuitos?estado=APROBADO&size=1"), token=sede)),
+        "cuarentenasActivas": total(pedir("GET", ctx.url("/api/cuarentenas?estado=ACTIVA&size=1"), token=sede)),
+        "eventos": total(pedir("GET", ctx.url("/api/eventos-trazabilidad?size=1"), token=sede)),
+    }
+    distintos = {k: (resumen.get(k), v) for k, v in esperado.items() if resumen.get(k) != v}
+    ctx.verificar("b12d.1", "el resumen de la Sede coincide con cada listado (%s)" % esperado, 200, r,
+                  not distintos and resumen.get("anclajesConfirmados") == 0, detalle=distintos or resumen)
+    r = pedir("GET", ctx.url("/api/tablero/resumen"), token=inspector)
+    ctx.verificar("b12d.2", "un inspector no ve el resumen de la Sede → 403", 403, r)
+
+    r = pedir("GET", ctx.url("/api/tablero/bandeja-inspector"), token=inspector)
+    bandeja = r.cuerpo if isinstance(r.cuerpo, dict) else {}
+    listas = {
+        "empresas": "/api/empresas/bandeja", "circuitos": "/api/circuitos/bandeja",
+        "lotesBiologicos": "/api/lotes/bandeja-liberacion", "cuarentenas": "/api/cuarentenas/bandeja",
+        "reportes": "/api/reportes-ciudadanos/bandeja",
+    }
+    esperada = {k: total(pedir("GET", ctx.url(ruta + "?size=1"), token=inspector)) for k, ruta in listas.items()}
+    distintos = {k: (bandeja.get(k), v) for k, v in esperada.items() if bandeja.get(k) != v}
+    ctx.verificar("b12d.3", "los pendientes del inspector coinciden con sus 5 bandejas (%s)" % esperada, 200, r,
+                  not distintos and set(bandeja) == set(listas), detalle=distintos or bandeja)
+    r = pedir("GET", ctx.url("/api/tablero/bandeja-inspector"), token=sede)
+    ctx.verificar("b12d.4", "la Sede no tiene bandeja de inspector → 403", 403, r)
+
+
 def seccion_final_cadena(ctx, demo, admin):
     """Final: la cadena sigue íntegra después de todo el recorrido."""
     sede = ctx.token(admin[0], admin[1])
@@ -1071,6 +1107,7 @@ SECCIONES = [
     ("B12b · ?estado= en cajas y viajes", seccion_b12b_filtros_cajas_viajes),
     ("B12c · Nombres en los DTO", seccion_b12c_nombres),
     ("B12f · Demo: segunda cadena (Valle de Uco)", seccion_b12f_demo_valle_de_uco),
+    ("B12d · Tablero: resumen de la Sede y bandeja del inspector", seccion_b12d_tablero),
     ("Final · Cadena íntegra", seccion_final_cadena),
 ]
 

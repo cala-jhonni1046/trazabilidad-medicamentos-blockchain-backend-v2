@@ -34,4 +34,7 @@ public interface InspectorAnmatRepository extends JpaRepository<InspectorAnmat, 
 
     /** Indica si ya hay un inspector con ese DNI (único). */
     boolean existsByDni(String dni);
+
+    /** Cantidad de inspectores en un estado (tablero de la Sede). */
+    long countByEstado(EstadoInspector estado);
 }

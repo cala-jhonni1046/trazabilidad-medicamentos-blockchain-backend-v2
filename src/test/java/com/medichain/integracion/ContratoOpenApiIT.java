@@ -59,7 +59,8 @@ class ContratoOpenApiIT extends IntegracionBase {
     private static final List<String> TAGS = List.of("Registro público", "Autenticación", "Empresas",
             "Inspectores ANMAT", "Usuarios", "Circuitos", "Medicamentos", "Lotes", "Unidades trazables", "Bultos",
             "Viajes", "Telemetría de temperatura", "Telemetría GPS", "Recepciones", "Dispensaciones", "Cuarentenas",
-            "Reportes ciudadanos", "Verificación pública", "Eventos de trazabilidad", "Registros blockchain");
+            "Reportes ciudadanos", "Verificación pública", "Eventos de trazabilidad", "Registros blockchain",
+            "Tablero");
 
     /** Altas que responden 201 (ResponseEntity.status(HttpStatus.CREATED) en el controller). */
     private static final Set<String> ALTAS = Set.of("registrarEmpresa", "registrarPaciente", "armarBulto",
@@ -102,7 +103,7 @@ class ContratoOpenApiIT extends IntegracionBase {
                 problemas.addAll(revisarRespuestas(donde, id, ruta, metodo, op, publica));
             }
         }
-        assertEquals(94, operaciones, "cantidad de operaciones del contrato");
+        assertEquals(96, operaciones, "cantidad de operaciones del contrato");
 
         List<String> tags = new ArrayList<>();
         contrato.path("tags").forEach(tag -> tags.add(tag.path("name").asString()));
@@ -234,6 +235,8 @@ class ContratoOpenApiIT extends IntegracionBase {
         }
         validar(validador, errores, "verificarCadena", llamar(HttpMethod.GET, "/api/eventos-trazabilidad/verificacion", sede, null));
         validar(validador, errores, "obtenerEstadoAnclaje", llamar(HttpMethod.GET, "/api/registros-blockchain/estado", sede, null));
+        validar(validador, errores, "obtenerResumenTablero", llamar(HttpMethod.GET, "/api/tablero/resumen", sede, null));
+        validar(validador, errores, "obtenerBandejaInspector", llamar(HttpMethod.GET, "/api/tablero/bandeja-inspector", inspector, null));
 
         assertTrue(errores.isEmpty(), "Respuestas que no cumplen el contrato:\n  " + String.join("\n  ", errores));
     }

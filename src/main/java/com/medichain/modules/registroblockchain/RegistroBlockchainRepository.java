@@ -37,4 +37,7 @@ public interface RegistroBlockchainRepository extends JpaRepository<RegistroBloc
 
     /** Todos los anclajes en un estado, por número de evento (la verificación recorre los CONFIRMADO). */
     List<RegistroBlockchain> findByEstadoOrderByHastaNumeroAsc(EstadoAnclaje estado);
+
+    /** Cantidad de anclajes en un estado (tablero de la Sede: los CONFIRMADO). */
+    long countByEstado(EstadoAnclaje estado);
 }
