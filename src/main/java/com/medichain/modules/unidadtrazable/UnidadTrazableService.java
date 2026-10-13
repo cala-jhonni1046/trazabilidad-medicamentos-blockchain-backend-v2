@@ -40,15 +40,18 @@ public class UnidadTrazableService {
         this.registradorEventos = registradorEventos;
     }
 
-    /** Devuelve una página de unidades según el rol del usuario. */
+    /**
+     * Devuelve una página de unidades según el rol del usuario, opcionalmente de un estado
+     * (el filtro solo achica lo que el rol ya ve).
+     */
     @Transactional(readOnly = true)
-    public Page<UnidadTrazable> getAll(Pageable pageable) {
+    public Page<UnidadTrazable> getAll(EstadoUnidad estado, Pageable pageable) {
         UsuarioAutenticado actual = usuarioActual.obtener();
         return switch (actual.getRol()) {
-            case SEDE_CENTRAL, INSPECTOR -> repository.findAll(pageable);
-            case LABORATORIO -> repository.findByLoteMedicamentoLaboratorioId(actual.getEmpresaId(), pageable);
-            case DISTRIBUIDOR -> repository.findVisiblesParaDistribuidor(actual.getEmpresaId(), pageable);
-            case FARMACIA -> repository.findVisiblesParaFarmacia(actual.getEmpresaId(), pageable);
+            case SEDE_CENTRAL, INSPECTOR -> repository.findPorEstado(estado, pageable);
+            case LABORATORIO -> repository.findDelLaboratorioPorEstado(actual.getEmpresaId(), estado, pageable);
+            case DISTRIBUIDOR -> repository.findVisiblesParaDistribuidor(actual.getEmpresaId(), estado, pageable);
+            case FARMACIA -> repository.findVisiblesParaFarmacia(actual.getEmpresaId(), estado, pageable);
             case PACIENTE -> Page.empty(pageable);
         };
     }

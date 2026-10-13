@@ -81,13 +81,13 @@ public class DespachoLogisticoService {
 
     /** Devuelve una página de viajes según el rol del usuario. */
     @Transactional(readOnly = true)
-    public Page<DespachoLogistico> getAll(Pageable pageable) {
+    public Page<DespachoLogistico> getAll(EstadoDespacho estado, Pageable pageable) {
         UsuarioAutenticado actual = usuarioActual.obtener();
         return switch (actual.getRol()) {
-            case SEDE_CENTRAL, INSPECTOR -> repository.findAll(pageable);
-            case LABORATORIO -> repository.findByOrigenId(actual.getEmpresaId(), pageable);
-            case DISTRIBUIDOR -> repository.findVisiblesParaDistribuidor(actual.getEmpresaId(), pageable);
-            case FARMACIA -> repository.findVisiblesParaFarmacia(actual.getEmpresaId(), pageable);
+            case SEDE_CENTRAL, INSPECTOR -> repository.findPorEstado(estado, pageable);
+            case LABORATORIO -> repository.findDelOrigenPorEstado(actual.getEmpresaId(), estado, pageable);
+            case DISTRIBUIDOR -> repository.findVisiblesParaDistribuidor(actual.getEmpresaId(), estado, pageable);
+            case FARMACIA -> repository.findVisiblesParaFarmacia(actual.getEmpresaId(), estado, pageable);
             case PACIENTE -> Page.empty(pageable);
         };
     }

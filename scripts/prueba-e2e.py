@@ -929,6 +929,37 @@ def seccion_b12a_contrato(ctx, demo, admin):
                   pagina.get("size") == 100)
 
 
+def seccion_b12b_filtros_cajas_viajes(ctx, demo, admin):
+    """B12b: ?estado= en cajas y viajes, dentro del alcance de cada rol; un estado inválido → 400."""
+    farmacia = ctx.token(EMAIL_FARMACIA, demo)
+    lab = ctx.token(EMAIL_LABORATORIO, demo)
+    todas = contenido(pedir("GET", ctx.url("/api/unidades-trazables?size=100"), token=farmacia))
+
+    r = pedir("GET", ctx.url("/api/unidades-trazables?estado=EN_STOCK&size=100"), token=farmacia)
+    estados = {c["estado"] for c in contenido(r)}
+    esperadas = [c for c in todas if c["estado"] == "EN_STOCK"]
+    ctx.verificar("b12b.1", "Los Álamos filtra sus cajas EN_STOCK (%d de %d)" % (len(esperadas), len(todas)), 200, r,
+                  estados == {"EN_STOCK"} and total(r) == len(esperadas) and len(esperadas) > 0)
+    r = pedir("GET", ctx.url("/api/unidades-trazables?estado=DISPENSADA&size=100"), token=farmacia)
+    dispensadas = [c for c in todas if c["estado"] == "DISPENSADA"]
+    ctx.verificar("b12b.2", "filtra las DISPENSADA (las de 7e)", 200, r,
+                  total(r) == len(dispensadas) and all(c["estado"] == "DISPENSADA" for c in contenido(r)))
+    r = pedir("GET", ctx.url("/api/unidades-trazables?estado=INEXISTENTE"), token=farmacia)
+    ctx.verificar("b12b.3", "estado de caja inválido → 400", 400, r)
+
+    viajes = contenido(pedir("GET", ctx.url("/api/viajes?size=100"), token=lab))
+    r = pedir("GET", ctx.url("/api/viajes?estado=FINALIZADO&size=100"), token=lab)
+    finalizados = [v for v in viajes if v["estado"] == "FINALIZADO"]
+    ctx.verificar("b12b.4", "el laboratorio filtra sus viajes FINALIZADO (%d de %d)" % (len(finalizados), len(viajes)),
+                  200, r, total(r) == len(finalizados) and len(finalizados) > 0
+                  and all(v["estado"] == "FINALIZADO" for v in contenido(r)))
+    r = pedir("GET", ctx.url("/api/viajes?estado=INEXISTENTE"), token=lab)
+    ctx.verificar("b12b.5", "estado de viaje inválido → 400", 400, r)
+    otra = ctx.token(EMAIL_FARMACIA_DOS, demo)
+    r = pedir("GET", ctx.url("/api/viajes?estado=FINALIZADO"), token=otra)
+    ctx.verificar("b12b.6", "lo ajeno no se ve: Cerro Arco no ve viajes FINALIZADO de otra farmacia", 200, r, total(r) == 0)
+
+
 def seccion_final_cadena(ctx, demo, admin):
     """Final: la cadena sigue íntegra después de todo el recorrido."""
     sede = ctx.token(admin[0], admin[1])
@@ -954,6 +985,7 @@ SECCIONES = [
     ("B11c · Tablero de la Sede: pendientes sin inspector", seccion_b11c_sin_inspector),
     ("B11d · Fechas en UTC con Z y entrada con offset", seccion_b11d_fechas),
     ("B12a · Contrato: enums, regla solo en 409 y tamaño máximo de página", seccion_b12a_contrato),
+    ("B12b · ?estado= en cajas y viajes", seccion_b12b_filtros_cajas_viajes),
     ("Final · Cadena íntegra", seccion_final_cadena),
 ]
 

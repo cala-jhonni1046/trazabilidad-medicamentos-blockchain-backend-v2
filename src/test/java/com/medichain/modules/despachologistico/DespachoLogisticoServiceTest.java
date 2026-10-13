@@ -33,6 +33,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 import java.time.OffsetDateTime;
 import java.util.Collection;
@@ -95,6 +98,7 @@ class DespachoLogisticoServiceTest {
     private Empresa farmacia;
     private Lote lote;
     private EnlaceCuit circuito;
+    private final Pageable pagina = PageRequest.of(0, 20);
 
     @BeforeEach
     void setUp() {
@@ -396,5 +400,47 @@ class DespachoLogisticoServiceTest {
         when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.FARMACIA,
                 DatosDePrueba.empresaHabilitada(TipoEmpresa.FARMACIA)));
         assertThrows(ResourceNotFoundException.class, () -> service().getById(viaje.getId()));
+    }
+
+    // ---------- Listado con estado (B12b) ----------
+
+    @Test
+    @DisplayName("B12b: el listado pasa el estado a la consulta de cada rol (el filtro va dentro del alcance)")
+    void listadoConEstadoPorRol() {
+        Page<DespachoLogistico> vacia = Page.empty(pagina);
+        EstadoDespacho estado = EstadoDespacho.EN_TRANSITO;
+        lenient().when(repository.findPorEstado(estado, pagina)).thenReturn(vacia);
+        lenient().when(repository.findDelOrigenPorEstado(laboratorio.getId(), estado, pagina)).thenReturn(vacia);
+        lenient().when(repository.findVisiblesParaDistribuidor(distribuidora.getId(), estado, pagina)).thenReturn(vacia);
+        lenient().when(repository.findVisiblesParaFarmacia(farmacia.getId(), estado, pagina)).thenReturn(vacia);
+
+        como(RolUsuario.SEDE_CENTRAL, laboratorio);
+        service().getAll(estado, pagina);
+        verify(repository).findPorEstado(estado, pagina);
+
+        como(RolUsuario.LABORATORIO, laboratorio);
+        service().getAll(estado, pagina);
+        verify(repository).findDelOrigenPorEstado(laboratorio.getId(), estado, pagina);
+
+        como(RolUsuario.DISTRIBUIDOR, distribuidora);
+        service().getAll(estado, pagina);
+        verify(repository).findVisiblesParaDistribuidor(distribuidora.getId(), estado, pagina);
+
+        como(RolUsuario.FARMACIA, farmacia);
+        service().getAll(estado, pagina);
+        verify(repository).findVisiblesParaFarmacia(farmacia.getId(), estado, pagina);
+    }
+
+    @Test
+    @DisplayName("B12b: sin estado (null) se pide todo el alcance; el paciente no ve viajes")
+    void listadoSinEstadoYPaciente() {
+        como(RolUsuario.FARMACIA, farmacia);
+        when(repository.findVisiblesParaFarmacia(farmacia.getId(), null, pagina)).thenReturn(Page.empty(pagina));
+        service().getAll(null, pagina);
+        verify(repository).findVisiblesParaFarmacia(farmacia.getId(), null, pagina);
+
+        como(RolUsuario.PACIENTE, farmacia);
+        assertTrue(service().getAll(EstadoDespacho.EN_TRANSITO, pagina).isEmpty());
+        verify(repository, never()).findPorEstado(any(), any());
     }
 }

@@ -6309,9 +6309,17 @@
     },
     "/api/unidades-trazables" : {
       "get" : {
-        "description" : "Devuelve una página de unidades trazables. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
+        "description" : "Devuelve una página de unidades trazables. Filtro opcional ?estado=EN_LABORATORIO, EN_TRANSITO, EN_DEPOSITO, EN_STOCK, DISPENSADA, DEVUELTA, ROBADA o RECHAZADA (una sola por consulta; lo ajeno sigue sin verse). Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.",
         "operationId" : "listarCajas",
         "parameters" : [ {
+          "description" : "Estado (opcional): EN_LABORATORIO, EN_TRANSITO, EN_DEPOSITO, EN_STOCK, DISPENSADA, DEVUELTA, ROBADA o RECHAZADA",
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/EstadoUnidad"
+          }
+        }, {
           "description" : "Zero-based page index (0..N)",
           "in" : "query",
           "name" : "page",
@@ -6806,9 +6814,17 @@
     },
     "/api/viajes" : {
       "get" : {
-        "description" : "SEDE e INSPECTOR ven todos; LABORATORIO los que origina; DISTRIBUIDOR los que origina y los del tramo 1 que vienen a su depósito; FARMACIA los del tramo 2 con parada en ella. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
+        "description" : "Filtro opcional ?estado=PROGRAMADO, EN_TRANSITO, FINALIZADO, ROBADO o CANCELADO (una sola por consulta; lo ajeno sigue sin verse). SEDE e INSPECTOR ven todos; LABORATORIO los que origina; DISTRIBUIDOR los que origina y los del tramo 1 que vienen a su depósito; FARMACIA los del tramo 2 con parada en ella. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.",
         "operationId" : "listarViajes",
         "parameters" : [ {
+          "description" : "Estado (opcional): PROGRAMADO, EN_TRANSITO, FINALIZADO, ROBADO o CANCELADO",
+          "in" : "query",
+          "name" : "estado",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/components/schemas/EstadoDespacho"
+          }
+        }, {
           "description" : "Zero-based page index (0..N)",
           "in" : "query",
           "name" : "page",

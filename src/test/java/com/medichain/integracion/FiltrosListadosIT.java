@@ -29,10 +29,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Test de integración FiltrosListadosIT en MediChain (paso B11b, punto C).
+ * Test de integración FiltrosListadosIT en MediChain (paso B11b, punto C; B12b).
  * <ul>
  *   <li>Filtro opcional ?estado= en bultos, empresas, circuitos, inspectores,
- *       lotes, cuarentenas y reportes: trae solo ese estado y DENTRO del alcance
+ *       lotes, cuarentenas, reportes, cajas y viajes (B12b): trae solo ese estado y DENTRO del alcance
  *       de cada rol (lo ajeno sigue sin verse; un estado inválido → 400).</li>
  *   <li>Temperatura de un viaje (GET /api/viajes/{id}/telemetria-temperatura y
  *       los listados de telemetría): la ven la Sede, los inspectores, la empresa
@@ -69,6 +69,55 @@ class FiltrosListadosIT extends IntegracionBase {
         EscenarioIntegracion.Actores otros = escenario.actores(Provincia.CATAMARCA);
         assertEquals(0, total(pagina("/api/bultos?estado=ARMADO", token(otros.adminFarmacia()))), "lo ajeno no se ve");
         mockMvc.perform(get("/api/bultos?estado=INEXISTENTE").header("Authorization", laboratorio))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("B12b: cajas y viajes por estado; el filtro va dentro del alcance (la farmacia con cajas propias y otras en camino no mezcla); estado inválido → 400")
+    void cajasYViajesPorEstado() throws Exception {
+        EscenarioIntegracion.Actores actores = escenario.actores(Provincia.SALTA);
+        Medicamento medicamento = escenario.medicamento(actores);
+        EnlaceCuit circuito = escenario.circuitoAprobado(actores);
+        Lote lote = escenario.loteLiberado(actores, medicamento, "FL-CAJ", 4);
+        // Bulto A: ya está en la farmacia (2 cajas EN_STOCK; sus dos viajes FINALIZADO).
+        escenario.cajasEnFarmacia(actores, circuito, lote, 2);
+        // Bulto B: viaja de la distribuidora a la farmacia (2 cajas EN_TRANSITO; viaje del tramo 2 EN_TRANSITO).
+        Bulto enCamino = escenario.bultoArmado(actores, circuito, lote, 2);
+        escenario.viajeEnTransito(actores.adminLaboratorio(), enCamino);
+        escenario.recibir(actores.adminDistribuidora(), enCamino, 2);
+        escenario.viajeEnTransito(actores.adminDistribuidora(), enCamino);
+        String laboratorio = token(actores.adminLaboratorio());
+        String distribuidora = token(actores.adminDistribuidora());
+        String farmacia = token(actores.adminFarmacia());
+        String sede = bearer(escenario.sede().getEmail(), "clave-falsa-de-la-sede");
+        String otraFarmacia = token(escenario.actores(Provincia.SALTA).adminFarmacia());
+
+        // Cajas. La farmacia ve las suyas (en su poder) y las que vienen hacia ella: el filtro NO mezcla las dos ramas.
+        assertEquals(4, total(pagina("/api/unidades-trazables", farmacia)), "sin filtro, todo su alcance");
+        assertEquals(2, total(pagina("/api/unidades-trazables?estado=EN_STOCK", farmacia)), "solo las que ya tiene");
+        assertEquals(2, total(pagina("/api/unidades-trazables?estado=EN_TRANSITO", farmacia)), "solo las que vienen");
+        assertEquals(0, total(pagina("/api/unidades-trazables?estado=DISPENSADA", farmacia)));
+        assertEquals(2, total(pagina("/api/unidades-trazables?estado=EN_STOCK", laboratorio)));
+        assertEquals(2, total(pagina("/api/unidades-trazables?estado=EN_TRANSITO", laboratorio)));
+        assertEquals(2, total(pagina("/api/unidades-trazables?estado=EN_TRANSITO", distribuidora)));
+        assertEquals(2, total(pagina("/api/unidades-trazables?estado=EN_STOCK", sede)));
+        assertEquals(0, total(pagina("/api/unidades-trazables?estado=EN_STOCK", otraFarmacia)), "lo ajeno no se ve");
+        mockMvc.perform(get("/api/unidades-trazables?estado=INEXISTENTE").header("Authorization", farmacia))
+                .andExpect(status().isBadRequest());
+
+        // Viajes. La farmacia solo ve los del tramo 2 con una parada en ella; la distribuidora, los suyos y los del tramo 1 que recibe.
+        assertEquals(2, total(pagina("/api/viajes", farmacia)));
+        assertEquals(1, total(pagina("/api/viajes?estado=EN_TRANSITO", farmacia)), "el que viene en camino");
+        assertEquals(1, total(pagina("/api/viajes?estado=FINALIZADO", farmacia)));
+        assertEquals(0, total(pagina("/api/viajes?estado=ROBADO", farmacia)));
+        assertEquals(4, total(pagina("/api/viajes", distribuidora)));
+        assertEquals(1, total(pagina("/api/viajes?estado=EN_TRANSITO", distribuidora)), "sin mezclar sus dos ramas");
+        assertEquals(3, total(pagina("/api/viajes?estado=FINALIZADO", distribuidora)));
+        assertEquals(2, total(pagina("/api/viajes", laboratorio)), "el laboratorio solo ve los que origina (tramo 1)");
+        assertEquals(0, total(pagina("/api/viajes?estado=EN_TRANSITO", laboratorio)), "el tramo 1 de B ya llegó");
+        assertEquals(1, total(pagina("/api/viajes?estado=EN_TRANSITO", sede)));
+        assertEquals(0, total(pagina("/api/viajes?estado=EN_TRANSITO", otraFarmacia)), "lo ajeno no se ve");
+        mockMvc.perform(get("/api/viajes?estado=INEXISTENTE").header("Authorization", farmacia))
                 .andExpect(status().isBadRequest());
     }
 

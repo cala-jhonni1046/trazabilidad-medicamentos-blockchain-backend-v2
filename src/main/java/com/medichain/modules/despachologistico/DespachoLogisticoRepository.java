@@ -21,20 +21,31 @@ public interface DespachoLogisticoRepository extends JpaRepository<DespachoLogis
     /** Despachos que origina la empresa dada. */
     Page<DespachoLogistico> findByOrigenId(UUID empresaId, Pageable pageable);
 
+    /** Viajes: todos, opcionalmente de un estado (Sede e inspectores). */
+    @Query("select d from DespachoLogistico d where (:estado is null or d.estado = :estado)")
+    Page<DespachoLogistico> findPorEstado(@Param("estado") EstadoDespacho estado, Pageable pageable);
+
+    /** Viajes que origina la empresa dada, opcionalmente de un estado. */
+    @Query("select d from DespachoLogistico d where d.origen.id = :empresaId and (:estado is null or d.estado = :estado)")
+    Page<DespachoLogistico> findDelOrigenPorEstado(@Param("empresaId") UUID empresaId,
+                                                   @Param("estado") EstadoDespacho estado, Pageable pageable);
+
     /**
      * Viajes que ve una distribuidora: los que origina y los del tramo 1 que
      * traen bultos de sus circuitos a su depósito.
      */
-    @Query("select d from DespachoLogistico d where d.origen.id = :empresaId or (d.tramo = com.medichain.modules.despachologistico.TramoDespacho.LAB_A_DISTRIBUIDOR "
+    @Query("select d from DespachoLogistico d where (d.origen.id = :empresaId or (d.tramo = com.medichain.modules.despachologistico.TramoDespacho.LAB_A_DISTRIBUIDOR "
             + "and exists (select b.id from DespachoLogistico d2 join d2.bultos b "
-            + "where d2.id = d.id and b.destino.distribuidor.id = :empresaId))")
-    Page<DespachoLogistico> findVisiblesParaDistribuidor(@Param("empresaId") UUID empresaId, Pageable pageable);
+            + "where d2.id = d.id and b.destino.distribuidor.id = :empresaId))) and (:estado is null or d.estado = :estado)")
+    Page<DespachoLogistico> findVisiblesParaDistribuidor(@Param("empresaId") UUID empresaId,
+                                                         @Param("estado") EstadoDespacho estado, Pageable pageable);
 
     /** Viajes que ve una farmacia: los del tramo 2 con bultos de sus circuitos (una parada en ella). */
     @Query("select d from DespachoLogistico d where d.tramo = com.medichain.modules.despachologistico.TramoDespacho.DISTRIBUIDOR_A_FARMACIA "
             + "and exists (select b.id from DespachoLogistico d2 join d2.bultos b "
-            + "where d2.id = d.id and b.destino.farmacia.id = :empresaId)")
-    Page<DespachoLogistico> findVisiblesParaFarmacia(@Param("empresaId") UUID empresaId, Pageable pageable);
+            + "where d2.id = d.id and b.destino.farmacia.id = :empresaId) and (:estado is null or d.estado = :estado)")
+    Page<DespachoLogistico> findVisiblesParaFarmacia(@Param("empresaId") UUID empresaId,
+                                                     @Param("estado") EstadoDespacho estado, Pageable pageable);
 
     /** Próximo número para el código VJ-0001 (secuencia creada por la migración V1__esquema_inicial). */
     @Query(value = "select nextval('viaje_codigo_seq')", nativeQuery = true)

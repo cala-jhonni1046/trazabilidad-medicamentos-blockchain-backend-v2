@@ -17,11 +17,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
@@ -135,5 +139,48 @@ class UnidadTrazableServiceTest {
         when(repository.findByGtinAndSerie(dispensada.getGtin(), dispensada.getSerie())).thenReturn(Optional.of(dispensada));
         ReglaNegocioException ex = assertThrows(ReglaNegocioException.class, () -> service().devolver(devolucion(dispensada)));
         assertEquals("TRANSICION_INVALIDA", ex.getCodigoRegla());
+    }
+
+    @Test
+    @DisplayName("B12b: el listado pasa el estado a la consulta de cada rol (nunca findAll sin alcance)")
+    void listadoConEstadoPorRol() {
+        Empresa laboratorio = DatosDePrueba.empresaHabilitada(TipoEmpresa.LABORATORIO);
+        Empresa distribuidora = DatosDePrueba.empresaHabilitada(TipoEmpresa.DISTRIBUIDOR);
+        Empresa farmacia = DatosDePrueba.empresaHabilitada(TipoEmpresa.FARMACIA);
+        Page<UnidadTrazable> vacia = Page.empty(pagina);
+        lenient().when(repository.findPorEstado(EstadoUnidad.EN_STOCK, pagina)).thenReturn(vacia);
+        lenient().when(repository.findDelLaboratorioPorEstado(laboratorio.getId(), EstadoUnidad.EN_STOCK, pagina)).thenReturn(vacia);
+        lenient().when(repository.findVisiblesParaDistribuidor(distribuidora.getId(), EstadoUnidad.EN_STOCK, pagina)).thenReturn(vacia);
+        lenient().when(repository.findVisiblesParaFarmacia(farmacia.getId(), EstadoUnidad.EN_STOCK, pagina)).thenReturn(vacia);
+
+        when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.SEDE_CENTRAL, null));
+        service().getAll(EstadoUnidad.EN_STOCK, pagina);
+        verify(repository).findPorEstado(EstadoUnidad.EN_STOCK, pagina);
+
+        when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.LABORATORIO, laboratorio));
+        service().getAll(EstadoUnidad.EN_STOCK, pagina);
+        verify(repository).findDelLaboratorioPorEstado(laboratorio.getId(), EstadoUnidad.EN_STOCK, pagina);
+
+        when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.DISTRIBUIDOR, distribuidora));
+        service().getAll(EstadoUnidad.EN_STOCK, pagina);
+        verify(repository).findVisiblesParaDistribuidor(distribuidora.getId(), EstadoUnidad.EN_STOCK, pagina);
+
+        when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.FARMACIA, farmacia));
+        service().getAll(EstadoUnidad.EN_STOCK, pagina);
+        verify(repository).findVisiblesParaFarmacia(farmacia.getId(), EstadoUnidad.EN_STOCK, pagina);
+    }
+
+    @Test
+    @DisplayName("B12b: sin estado (null) se pide todo el alcance; el paciente no ve cajas")
+    void listadoSinEstadoYPaciente() {
+        Empresa farmacia = DatosDePrueba.empresaHabilitada(TipoEmpresa.FARMACIA);
+        when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.FARMACIA, farmacia));
+        when(repository.findVisiblesParaFarmacia(farmacia.getId(), null, pagina)).thenReturn(Page.empty(pagina));
+        service().getAll(null, pagina);
+        verify(repository).findVisiblesParaFarmacia(farmacia.getId(), null, pagina);
+
+        when(usuarioActual.obtener()).thenReturn(DatosDePrueba.autenticado(RolUsuario.PACIENTE, null));
+        assertTrue(service().getAll(EstadoUnidad.EN_STOCK, pagina).isEmpty());
+        verify(repository, never()).findPorEstado(any(), any());
     }
 }

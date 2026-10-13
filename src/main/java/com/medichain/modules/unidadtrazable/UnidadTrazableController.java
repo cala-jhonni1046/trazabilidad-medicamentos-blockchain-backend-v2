@@ -4,6 +4,7 @@ import com.medichain.config.RespuestasError;
 import com.medichain.modules.cuarentena.Bloqueo;
 import com.medichain.modules.cuarentena.EvaluadorBloqueo;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
@@ -49,12 +51,13 @@ public class UnidadTrazableController {
 
     /** Lista las unidades trazables de forma paginada. */
     @GetMapping
-    @Operation(operationId = "listarCajas", summary = "Listar unidades trazables", description = "Devuelve una página de unidades trazables. Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.")
+    @Operation(operationId = "listarCajas", summary = "Listar unidades trazables", description = "Devuelve una página de unidades trazables. Filtro opcional ?estado=EN_LABORATORIO, EN_TRANSITO, EN_DEPOSITO, EN_STOCK, DISPENSADA, DEVUELTA, ROBADA o RECHAZADA (una sola por consulta; lo ajeno sigue sin verse). Incluye el indicador de bloqueo R10 (bloqueado, motivoBloqueo, mensajeBloqueo). Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA. Reglas: R10.")
     @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<UnidadTrazableResponseDTO>> getAll(
+            @Parameter(description = "Estado (opcional): EN_LABORATORIO, EN_TRANSITO, EN_DEPOSITO, EN_STOCK, DISPENSADA, DEVUELTA, ROBADA o RECHAZADA") @RequestParam(required = false) EstadoUnidad estado,
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<UnidadTrazableResponseDTO> page = pagina(service.getAll(pageable));
+        Page<UnidadTrazableResponseDTO> page = pagina(service.getAll(estado, pageable));
         return ResponseEntity.status(HttpStatus.OK).body(page);
     }
 

@@ -6,6 +6,7 @@ import com.medichain.modules.telemetriatemperatura.TelemetriaTemperaturaMapper;
 import com.medichain.modules.telemetriatemperatura.TelemetriaTemperaturaResponseDTO;
 import com.medichain.modules.telemetriatemperatura.TelemetriaTemperaturaService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
@@ -54,12 +56,13 @@ public class DespachoLogisticoController {
 
     /** Lista los viajes visibles para el usuario. */
     @GetMapping
-    @Operation(operationId = "listarViajes", summary = "Listar viajes", description = "SEDE e INSPECTOR ven todos; LABORATORIO los que origina; DISTRIBUIDOR los que origina y los del tramo 1 que vienen a su depósito; FARMACIA los del tramo 2 con parada en ella. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
+    @Operation(operationId = "listarViajes", summary = "Listar viajes", description = "Filtro opcional ?estado=PROGRAMADO, EN_TRANSITO, FINALIZADO, ROBADO o CANCELADO (una sola por consulta; lo ajeno sigue sin verse). SEDE e INSPECTOR ven todos; LABORATORIO los que origina; DISTRIBUIDOR los que origina y los del tramo 1 que vienen a su depósito; FARMACIA los del tramo 2 con parada en ella. Roles: SEDE_CENTRAL, INSPECTOR, LABORATORIO, DISTRIBUIDOR, FARMACIA.")
     @RespuestasError({400, 401, 403})
     @PreAuthorize("hasAnyRole('SEDE_CENTRAL', 'INSPECTOR', 'LABORATORIO', 'DISTRIBUIDOR', 'FARMACIA')")
     public ResponseEntity<Page<DespachoLogisticoResponseDTO>> getAll(
+            @Parameter(description = "Estado (opcional): PROGRAMADO, EN_TRANSITO, FINALIZADO, ROBADO o CANCELADO") @RequestParam(required = false) EstadoDespacho estado,
             @ParameterObject @PageableDefault(size = 20, sort = "fechaCreacion", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.OK).body(service.getAll(pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.status(HttpStatus.OK).body(service.getAll(estado, pageable).map(mapper::toResponseDTO));
     }
 
     /** Busca un viaje por id. */
