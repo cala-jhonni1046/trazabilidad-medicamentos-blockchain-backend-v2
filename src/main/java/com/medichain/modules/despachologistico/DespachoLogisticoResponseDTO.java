@@ -47,6 +47,10 @@ public class DespachoLogisticoResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private List<UUID> paradaIds;
 
+    @Schema(description = "la razón social de la empresa de origen del viaje", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String origenRazonSocial;
+    @Schema(description = "las razones sociales de las paradas, en el mismo orden que paradaIds", requiredMode = Schema.RequiredMode.REQUIRED)
+    private List<String> paradaRazonesSociales;
     /** Constructor vacío exigido por Jackson. */
     public DespachoLogisticoResponseDTO() {
     }
@@ -209,5 +213,25 @@ public class DespachoLogisticoResponseDTO {
     /** Establece los ids de las paradas. */
     public void setParadaIds(List<UUID> paradaIds) {
         this.paradaIds = paradaIds;
+    }
+
+    /** Devuelve la razón social de la empresa de origen del viaje. */
+    public String getOrigenRazonSocial() {
+        return origenRazonSocial;
+    }
+
+    /** Establece la razón social de la empresa de origen del viaje. */
+    public void setOrigenRazonSocial(String origenRazonSocial) {
+        this.origenRazonSocial = origenRazonSocial;
+    }
+
+    /** Devuelve las razones sociales de las paradas, en el mismo orden que paradaIds. */
+    public List<String> getParadaRazonesSociales() {
+        return paradaRazonesSociales;
+    }
+
+    /** Establece las razones sociales de las paradas, en el mismo orden que paradaIds. */
+    public void setParadaRazonesSociales(List<String> paradaRazonesSociales) {
+        this.paradaRazonesSociales = paradaRazonesSociales;
     }
 }

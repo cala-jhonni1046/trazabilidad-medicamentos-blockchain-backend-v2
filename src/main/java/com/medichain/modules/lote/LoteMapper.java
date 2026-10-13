@@ -30,6 +30,8 @@ public class LoteMapper {
         dto.setFechaLiberacion(entity.getFechaLiberacion());
         dto.setMedicamentoId(entity.getMedicamento() != null ? entity.getMedicamento().getId() : null);
         dto.setLaboratorioId(entity.getLaboratorio() != null ? entity.getLaboratorio().getId() : null);
+        dto.setMedicamentoNombre(entity.getMedicamento() != null ? entity.getMedicamento().getNombreComercial() : null);
+        dto.setLaboratorioRazonSocial(entity.getLaboratorio() != null ? entity.getLaboratorio().getRazonSocial() : null);
         dto.setLiberadoPorId(entity.getLiberadoPor() != null ? entity.getLiberadoPor().getId() : null);
         // R10: lo calcula EvaluadorBloqueo (el mapper no consulta la base); null = no bloqueado.
         dto.setBloqueado(bloqueo != null);

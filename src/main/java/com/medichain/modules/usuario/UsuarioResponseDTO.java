@@ -40,6 +40,8 @@ public class UsuarioResponseDTO {
     @Schema(nullable = true)
     private UUID empresaId;
 
+    @Schema(description = "la razón social de la empresa del usuario (null si no tiene empresa)", nullable = true)
+    private String empresaRazonSocial;
     /** Constructor vacío exigido por Jackson. */
     public UsuarioResponseDTO() {
     }
@@ -182,5 +184,15 @@ public class UsuarioResponseDTO {
     /** Establece el id de la empresa donde trabaja el usuario. */
     public void setEmpresaId(UUID empresaId) {
         this.empresaId = empresaId;
+    }
+
+    /** Devuelve la razón social de la empresa del usuario (null si no tiene empresa). */
+    public String getEmpresaRazonSocial() {
+        return empresaRazonSocial;
+    }
+
+    /** Establece la razón social de la empresa del usuario (null si no tiene empresa). */
+    public void setEmpresaRazonSocial(String empresaRazonSocial) {
+        this.empresaRazonSocial = empresaRazonSocial;
     }
 }

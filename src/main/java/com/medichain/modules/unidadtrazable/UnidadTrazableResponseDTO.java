@@ -43,6 +43,10 @@ public class UnidadTrazableResponseDTO {
     @Schema(description = "Explicación del bloqueo para mostrar; null si no está bloqueado",
             example = "el lote L2026-0415 está vencido", nullable = true)
     private String mensajeBloqueo;
+    @Schema(description = "el código del lote de la caja", example = "L2026-0001", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String loteCodigo;
+    @Schema(description = "el nombre comercial del medicamento de la caja", example = "Cuyafen", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String medicamentoNombre;
     /** Constructor vacío exigido por Jackson. */
     public UnidadTrazableResponseDTO() {
     }
@@ -185,5 +189,25 @@ public class UnidadTrazableResponseDTO {
     /** Establece la explicación del bloqueo. */
     public void setMensajeBloqueo(String mensajeBloqueo) {
         this.mensajeBloqueo = mensajeBloqueo;
+    }
+
+    /** Devuelve el código del lote de la caja. */
+    public String getLoteCodigo() {
+        return loteCodigo;
+    }
+
+    /** Establece el código del lote de la caja. */
+    public void setLoteCodigo(String loteCodigo) {
+        this.loteCodigo = loteCodigo;
+    }
+
+    /** Devuelve el nombre comercial del medicamento de la caja. */
+    public String getMedicamentoNombre() {
+        return medicamentoNombre;
+    }
+
+    /** Establece el nombre comercial del medicamento de la caja. */
+    public void setMedicamentoNombre(String medicamentoNombre) {
+        this.medicamentoNombre = medicamentoNombre;
     }
 }

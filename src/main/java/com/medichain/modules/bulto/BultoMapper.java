@@ -28,6 +28,12 @@ public class BultoMapper {
         dto.setFechaArmado(entity.getFechaArmado());
         dto.setLoteId(entity.getLote() != null ? entity.getLote().getId() : null);
         dto.setDestinoId(entity.getDestino() != null ? entity.getDestino().getId() : null);
+        dto.setLoteCodigo(entity.getLote() != null ? entity.getLote().getCodigo() : null);
+        if (entity.getDestino() != null) {
+            dto.setCircuitoCodigo(entity.getDestino().getCodigo());
+            dto.setDistribuidorRazonSocial(entity.getDestino().getDistribuidor().getRazonSocial());
+            dto.setFarmaciaRazonSocial(entity.getDestino().getFarmacia().getRazonSocial());
+        }
         dto.setUbicacionId(entity.getUbicacion() != null ? entity.getUbicacion().getId() : null);
         dto.setViajeActualId(entity.getViajeActual() != null ? entity.getViajeActual().getId() : null);
         // R10: lo calcula EvaluadorBloqueo (el mapper no consulta la base); null = no bloqueado.

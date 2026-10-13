@@ -31,6 +31,9 @@ public class EnlaceCuitMapper {
         dto.setLaboratorioId(entity.getLaboratorio() != null ? entity.getLaboratorio().getId() : null);
         dto.setDistribuidorId(entity.getDistribuidor() != null ? entity.getDistribuidor().getId() : null);
         dto.setFarmaciaId(entity.getFarmacia() != null ? entity.getFarmacia().getId() : null);
+        dto.setLaboratorioRazonSocial(entity.getLaboratorio() != null ? entity.getLaboratorio().getRazonSocial() : null);
+        dto.setDistribuidorRazonSocial(entity.getDistribuidor() != null ? entity.getDistribuidor().getRazonSocial() : null);
+        dto.setFarmaciaRazonSocial(entity.getFarmacia() != null ? entity.getFarmacia().getRazonSocial() : null);
         dto.setPropuestoPorId(entity.getPropuestoPor() != null ? entity.getPropuestoPor().getId() : null);
         dto.setInspectorAprobadorId(entity.getInspectorAprobador() != null ? entity.getInspectorAprobador().getId() : null);
         dto.setInspectorRevisorId(entity.getInspectorRevisor() != null ? entity.getInspectorRevisor().getId() : null);

@@ -53,6 +53,12 @@ public class EnlaceCuitResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean suspendidoPorEmpresa;
 
+    @Schema(description = "la razón social del laboratorio", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String laboratorioRazonSocial;
+    @Schema(description = "la razón social de la distribuidora", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String distribuidorRazonSocial;
+    @Schema(description = "la razón social de la farmacia", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String farmaciaRazonSocial;
     /** Constructor vacío exigido por Jackson. */
     public EnlaceCuitResponseDTO() {
     }
@@ -255,5 +261,35 @@ public class EnlaceCuitResponseDTO {
     /** Establece si está suspendido por la suspensión de una empresa. */
     public void setSuspendidoPorEmpresa(Boolean suspendidoPorEmpresa) {
         this.suspendidoPorEmpresa = suspendidoPorEmpresa;
+    }
+
+    /** Devuelve la razón social del laboratorio. */
+    public String getLaboratorioRazonSocial() {
+        return laboratorioRazonSocial;
+    }
+
+    /** Establece la razón social del laboratorio. */
+    public void setLaboratorioRazonSocial(String laboratorioRazonSocial) {
+        this.laboratorioRazonSocial = laboratorioRazonSocial;
+    }
+
+    /** Devuelve la razón social de la distribuidora. */
+    public String getDistribuidorRazonSocial() {
+        return distribuidorRazonSocial;
+    }
+
+    /** Establece la razón social de la distribuidora. */
+    public void setDistribuidorRazonSocial(String distribuidorRazonSocial) {
+        this.distribuidorRazonSocial = distribuidorRazonSocial;
+    }
+
+    /** Devuelve la razón social de la farmacia. */
+    public String getFarmaciaRazonSocial() {
+        return farmaciaRazonSocial;
+    }
+
+    /** Establece la razón social de la farmacia. */
+    public void setFarmaciaRazonSocial(String farmaciaRazonSocial) {
+        this.farmaciaRazonSocial = farmaciaRazonSocial;
     }
 }

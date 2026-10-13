@@ -55,6 +55,8 @@ public class CuarentenaResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Set<UUID> bultoIds = new LinkedHashSet<>();
 
+    @Schema(description = "el código del lote de la medida (null si no es de alcance LOTE)", nullable = true)
+    private String loteCodigo;
     /** Constructor vacío exigido por Jackson. */
     public CuarentenaResponseDTO() {
     }
@@ -257,5 +259,15 @@ public class CuarentenaResponseDTO {
     /** Establece el código del reporte de origen. */
     public void setReporteOrigen(String reporteOrigen) {
         this.reporteOrigen = reporteOrigen;
+    }
+
+    /** Devuelve el código del lote de la medida (null si no es de alcance LOTE). */
+    public String getLoteCodigo() {
+        return loteCodigo;
+    }
+
+    /** Establece el código del lote de la medida (null si no es de alcance LOTE). */
+    public void setLoteCodigo(String loteCodigo) {
+        this.loteCodigo = loteCodigo;
     }
 }

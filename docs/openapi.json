@@ -7505,6 +7505,11 @@
             "format" : "int32",
             "example" : 10
           },
+          "circuitoCodigo" : {
+            "type" : "string",
+            "description" : "el código del circuito de destino del bulto (destinoId)",
+            "example" : "CIR-0001"
+          },
           "codigo" : {
             "type" : "string",
             "example" : "BUL-0001"
@@ -7513,8 +7518,16 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "distribuidorRazonSocial" : {
+            "type" : "string",
+            "description" : "la razón social de la distribuidora del circuito de destino"
+          },
           "estado" : {
             "$ref" : "#/components/schemas/EstadoBulto"
+          },
+          "farmaciaRazonSocial" : {
+            "type" : "string",
+            "description" : "la razón social de la farmacia del circuito de destino"
           },
           "fechaActualizacion" : {
             "type" : "string",
@@ -7531,6 +7544,11 @@
           "id" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "loteCodigo" : {
+            "type" : "string",
+            "description" : "el código del lote del bulto",
+            "example" : "L2026-0001"
           },
           "loteId" : {
             "type" : "string",
@@ -7566,7 +7584,7 @@
             "format" : "uuid"
           }
         },
-        "required" : [ "bloqueado", "cantidad", "codigo", "destinoId", "estado", "fechaActualizacion", "fechaArmado", "fechaCreacion", "id", "loteId", "precinto", "version" ]
+        "required" : [ "bloqueado", "cantidad", "circuitoCodigo", "codigo", "destinoId", "distribuidorRazonSocial", "estado", "farmaciaRazonSocial", "fechaActualizacion", "fechaArmado", "fechaCreacion", "id", "loteCodigo", "loteId", "precinto", "version" ]
       },
       "CausaBloqueo" : {
         "type" : "string",
@@ -7670,6 +7688,10 @@
           "inspectorRevisorId" : {
             "type" : [ "string", "null" ],
             "format" : "uuid"
+          },
+          "loteCodigo" : {
+            "type" : [ "string", "null" ],
+            "description" : "el código del lote de la medida (null si no es de alcance LOTE)"
           },
           "loteId" : {
             "type" : [ "string", "null" ],
@@ -7785,11 +7807,22 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "origenRazonSocial" : {
+            "type" : "string",
+            "description" : "la razón social de la empresa de origen del viaje"
+          },
           "paradaIds" : {
             "type" : "array",
             "items" : {
               "type" : "string",
               "format" : "uuid"
+            }
+          },
+          "paradaRazonesSociales" : {
+            "type" : "array",
+            "description" : "las razones sociales de las paradas, en el mismo orden que paradaIds",
+            "items" : {
+              "type" : "string"
             }
           },
           "patente" : {
@@ -7803,7 +7836,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "bultoCodigos", "bultoIds", "chofer", "codigo", "creadoPorId", "estado", "fechaActualizacion", "fechaCreacion", "fechaEstimadaEntrega", "id", "origenId", "paradaIds", "patente", "tramo", "version" ]
+        "required" : [ "bultoCodigos", "bultoIds", "chofer", "codigo", "creadoPorId", "estado", "fechaActualizacion", "fechaCreacion", "fechaEstimadaEntrega", "id", "origenId", "origenRazonSocial", "paradaIds", "paradaRazonesSociales", "patente", "tramo", "version" ]
       },
       "DevolucionRequestDTO" : {
         "type" : "object",
@@ -8099,12 +8132,20 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "distribuidorRazonSocial" : {
+            "type" : "string",
+            "description" : "la razón social de la distribuidora"
+          },
           "estado" : {
             "$ref" : "#/components/schemas/EstadoEnlaceCuit"
           },
           "farmaciaId" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "farmaciaRazonSocial" : {
+            "type" : "string",
+            "description" : "la razón social de la farmacia"
           },
           "fechaAceptacionDistribuidor" : {
             "type" : [ "string", "null" ],
@@ -8146,6 +8187,10 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "laboratorioRazonSocial" : {
+            "type" : "string",
+            "description" : "la razón social del laboratorio"
+          },
           "motivoRechazo" : {
             "type" : [ "string", "null" ]
           },
@@ -8171,7 +8216,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "codigo", "distribuidorId", "estado", "farmaciaId", "fechaActualizacion", "fechaCreacion", "fechaPropuesta", "id", "laboratorioId", "propuestoPorId", "suspendidoPorEmpresa", "version" ]
+        "required" : [ "codigo", "distribuidorId", "distribuidorRazonSocial", "estado", "farmaciaId", "farmaciaRazonSocial", "fechaActualizacion", "fechaCreacion", "fechaPropuesta", "id", "laboratorioId", "laboratorioRazonSocial", "propuestoPorId", "suspendidoPorEmpresa", "version" ]
       },
       "ErrorCampoDTO" : {
         "type" : "object",
@@ -8516,6 +8561,11 @@
       "InspectorAnmatResponseDTO" : {
         "type" : "object",
         "properties" : {
+          "apellido" : {
+            "type" : "string",
+            "description" : "el apellido del inspector (de su cuenta de usuario)",
+            "example" : "Quiroga"
+          },
           "dni" : {
             "type" : "string"
           },
@@ -8545,6 +8595,11 @@
           "legajo" : {
             "type" : "string"
           },
+          "nombre" : {
+            "type" : "string",
+            "description" : "el nombre del inspector (de su cuenta de usuario)",
+            "example" : "Rocío"
+          },
           "provincia" : {
             "$ref" : "#/components/schemas/Provincia"
           },
@@ -8561,7 +8616,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "dni", "estado", "fechaActualizacion", "fechaAlta", "fechaCreacion", "id", "legajo", "provincia", "usuarioAltaId", "usuarioId", "version" ]
+        "required" : [ "apellido", "dni", "estado", "fechaActualizacion", "fechaAlta", "fechaCreacion", "id", "legajo", "nombre", "provincia", "usuarioAltaId", "usuarioId", "version" ]
       },
       "LoginRequestDTO" : {
         "type" : "object",
@@ -8746,6 +8801,10 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "laboratorioRazonSocial" : {
+            "type" : "string",
+            "description" : "la razón social del laboratorio del lote"
+          },
           "liberadoPorId" : {
             "type" : [ "string", "null" ],
             "format" : "uuid"
@@ -8753,6 +8812,11 @@
           "medicamentoId" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "medicamentoNombre" : {
+            "type" : "string",
+            "description" : "el nombre comercial del medicamento del lote",
+            "example" : "Cuyafen"
           },
           "mensajeBloqueo" : {
             "type" : [ "string", "null" ],
@@ -8772,7 +8836,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "bloqueado", "cantidad", "codigo", "estado", "fechaActualizacion", "fechaCreacion", "fechaFabricacion", "fechaVencimiento", "id", "laboratorioId", "medicamentoId", "version" ]
+        "required" : [ "bloqueado", "cantidad", "codigo", "estado", "fechaActualizacion", "fechaCreacion", "fechaFabricacion", "fechaVencimiento", "id", "laboratorioId", "laboratorioRazonSocial", "medicamentoId", "medicamentoNombre", "version" ]
       },
       "MedicamentoRequestDTO" : {
         "type" : "object",
@@ -9877,9 +9941,19 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "loteCodigo" : {
+            "type" : "string",
+            "description" : "el código del lote de la caja",
+            "example" : "L2026-0001"
+          },
           "loteId" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "medicamentoNombre" : {
+            "type" : "string",
+            "description" : "el nombre comercial del medicamento de la caja",
+            "example" : "Cuyafen"
           },
           "mensajeBloqueo" : {
             "type" : [ "string", "null" ],
@@ -9903,7 +9977,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "bloqueado", "codigoGS1", "estado", "fechaActualizacion", "fechaCreacion", "gtin", "id", "loteId", "serie", "version" ]
+        "required" : [ "bloqueado", "codigoGS1", "estado", "fechaActualizacion", "fechaCreacion", "gtin", "id", "loteCodigo", "loteId", "medicamentoNombre", "serie", "version" ]
       },
       "UsuarioRequestDTO" : {
         "type" : "object",
@@ -9981,6 +10055,10 @@
           "empresaId" : {
             "type" : [ "string", "null" ],
             "format" : "uuid"
+          },
+          "empresaRazonSocial" : {
+            "type" : [ "string", "null" ],
+            "description" : "la razón social de la empresa del usuario (null si no tiene empresa)"
           },
           "esAdminEmpresa" : {
             "type" : "boolean"

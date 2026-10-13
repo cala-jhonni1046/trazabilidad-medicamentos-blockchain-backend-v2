@@ -26,6 +26,11 @@ public class UnidadTrazableMapper {
         dto.setCodigoGS1(entity.codigoGS1());
         dto.setEstado(entity.getEstado());
         dto.setLoteId(entity.getLote() != null ? entity.getLote().getId() : null);
+        if (entity.getLote() != null) {
+            dto.setLoteCodigo(entity.getLote().getCodigo());
+            dto.setMedicamentoNombre(entity.getLote().getMedicamento() != null
+                    ? entity.getLote().getMedicamento().getNombreComercial() : null);
+        }
         dto.setEmpresaActualId(entity.getEmpresaActual() != null ? entity.getEmpresaActual().getId() : null);
         dto.setBultoId(entity.getBulto() != null ? entity.getBulto().getId() : null);
         // R10: lo calcula EvaluadorBloqueo (el mapper no consulta la base); null = no bloqueado.

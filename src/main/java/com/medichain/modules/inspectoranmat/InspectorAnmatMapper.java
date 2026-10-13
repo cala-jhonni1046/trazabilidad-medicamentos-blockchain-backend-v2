@@ -38,6 +38,9 @@ public class InspectorAnmatMapper {
         dto.setFechaBaja(entity.getFechaBaja());
         dto.setUsuarioId(entity.getUsuario() != null ? entity.getUsuario().getId() : null);
         dto.setUsuarioAltaId(entity.getUsuarioAlta() != null ? entity.getUsuarioAlta().getId() : null);
+        // Nombre de la cuenta del inspector (B12c): el front no tiene que pedir el usuario por cada fila.
+        dto.setNombre(entity.getUsuario() != null ? entity.getUsuario().getNombre() : null);
+        dto.setApellido(entity.getUsuario() != null ? entity.getUsuario().getApellido() : null);
         return dto;
     }
 }

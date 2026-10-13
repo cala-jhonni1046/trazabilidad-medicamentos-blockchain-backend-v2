@@ -34,6 +34,7 @@ public class CuarentenaMapper {
         dto.setFechaInicio(entity.getFechaInicio());
         dto.setFechaFin(entity.getFechaFin());
         dto.setLoteId(entity.getLote() != null ? entity.getLote().getId() : null);
+        dto.setLoteCodigo(entity.getLote() != null ? entity.getLote().getCodigo() : null);
         dto.setDespachoId(entity.getDespacho() != null ? entity.getDespacho().getId() : null);
         dto.setInspectorId(entity.getInspector() != null ? entity.getInspector().getId() : null);
         dto.setInspectorRevisorId(entity.getInspectorRevisor() != null ? entity.getInspectorRevisor().getId() : null);

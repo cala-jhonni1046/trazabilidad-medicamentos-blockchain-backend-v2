@@ -960,6 +960,55 @@ def seccion_b12b_filtros_cajas_viajes(ctx, demo, admin):
     ctx.verificar("b12b.6", "lo ajeno no se ve: Cerro Arco no ve viajes FINALIZADO de otra farmacia", 200, r, total(r) == 0)
 
 
+def seccion_b12c_nombres(ctx, demo, admin):
+    """B12c: las respuestas traen los nombres (razón social, nombre del inspector, códigos) además de los ids."""
+    sede = ctx.token(admin[0], admin[1])
+    lab = ctx.token(EMAIL_LABORATORIO, demo)
+
+    r = pedir("GET", ctx.url("/api/inspectores-anmat?size=100"), token=sede)
+    inspector = (contenido(r) or [{}])[0]
+    ctx.verificar("b12c.1", "el inspector trae nombre y apellido (%s %s)" % (inspector.get("nombre"), inspector.get("apellido")),
+                  200, r, bool(inspector.get("nombre")) and bool(inspector.get("apellido")))
+
+    r = pedir("GET", ctx.url("/api/circuitos?size=100"), token=sede)
+    circuito = buscar(contenido(r), "codigo", "CIR-0001") or {}
+    ctx.verificar("b12c.2", "CIR-0001 trae las razones sociales de laboratorio, distribuidora y farmacia", 200, r,
+                  "Andino" in (circuito.get("laboratorioRazonSocial") or "")
+                  and "Piedemonte" in (circuito.get("distribuidorRazonSocial") or "")
+                  and "Alamos" in (circuito.get("farmaciaRazonSocial") or "").replace("Á", "A").replace("á", "a"),
+                  detalle=(circuito.get("laboratorioRazonSocial"), circuito.get("distribuidorRazonSocial"),
+                           circuito.get("farmaciaRazonSocial")))
+
+    r = pedir("GET", ctx.url("/api/viajes?size=100"), token=lab)
+    viaje = (contenido(r) or [{}])[0]
+    ctx.verificar("b12c.3", "el viaje trae el origen y una razón social por parada", 200, r,
+                  "Andino" in (viaje.get("origenRazonSocial") or "")
+                  and len(viaje.get("paradaRazonesSociales") or []) == len(viaje.get("paradaIds") or []) > 0)
+
+    r = pedir("GET", ctx.url("/api/bultos?size=100"), token=lab)
+    bulto = buscar(contenido(r), "codigo", "BUL-0001") or {}
+    ctx.verificar("b12c.4", "BUL-0001 trae el lote, el circuito de destino y sus dos empresas", 200, r,
+                  bulto.get("loteCodigo") == "L2026-0001" and bulto.get("circuitoCodigo") == "CIR-0001"
+                  and bool(bulto.get("distribuidorRazonSocial")) and bool(bulto.get("farmaciaRazonSocial")))
+
+    r = pedir("GET", ctx.url("/api/lotes?size=100"), token=lab)
+    lote = buscar(contenido(r), "codigo", "L2026-0001") or {}
+    ctx.verificar("b12c.5", "el lote trae el medicamento (Cuyafen) y el laboratorio", 200, r,
+                  lote.get("medicamentoNombre") == "Cuyafen" and "Andino" in (lote.get("laboratorioRazonSocial") or ""))
+
+    r = pedir("GET", ctx.url("/api/unidades-trazables?size=5"), token=lab)
+    cajas = contenido(r)
+    ctx.verificar("b12c.6", "la caja trae el código del lote y el medicamento", 200, r,
+                  len(cajas) > 0 and all(c.get("loteCodigo") and c.get("medicamentoNombre") for c in cajas))
+
+    r = pedir("GET", ctx.url("/api/usuarios?size=100"), token=sede)
+    usuarios = contenido(r)
+    del_lab = buscar(usuarios, "email", EMAIL_LABORATORIO) or {}
+    de_sede = buscar(usuarios, "email", admin[0]) or {}
+    ctx.verificar("b12c.7", "el usuario trae la razón social de su empresa; la Sede, null", 200, r,
+                  "Andino" in (del_lab.get("empresaRazonSocial") or "") and de_sede.get("empresaRazonSocial") is None)
+
+
 def seccion_final_cadena(ctx, demo, admin):
     """Final: la cadena sigue íntegra después de todo el recorrido."""
     sede = ctx.token(admin[0], admin[1])
@@ -986,6 +1035,7 @@ SECCIONES = [
     ("B11d · Fechas en UTC con Z y entrada con offset", seccion_b11d_fechas),
     ("B12a · Contrato: enums, regla solo en 409 y tamaño máximo de página", seccion_b12a_contrato),
     ("B12b · ?estado= en cajas y viajes", seccion_b12b_filtros_cajas_viajes),
+    ("B12c · Nombres en los DTO", seccion_b12c_nombres),
     ("Final · Cadena íntegra", seccion_final_cadena),
 ]
 

@@ -51,6 +51,7 @@ public class UsuarioMapper {
         dto.setEsDirectorTecnico(entity.getEsDirectorTecnico());
         dto.setUltimoLogin(entity.getUltimoLogin());
         dto.setEmpresaId(entity.getEmpresa() != null ? entity.getEmpresa().getId() : null);
+        dto.setEmpresaRazonSocial(entity.getEmpresa() != null ? entity.getEmpresa().getRazonSocial() : null);
         return dto;
     }
 }

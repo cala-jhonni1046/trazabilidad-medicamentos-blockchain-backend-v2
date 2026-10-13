@@ -47,6 +47,14 @@ public class BultoResponseDTO {
     @Schema(description = "Explicación del bloqueo para mostrar; null si no está bloqueado",
             example = "el lote L2026-0415 está vencido", nullable = true)
     private String mensajeBloqueo;
+    @Schema(description = "el código del lote del bulto", example = "L2026-0001", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String loteCodigo;
+    @Schema(description = "el código del circuito de destino del bulto (destinoId)", example = "CIR-0001", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String circuitoCodigo;
+    @Schema(description = "la razón social de la distribuidora del circuito de destino", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String distribuidorRazonSocial;
+    @Schema(description = "la razón social de la farmacia del circuito de destino", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String farmaciaRazonSocial;
     /** Constructor vacío exigido por Jackson. */
     public BultoResponseDTO() {
     }
@@ -209,5 +217,45 @@ public class BultoResponseDTO {
     /** Establece la explicación del bloqueo. */
     public void setMensajeBloqueo(String mensajeBloqueo) {
         this.mensajeBloqueo = mensajeBloqueo;
+    }
+
+    /** Devuelve el código del lote del bulto. */
+    public String getLoteCodigo() {
+        return loteCodigo;
+    }
+
+    /** Establece el código del lote del bulto. */
+    public void setLoteCodigo(String loteCodigo) {
+        this.loteCodigo = loteCodigo;
+    }
+
+    /** Devuelve el código del circuito de destino del bulto (destinoId). */
+    public String getCircuitoCodigo() {
+        return circuitoCodigo;
+    }
+
+    /** Establece el código del circuito de destino del bulto (destinoId). */
+    public void setCircuitoCodigo(String circuitoCodigo) {
+        this.circuitoCodigo = circuitoCodigo;
+    }
+
+    /** Devuelve la razón social de la distribuidora del circuito de destino. */
+    public String getDistribuidorRazonSocial() {
+        return distribuidorRazonSocial;
+    }
+
+    /** Establece la razón social de la distribuidora del circuito de destino. */
+    public void setDistribuidorRazonSocial(String distribuidorRazonSocial) {
+        this.distribuidorRazonSocial = distribuidorRazonSocial;
+    }
+
+    /** Devuelve la razón social de la farmacia del circuito de destino. */
+    public String getFarmaciaRazonSocial() {
+        return farmaciaRazonSocial;
+    }
+
+    /** Establece la razón social de la farmacia del circuito de destino. */
+    public void setFarmaciaRazonSocial(String farmaciaRazonSocial) {
+        this.farmaciaRazonSocial = farmaciaRazonSocial;
     }
 }

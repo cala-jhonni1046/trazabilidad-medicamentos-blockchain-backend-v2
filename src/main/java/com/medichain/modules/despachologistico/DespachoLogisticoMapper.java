@@ -36,6 +36,8 @@ public class DespachoLogisticoMapper {
         dto.setBultoIds(entity.getBultos().stream().map(Bulto::getId).collect(Collectors.toCollection(LinkedHashSet::new)));
         dto.setBultoCodigos(entity.getBultos().stream().map(Bulto::getCodigo).sorted().toList());
         dto.setParadaIds(entity.paradas().stream().map(Empresa::getId).toList());
+        dto.setOrigenRazonSocial(entity.getOrigen() != null ? entity.getOrigen().getRazonSocial() : null);
+        dto.setParadaRazonesSociales(entity.paradas().stream().map(Empresa::getRazonSocial).toList());
         return dto;
     }
 }

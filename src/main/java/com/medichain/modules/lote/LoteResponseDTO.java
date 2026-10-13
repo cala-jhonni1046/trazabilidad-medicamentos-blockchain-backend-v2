@@ -50,6 +50,10 @@ public class LoteResponseDTO {
     @Schema(description = "Explicación del bloqueo para mostrar; null si no está bloqueado",
             example = "el lote L2026-0415 está vencido", nullable = true)
     private String mensajeBloqueo;
+    @Schema(description = "el nombre comercial del medicamento del lote", example = "Cuyafen", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String medicamentoNombre;
+    @Schema(description = "la razón social del laboratorio del lote", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String laboratorioRazonSocial;
     /** Constructor vacío exigido por Jackson. */
     public LoteResponseDTO() {
     }
@@ -222,5 +226,25 @@ public class LoteResponseDTO {
     /** Establece la explicación del bloqueo. */
     public void setMensajeBloqueo(String mensajeBloqueo) {
         this.mensajeBloqueo = mensajeBloqueo;
+    }
+
+    /** Devuelve el nombre comercial del medicamento del lote. */
+    public String getMedicamentoNombre() {
+        return medicamentoNombre;
+    }
+
+    /** Establece el nombre comercial del medicamento del lote. */
+    public void setMedicamentoNombre(String medicamentoNombre) {
+        this.medicamentoNombre = medicamentoNombre;
+    }
+
+    /** Devuelve la razón social del laboratorio del lote. */
+    public String getLaboratorioRazonSocial() {
+        return laboratorioRazonSocial;
+    }
+
+    /** Establece la razón social del laboratorio del lote. */
+    public void setLaboratorioRazonSocial(String laboratorioRazonSocial) {
+        this.laboratorioRazonSocial = laboratorioRazonSocial;
     }
 }

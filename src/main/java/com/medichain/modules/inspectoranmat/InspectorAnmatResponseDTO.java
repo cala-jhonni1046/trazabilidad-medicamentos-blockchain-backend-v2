@@ -37,6 +37,10 @@ public class InspectorAnmatResponseDTO {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private UUID usuarioAltaId;
 
+    @Schema(description = "el nombre del inspector (de su cuenta de usuario)", example = "Rocío", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String nombre;
+    @Schema(description = "el apellido del inspector (de su cuenta de usuario)", example = "Quiroga", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String apellido;
     /** Constructor vacío exigido por Jackson. */
     public InspectorAnmatResponseDTO() {
     }
@@ -159,5 +163,25 @@ public class InspectorAnmatResponseDTO {
     /** Establece el id del usuario que dio de alta al inspector. */
     public void setUsuarioAltaId(UUID usuarioAltaId) {
         this.usuarioAltaId = usuarioAltaId;
+    }
+
+    /** Devuelve el nombre del inspector (de su cuenta de usuario). */
+    public String getNombre() {
+        return nombre;
+    }
+
+    /** Establece el nombre del inspector (de su cuenta de usuario). */
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    /** Devuelve el apellido del inspector (de su cuenta de usuario). */
+    public String getApellido() {
+        return apellido;
+    }
+
+    /** Establece el apellido del inspector (de su cuenta de usuario). */
+    public void setApellido(String apellido) {
+        this.apellido = apellido;
     }
 }
