@@ -72,6 +72,9 @@ EMAIL_FARMACIA_NUEVA = "admin@farmacia-e2e.demo"
 CUIT_FARMACIA_SALTA = "30-71000007-3"
 GLN_FARMACIA_SALTA = "7799000000099"
 EMAIL_FARMACIA_SALTA = "admin@farmacia-salta.demo"
+CUIT_FARMACIA_B12F = "30-71000013-8"
+GLN_FARMACIA_B12F = "7799000000105"
+EMAIL_FARMACIA_B12F = "admin@farmacia-b12f.demo"
 
 # Inspector que la prueba da de alta, de baja y reactiva (paso 9: token de una cuenta desactivada).
 EMAIL_INSPECTOR_BAJA = "inspector.baja.e2e@medichain.demo"
@@ -1133,6 +1136,38 @@ def seccion_b12e_trazabilidad_por_codigo(ctx, demo, admin):
                   [c["serie"] for c in contenido(r)] == ["L20260001S000011"])
 
 
+def seccion_b12g_aislamiento_medicamentos(ctx, demo, admin):
+    """B12g: el catálogo de medicamentos se aísla por rol (LAB los suyos; DIST/FARM por circuito APROBADO)."""
+    lab = ctx.token(EMAIL_LABORATORIO, demo)
+    r = pedir("GET", ctx.url("/api/medicamentos?size=100"), token=lab)
+    cuyafen = buscar(contenido(r), "gtin", GTIN_CUYAFEN)
+    ctx.verificar("b12g.1", "el laboratorio ve su medicamento Cuyafen en el catálogo", 200, r, cuyafen is not None)
+    cuyafen_id = exigir(cuyafen, "Cuyafen no está en el catálogo del laboratorio")["id"]
+
+    # Los Álamos tiene el circuito CIR-0001 APROBADO con el laboratorio Andino.
+    farmacia = ctx.token(EMAIL_FARMACIA, demo)
+    r = pedir("GET", ctx.url("/api/medicamentos?size=100"), token=farmacia)
+    ctx.verificar("b12g.2", "la farmacia con circuito APROBADO ve el medicamento del laboratorio", 200, r,
+                  buscar(contenido(r), "gtin", GTIN_CUYAFEN) is not None)
+    r = pedir("GET", ctx.url("/api/medicamentos/%s" % cuyafen_id), token=farmacia)
+    ctx.verificar("b12g.3", "esa farmacia abre el medicamento por id → 200", 200, r)
+
+    # Una farmacia nueva (registrada acá, sin ningún circuito APROBADO): catálogo vacío y 404 por id.
+    campos = {"tipo": "FARMACIA", "cuit": CUIT_FARMACIA_B12F, "razonSocial": "Farmacia B12f E2E",
+              "gln": GLN_FARMACIA_B12F, "provincia": "MENDOZA", "localidad": "Mendoza",
+              "domicilio": "Calle Sin Circuito 10", "adminEmail": EMAIL_FARMACIA_B12F, "adminPassword": demo,
+              "adminNombre": "Prueba", "adminApellido": "B12f", "adminDni": "30111098"}
+    pdf = b"%PDF-1.4\n% habilitacion e2e b12f\n%%EOF\n"
+    r = pedir_multipart(ctx.url("/api/registro/empresas"), campos,
+                        {"documento": ("habilitacion.pdf", pdf, "application/pdf")})
+    exigir(r.codigo == 201, "no se registró la farmacia B12f (HTTP %s)" % r.codigo)
+    nueva = ctx.token(EMAIL_FARMACIA_B12F, demo)
+    r = pedir("GET", ctx.url("/api/medicamentos?size=100"), token=nueva)
+    ctx.verificar("b12g.4", "una farmacia sin circuito APROBADO ve el catálogo vacío", 200, r, total(r) == 0)
+    r = pedir("GET", ctx.url("/api/medicamentos/%s" % cuyafen_id), token=nueva)
+    ctx.verificar("b12g.5", "esa farmacia pide el medicamento por id → 404 (fuera de alcance)", 404, r)
+
+
 def seccion_final_cadena(ctx, demo, admin):
     """Final: la cadena sigue íntegra después de todo el recorrido."""
     sede = ctx.token(admin[0], admin[1])
@@ -1163,6 +1198,7 @@ SECCIONES = [
     ("B12f · Demo: segunda cadena (Valle de Uco)", seccion_b12f_demo_valle_de_uco),
     ("B12d · Tablero: resumen de la Sede y bandeja del inspector", seccion_b12d_tablero),
     ("B12e · Trazabilidad por código y búsquedas", seccion_b12e_trazabilidad_por_codigo),
+    ("B12g · Aislamiento del catálogo de medicamentos por rol", seccion_b12g_aislamiento_medicamentos),
     ("Final · Cadena íntegra", seccion_final_cadena),
 ]
 

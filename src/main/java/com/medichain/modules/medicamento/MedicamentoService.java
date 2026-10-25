@@ -19,9 +19,12 @@ import java.util.UUID;
 
 /**
  * Servicio MedicamentoService en MediChain.
- * El catálogo de medicamentos es visible para todos los roles salvo
- * PACIENTE (lo controla @PreAuthorize), sin filtrado. El alta la hace un
- * laboratorio HABILITADO (R2); el laboratorio sale del token.
+ * Alcance de lectura por rol: la Sede y los inspectores ven todo el catálogo;
+ * un laboratorio ve solo los suyos; una distribuidora o farmacia ve los de los
+ * laboratorios con los que tiene un circuito APROBADO (PACIENTE no accede, lo
+ * corta @PreAuthorize). Un medicamento fuera del alcance del rol responde 404
+ * en getById, como el resto de los recursos de otra empresa. El alta la hace
+ * un laboratorio HABILITADO (R2); el laboratorio sale del token.
  */
 @Service
 public class MedicamentoService {
@@ -41,17 +44,47 @@ public class MedicamentoService {
         this.registradorEventos = registradorEventos;
     }
 
-    /** Devuelve una página del catálogo de medicamentos. */
+    /** Devuelve una página del catálogo según el alcance del rol del usuario. */
     @Transactional(readOnly = true)
     public Page<Medicamento> getAll(Pageable pageable) {
-        return repository.findAll(pageable);
+        UsuarioAutenticado actual = usuarioActual.obtener();
+        return switch (actual.getRol()) {
+            case SEDE_CENTRAL, INSPECTOR -> repository.findAll(pageable);
+            case LABORATORIO -> repository.findByLaboratorioId(actual.getEmpresaId(), pageable);
+            case DISTRIBUIDOR, FARMACIA -> repository.findVisiblesParaEmpresa(actual.getEmpresaId(), pageable);
+            case PACIENTE -> Page.empty(pageable);
+        };
     }
 
-    /** Busca un medicamento por id o lanza ResourceNotFoundException si no existe. */
+    /**
+     * Busca un medicamento por id dentro del alcance del rol. Si no existe, o
+     * existe pero está fuera del alcance (de otro laboratorio sin circuito con
+     * la empresa), lanza ResourceNotFoundException (404), igual que cualquier
+     * recurso de otra empresa.
+     */
     @Transactional(readOnly = true)
     public Medicamento getById(UUID id) {
-        return repository.findById(id)
+        UsuarioAutenticado actual = usuarioActual.obtener();
+        Medicamento medicamento = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Medicamento no encontrado con id: " + id));
+        if (esVisiblePara(medicamento, actual)) {
+            return medicamento;
+        }
+        throw new ResourceNotFoundException("Medicamento no encontrado con id: " + id);
+    }
+
+    /**
+     * Visibilidad de lectura de un medicamento según el rol: la Sede y los
+     * inspectores ven todo; el laboratorio, los suyos; la distribuidora o
+     * farmacia, los de los laboratorios con circuito APROBADO con ella.
+     */
+    private boolean esVisiblePara(Medicamento medicamento, UsuarioAutenticado actual) {
+        return switch (actual.getRol()) {
+            case SEDE_CENTRAL, INSPECTOR -> true;
+            case LABORATORIO -> medicamento.getLaboratorio().getId().equals(actual.getEmpresaId());
+            case DISTRIBUIDOR, FARMACIA -> repository.existsVisibleParaEmpresa(medicamento.getId(), actual.getEmpresaId());
+            case PACIENTE -> false;
+        };
     }
 
     /**
