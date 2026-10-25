@@ -68,8 +68,8 @@ public class UsuarioService {
     }
 
     /**
-     * Busca un usuario por id. Visible para SEDE, para uno mismo y para el
-     * administrador de la misma empresa; en cualquier otro caso 404.
+     * Busca un usuario por id. Visible para SEDE, para uno mismo y para
+     * cualquier usuario de la misma empresa; en cualquier otro caso 404.
      */
     @Transactional(readOnly = true)
     public Usuario getById(UUID id) {
