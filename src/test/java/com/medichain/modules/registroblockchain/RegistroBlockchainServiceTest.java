@@ -88,7 +88,8 @@ class RegistroBlockchainServiceTest {
         assertEquals(459_010L, dto.getLimiteGas());
         assertTrue(dto.getPrimerAnclaje());
         assertEquals(500_000L, dto.getGasMaximo());
-        assertEquals("0.00038839", dto.getCostoPorAnclajeEth());
+        assertEquals("0.000388392400000000", dto.getCostoPorAnclajeEth());
+        assertEquals("1.100000000", dto.getComisionActualGwei());
         assertEquals(90L, dto.getAnclajesEstimados());
         assertEquals("0.003883", dto.getSaldoMinimoEth());
         assertTrue(dto.getMensaje().contains("primer anclaje"));

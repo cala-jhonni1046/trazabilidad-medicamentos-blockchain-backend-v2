@@ -141,10 +141,12 @@ public class RegistroBlockchainService {
         }
         dto.setGasPorAnclaje(estimacion.getGasEstimado().longValueExact());
         dto.setLimiteGas(estimacion.getLimiteGas().longValueExact());
-        dto.setComisionActualGwei(new BigDecimal(estimacion.getPrecioWei()).divide(WEI_POR_GWEI, 3, RoundingMode.HALF_UP)
+        // Gwei con 9 decimales (= precisión de wei): una comisión chiquita ya no llega como "0.000".
+        dto.setComisionActualGwei(new BigDecimal(estimacion.getPrecioWei()).divide(WEI_POR_GWEI, 9, RoundingMode.DOWN)
                 .toPlainString());
         BigInteger costo = estimacion.costoEstimadoWei();
-        dto.setCostoPorAnclajeEth(enEth(costo, 8));
+        // ETH con 18 decimales (= precisión de wei): un costo de ~5e-10 ETH no se trunca a "0.00000000".
+        dto.setCostoPorAnclajeEth(enEth(costo, 18));
         dto.setAnclajesEstimados(costo.signum() == 0 ? null : saldo.divide(costo).longValue());
         int anclajes = propiedades.getSaldoMinimoAnclajes();
         dto.setSaldoMinimoEth(enEth(costo.multiply(BigInteger.valueOf(anclajes)).max(estimacion.costoMaximoWei()), 6));
